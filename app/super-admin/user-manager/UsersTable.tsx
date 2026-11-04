@@ -22,6 +22,14 @@ role:            Tableau responsive des utilisateurs. Affiche une liste
                  verrouillé si c'est le seul dont platformRole ===
                  "superAdmin" dans `users`.
 
+                 Badges : ROLE_BADGE_CLASS est un Record<PlatformRole,
+                 string> exhaustif — ajouter un rôle dans
+                 PLATFORM_ROLES (@/config/roles.ts) force l'ajout de son
+                 badge ici (erreur de compilation sinon). Le sélecteur
+                 itère sur PLATFORM_ROLES et affiche
+                 PLATFORM_ROLE_LABELS[role], donc un nouveau rôle
+                 apparaît automatiquement.
+
 flow:            Reçoit users (UserListItem[]) → calcule
                  superAdminCount + lastSuperAdminId → pour chaque user,
                  rend une ligne avec NativeSelect (désactivé UNIQUEMENT
@@ -103,6 +111,7 @@ export interface UsersTableProps {
 const ROLE_BADGE_CLASS: Record<PlatformRole, string> = {
   user: "bg-muted/60 text-muted-foreground",
   admin: "bg-chart-3/15 text-chart-3",
+  dev: "bg-chart-2/15 text-chart-2",
   superAdmin: "bg-chart-4/15 text-chart-4",
 };
 

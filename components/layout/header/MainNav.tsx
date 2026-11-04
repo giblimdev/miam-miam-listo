@@ -7,20 +7,26 @@ generic:         true
 
 role:            Navigation principale desktop. Reçoit les items + le
                  rôle plateforme (PlatformRole) de l'utilisateur courant
-                 par props. Filtre les items selon `visible` ET
-                 `minPlatformRole` (un item avec minPlatformRole:
-                 "admin" n'est rendu que si le rôle plateforme de
-                 l'utilisateur a un rang ≥ "admin"). La lecture de
-                 usePathname() est isolée dans NavActiveLink (sous
-                 Suspense) — obligatoire avec Cache Components sur les
-                 routes dynamiques, sinon le prérendu bloque.
+                 par props. Filtre les items ET leurs enfants selon
+                 `visible` ET `minPlatformRole` (un item avec
+                 minPlatformRole: "dev" n'est rendu que si le rôle
+                 plateforme de l'utilisateur a un rang ≥ dev, donc dev
+                 ou superAdmin). La lecture de usePathname() est isolée
+                 dans NavActiveLink (sous Suspense) — obligatoire avec
+                 Cache Components sur les routes dynamiques, sinon le
+                 prérendu bloque.
+
+                 canSee est importé depuis navTypes.ts (source unique de
+                 vérité, partagée avec Header.tsx) — plus de duplication
+                 locale qui causait des incohérences desktop/mobile.
 
 flow:            Client Component → useMemo(filtre + tri des items
-                 selon platformRole via hasPlatformRank) → NavItemRow
-                 (statique) → chaque lien sous <Suspense><NavActiveLink
-                 /></Suspense> pour l'état actif ; sous-menu si
-                 children. Anonyme (platformRole null) : seuls les items
-                 minPlatformRole: "user" sont visibles.
+                 selon platformRole via canSee) → NavItemRow (statique)
+                 → chaque lien sous <Suspense><NavActiveLink /></Suspense>
+                 pour l'état actif ; sous-menu si children, enfants
+                 filtrés via canSee. Anonyme (platformRole null) : seuls
+                 les items minPlatformRole: "user" sont visibles.
+                 superAdmin : tous les items.
 
 ecosystem:       Layout = [
                    "@/app/globals.css",
@@ -55,7 +61,8 @@ exports:         ["default MainNav", "MainNavProps"]
 
 useBy:           ["@/components/layout/header/Header.tsx"]
 
-userStories:     ["*en tant que développeur je veux une nav desktop paramétrable par rôle plateforme"]
+userStories:     ["*en tant que développeur je veux une nav desktop paramétrable par rôle plateforme",
+                  "*en tant que superAdmin je veux voir tous les items de navigation"]
 
 status:          wip
 pathChecked:     ✔true
@@ -70,9 +77,12 @@ import { Suspense, useMemo } from "react";
 import Link from "next/link";
 import { ChevronDown, ExternalLink } from "lucide-react";
 
-import type { NavItem } from "@/components/layout/header/navTypes";
+import {
+  canSee,
+  type NavItem,
+} from "@/components/layout/header/navTypes";
 import { NavActiveLink } from "@/components/layout/header/NavActiveLink";
-import { hasPlatformRank, type PlatformRole } from "@/config/roles";
+import type { PlatformRole } from "@/config/roles";
 
 /* ------------------------------------------------------------------ */
 /*  Helpers de style                                                   */
@@ -91,26 +101,6 @@ const SUB_LINK_BASE =
 const SUB_LINK_INACTIVE = `${SUB_LINK_BASE} text-foreground hover:bg-muted`;
 
 const SUB_LINK_ACTIVE = `${SUB_LINK_BASE} bg-primary/10 text-primary`;
-
-/* ------------------------------------------------------------------ */
-/*  Filtrage par rôle plateforme                                       */
-/* ------------------------------------------------------------------ */
-
-function canSee(
-  item: NavItem,
-  platformRole: PlatformRole | null | undefined,
-): boolean {
-  /* 1. Filtre `visible` */
-  if (item.visible === false) return false;
-
-  /* 2. Anonyme : seuls les items `user` sont visibles. */
-  if (!platformRole) {
-    return item.minPlatformRole === "user";
-  }
-
-  /* 3. Hiérarchie : superAdmin > admin > user. */
-  return hasPlatformRank(platformRole, item.minPlatformRole);
-}
 
 /* ------------------------------------------------------------------ */
 /*  Fallback : lien neutre (prérendu)                                  */
@@ -223,15 +213,16 @@ function ChildrenList({ children }: ChildrenListProps) {
 
 interface NavItemRowProps {
   readonly item: NavItem;
+  readonly platformRole: PlatformRole | null;
 }
 
-function NavItemRow({ item }: NavItemRowProps) {
+function NavItemRow({ item, platformRole }: NavItemRowProps) {
   const sortedChildren = useMemo(() => {
     if (!item.children) return [];
     return [...item.children]
-      .filter((child) => child.visible !== false)
+      .filter((child) => canSee(child, platformRole))
       .sort((a, b) => a.displayOrder - b.displayOrder);
-  }, [item.children]);
+  }, [item.children, platformRole]);
 
   const hasChildren = sortedChildren.length > 0;
 
@@ -288,7 +279,7 @@ export type MainNavProps = {
   readonly items: readonly NavItem[];
   /**
    * Rôle plateforme de l'utilisateur courant (null = anonyme).
-   * Filtrage via hasPlatformRank (hiérarchie superAdmin > admin > user).
+   * Filtrage via canSee (hiérarchie superAdmin > dev > admin > user).
    */
   readonly platformRole?: PlatformRole | null;
 };
@@ -306,7 +297,11 @@ export default function MainNav({ items, platformRole }: MainNavProps) {
     <nav aria-label="Navigation principale" className="hidden md:block">
       <ul className="flex items-center gap-0.5">
         {sortedItems.map((item) => (
-          <NavItemRow key={item.id} item={item} />
+          <NavItemRow
+            key={item.id}
+            item={item}
+            platformRole={platformRole ?? null}
+          />
         ))}
       </ul>
     </nav>

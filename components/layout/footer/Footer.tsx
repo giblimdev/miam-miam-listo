@@ -6,13 +6,16 @@ type:            component
 generic:         false
 
 role:            Pied de page global de l'application. Présente la marque
-                 (logo + tagline + réseaux), trois colonnes de liens
+                 (logo partagé + tagline + réseaux), trois colonnes de liens
                  (Produit, Ressources, Légal) et une ligne de bas de page
                  avec copyright dynamique. Le composant est mis en cache
                  ("use cache" en tête de fichier) : il doit donc être
                  async (exigence Next.js pour les fonctions cachées). Cela
                  permet d'utiliser new Date() lors du prérendu sans bloquer
                  les routes statiques (Cache Components de Next 16).
+                 Le logo et le wordmark sont délégués à <Logo />
+                 (components/layout/header/Logo.tsx) — source unique de
+                 vérité pour la marque, réutilisée par Header et Footer.
                  Les icônes de marque (GitHub, X, LinkedIn) sont rendues
                  en SVG inline car lucide-react ne les exporte plus
                  (trademark).
@@ -40,7 +43,8 @@ relatedFiles:    ["@/app/layout.tsx",
                   "@/components/layout/header/Header.tsx",
                   "@/components/layout/header/Logo.tsx"]
 
-imports:         ["next/link", "lucide-react"]
+imports:         ["next/link", "lucide-react",
+                  "@/components/layout/header/Logo"]
 
 exports:         ["default Footer"]
 
@@ -57,7 +61,9 @@ scriptChecked:   ✔true
 "use cache";
 
 import Link from "next/link";
-import { Mail, Sparkles } from "lucide-react";
+import { Mail } from "lucide-react";
+
+import Logo from "@/components/layout/header/Logo";
 
 /* ------------------------------------------------------------------ */
 /*  Icônes de marque — SVG inline                                      */
@@ -190,18 +196,7 @@ export default async function Footer() {
         <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {/* Marque */}
           <div className="sm:col-span-2 lg:col-span-1">
-            <Link
-              href="/"
-              aria-label="Genesis — Accueil"
-              className="inline-flex items-center gap-2"
-            >
-              <span className="grid size-9 place-items-center rounded-xl bg-gradient-to-br from-chart-1 to-chart-2 text-white shadow-sm">
-                <Sparkles className="size-4" aria-hidden />
-              </span>
-              <span className="text-lg font-bold tracking-tight text-foreground">
-                Genesis
-              </span>
-            </Link>
+            <Logo />
 
             <p className="mt-3 max-w-xs text-sm leading-relaxed text-muted-foreground">
               L&apos;atelier qui structure vos projets. Conception,

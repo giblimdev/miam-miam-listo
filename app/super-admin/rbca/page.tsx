@@ -7,8 +7,8 @@ generic:         false
 
 role:            Page de documentation du modèle RBAC de Genesis. Explique
                  la séparation entre :
-                 1) PlatformRole (user / admin / superAdmin) — rôle GLOBAL
-                    de l'utilisateur sur la plateforme, stocké dans
+                 1) PlatformRole (user / admin / dev / superAdmin) — rôle
+                    GLOBAL de l'utilisateur sur la plateforme, stocké dans
                     User.platformRole (String, validé côté app par
                     platformRoleSchema). C'est le seul rôle natif Better
                     Auth.
@@ -25,15 +25,34 @@ role:            Page de documentation du modèle RBAC de Genesis. Explique
                  (prisma schema + better-auth config + validations +
                  helpers rbac + UI).
 
+                 Source de vérité : les rôles affichés proviennent
+                 DIRECTEMENT de PLATFORM_ROLES (@/config/roles.ts). Ajouter
+                 un rôle dans config/roles.ts le fait apparaître ici
+                 automatiquement (aucune duplication à maintenir). Les
+                 contenus rédactionnels (périmètre, qui l'attribue, notes,
+                 icône, accent) sont portés par un Record<PlatformRole,
+                 RolePresentation> local — le compilateur TypeScript force
+                 l'exhaustivité : impossible d'oublier une entrée.
+
+                 Hiérarchie : superAdmin (3) > dev (2) > admin (1) >
+                 user (0). Un superAdmin voit TOUS les items de
+                 navigation, quel que soit leur minPlatformRole (règle
+                 appliquée par canSee() via hasPlatformRank).
+
                  Page statique (Server Component) sans fetch ni état.
                  Sert de référence pour toute évolution future du modèle
                  de rôles.
 
 flow:            Server Component pur → rend un wrapper max-w-5xl →
-                 Hero (badge, titre, tagline) → section « PlatformRole »
-                 (3 rôles, tableau) → section « WorkerRole » (à venir,
-                 modèle Prisma, contraintes, impact Better Auth) →
-                 section « Qui attribue quoi » (règles) → section
+                 Hero (badge, titre, tagline) → section « Les rôles
+                 plateforme » (grille dynamique : map sur PLATFORM_ROLES
+                 triés par rang → RoleCard pour chaque rôle, avec
+                 présentation lue dans ROLE_PRESENTATION[role]) →
+                 section « Hiérarchie » (tableau des rangs + règle
+                 superAdmin voit tout) → section « PlatformRole en
+                 détail » (tableau des fichiers) → section « WorkerRole »
+                 (à venir, modèle Prisma, contraintes, impact Better
+                 Auth) → section « Qui attribue quoi » (règles) → section
                  « Garde-fous » (anti-lockout, anti-auto-promotion) →
                  section « Procédure de migration WorkerRole » (5 étapes
                  numérotées) → CTA vers /super-admin/user-manager.
@@ -56,9 +75,11 @@ relatedFiles:    ["@/config/roles.ts",
                   "@/lib/auth/rbac.ts",
                   "@/lib/auth/auth.ts",
                   "@/lib/prisma.ts",
-                  "@/app/super-admin/user-manager/page.tsx"]
+                  "@/app/super-admin/user-manager/page.tsx",
+                  "@/components/layout/header/navTypes.ts"]
 
 imports:         ["next/link", "lucide-react",
+                  "@/config/roles",
                   "@/components/ui/button",
                   "@/components/ui/card"]
 
@@ -70,7 +91,7 @@ userStories:     ["*en tant que développeur je veux comprendre le modèle RBAC 
                   "*en tant que super-admin je veux savoir comment attribuer les rôles",
                   "*en tant que développeur je veux préparer l'ajout des rôles métier (WorkerRole)"]
 
-status:          planned
+status:          wip
 pathChecked:     ✔true
 metaDataChecked: ✔true
 scriptChecked:   ✔true
@@ -93,6 +114,12 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import {
+  PLATFORM_ROLES,
+  PLATFORM_ROLE_LABELS,
+  PLATFORM_ROLE_RANK,
+  type PlatformRole,
+} from "@/config/roles";
 import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
@@ -109,16 +136,19 @@ import {
 export const metadata: Metadata = {
   title: "RBAC — Rôles plateforme et rôles métier",
   description:
-    "Modèle de rôles de Genesis : PlatformRole global (user / admin / superAdmin), rôles métier contextuels (WorkerRole, à venir) et règles d'attribution.",
+    "Modèle de rôles de Genesis : PlatformRole global (user / admin / dev / superAdmin), hiérarchie stricte, rôles métier contextuels (WorkerRole, à venir) et règles d'attribution.",
 };
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
 
-interface RoleRow {
-  readonly role: string;
-  readonly label: string;
+/**
+ * Présentation éditoriale d'un rôle plateforme. Les valeurs
+ * (`role`, `label`, `rank`) sont dérivées de `config/roles.ts` ; ce
+ * Record ne porte que les champs rédactionnels propres à la doc.
+ */
+interface RolePresentation {
   readonly scope: string;
   readonly whoAssigns: string;
   readonly notes: string;
@@ -133,47 +163,65 @@ interface MigrationStep {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Données — PlatformRole                                             */
+/*  Présentation par rôle (exhaustif sur PlatformRole)                 */
 /* ------------------------------------------------------------------ */
 
-const PLATFORM_ROLE_ROWS: readonly RoleRow[] = [
-  {
-    role: "user",
-    label: "Utilisateur",
+/**
+ * Record<PlatformRole, RolePresentation> — le compilateur TypeScript
+ * force l'exhaustivité : ajouter un rôle dans PLATFORM_ROLES sans
+ * ajouter son entrée ici provoque une erreur de compilation.
+ */
+const ROLE_PRESENTATION: Record<PlatformRole, RolePresentation> = {
+  user: {
     scope:
       "Accès standard : lecture publique, gestion de son propre profil, actions autorisées à tout compte connecté. Rôle par défaut à l'inscription.",
     whoAssigns:
       "Automatique (Better Auth) à la création du compte. Aucune action manuelle requise.",
     notes:
-      'Valeur stockée en base : "user". Fallback de toPlatformRole() si la valeur en base est invalide.',
+      'Valeur stockée en base : "user". Rang 0 (le plus bas). Fallback de toPlatformRole() si la valeur en base est invalide.',
     icon: Users,
     accent: "chart-1",
   },
-  {
-    role: "admin",
-    label: "Administrateur",
+  admin: {
     scope:
       "Accès aux outils d'administration métier (validation de contenus, modération, gestion des membres d'une organisation). Ne peut pas gérer les rôles plateforme.",
     whoAssigns:
       "Attribué par un superAdmin (ou un admin déjà en place selon la politique retenue). Journalisé.",
     notes:
-      'Valeur stockée en base : "admin". Utilisé par requirePlatformRole(["admin", "superAdmin"]) via requirePlatformRank.',
+      'Valeur stockée en base : "admin". Rang 1 dans la hiérarchie (au-dessus de user, sous dev et superAdmin).',
     icon: UserCog,
     accent: "chart-2",
   },
-  {
-    role: "superAdmin",
-    label: "Super-administrateur",
+  dev: {
     scope:
-      "Accès total à la plateforme : gestion des rôles plateforme, règles globales, audit, conformité. Rôle à périmètre étroit mais haute responsabilité.",
+      "Accès aux outils techniques : Genesis (SelectFiles, CreateFiles, CopyToIA), diagnostics, feature flags, logs applicatifs. Ne peut pas gérer les rôles plateforme ni les règles globales.",
+    whoAssigns:
+      "Attribué par un superAdmin. Journalisé. Rôle technique, à périmètre étroit.",
+    notes:
+      "Valeur stockée en base : \"dev\". Rang 2 dans la hiérarchie — sous superAdmin, au-dessus d'admin. Ouvre /genesis sans donner les droits d'administration métier. Voit donc Admin (rang 1 ≤ 2) mais pas Super-admin (rang 3 > 2).",
+    icon: Cog,
+    accent: "chart-3",
+  },
+  superAdmin: {
+    scope:
+      "Accès total à la plateforme : gestion des rôles plateforme, règles globales, audit, conformité. Rôle à périmètre étroit mais haute responsabilité. Voit TOUS les items de navigation, quel que soit leur minPlatformRole.",
     whoAssigns:
       "Attribué par un autre superAdmin. En bootstrap (aucun superAdmin existant), l'auto-promotion est autorisée via /super-admin/user-manager.",
     notes:
-      'Valeur stockée en base : "superAdmin". Anti-lockout : le dernier superAdmin actif ne peut pas être rétrogradé.',
+      'Valeur stockée en base : "superAdmin". Rang 3 (le plus haut). Anti-lockout : le dernier superAdmin actif ne peut pas être rétrogradé. Règle « voit tout » appliquée par canSee() via hasPlatformRank.',
     icon: ShieldCheck,
     accent: "chart-4",
   },
-];
+};
+
+/**
+ * Rôles triés par rang croissant (user → admin → dev → superAdmin).
+ * Le tri est dérivé de PLATFORM_ROLE_RANK, donc l'ordre suit
+ * automatiquement la hiérarchie définie dans config/roles.ts.
+ */
+const SORTED_PLATFORM_ROLES: readonly PlatformRole[] = [...PLATFORM_ROLES].sort(
+  (a, b) => PLATFORM_ROLE_RANK[a] - PLATFORM_ROLE_RANK[b],
+);
 
 /* ------------------------------------------------------------------ */
 /*  Données — étapes de migration WorkerRole                           */
@@ -230,9 +278,17 @@ const MIGRATION_STEPS: readonly MigrationStep[] = [
 /*  Sous-composants                                                    */
 /* ------------------------------------------------------------------ */
 
-function RoleCard({ row }: { readonly row: RoleRow }) {
-  const Icon = row.icon;
-  const accent = row.accent;
+function RoleCard({
+  role,
+  presentation,
+}: {
+  readonly role: PlatformRole;
+  readonly presentation: RolePresentation;
+}) {
+  const Icon = presentation.icon;
+  const accent = presentation.accent;
+  const label = PLATFORM_ROLE_LABELS[role];
+  const rank = PLATFORM_ROLE_RANK[role];
 
   return (
     <Card
@@ -256,26 +312,28 @@ function RoleCard({ row }: { readonly row: RoleRow }) {
           <Icon className="size-5" aria-hidden />
         </div>
         <div className="min-w-0 flex-1">
-          <CardTitle className="text-base">{row.label}</CardTitle>
-          <CardDescription className="mt-0.5 font-mono text-xs text-muted-foreground">
-            {row.role}
+          <CardTitle className="text-base">{label}</CardTitle>
+          <CardDescription className="mt-0.5 flex items-center gap-2 font-mono text-xs text-muted-foreground">
+            <span>{role}</span>
+            <span aria-hidden>·</span>
+            <span>rang {rank}</span>
           </CardDescription>
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
         <p className="text-sm leading-relaxed text-foreground/80">
-          {row.scope}
+          {presentation.scope}
         </p>
         <dl className="space-y-2 text-xs">
           <div>
             <dt className="font-semibold text-foreground">
               Qui l&apos;attribue ?
             </dt>
-            <dd className="text-muted-foreground">{row.whoAssigns}</dd>
+            <dd className="text-muted-foreground">{presentation.whoAssigns}</dd>
           </div>
           <div>
             <dt className="font-semibold text-foreground">Notes techniques</dt>
-            <dd className="text-muted-foreground">{row.notes}</dd>
+            <dd className="text-muted-foreground">{presentation.notes}</dd>
           </div>
         </dl>
       </CardContent>
@@ -320,27 +378,126 @@ export default function RcbaPage() {
         </div>
       </section>
 
-      {/* PlatformRole */}
+      {/* Les rôles plateforme — dynamique depuis PLATFORM_ROLES */}
       <section className="px-4 pb-16 sm:px-6">
         <div className="mx-auto max-w-6xl">
           <header className="mb-8 text-center">
             <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-              1. PlatformRole — rôle global
+              Les rôles plateforme
             </h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              Stocké dans <code>User.platformRole</code> (String). Validé par{" "}
-              <code>platformRoleSchema</code>. C&apos;est le seul rôle que
-              Better Auth connaît nativement.
+              {SORTED_PLATFORM_ROLES.length} rôles globaux, stockés dans{" "}
+              <code>User.platformRole</code> et validés par{" "}
+              <code>platformRoleSchema</code>. Liste dérivée de{" "}
+              <code>config/roles.ts</code> — ajouter un rôle dans{" "}
+              <code>PLATFORM_ROLES</code> le fait apparaître ici
+              automatiquement. Triés par rang croissant.
             </p>
           </header>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            {PLATFORM_ROLE_ROWS.map((row) => (
-              <RoleCard key={row.role} row={row} />
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {SORTED_PLATFORM_ROLES.map((role) => (
+              <RoleCard
+                key={role}
+                role={role}
+                presentation={ROLE_PRESENTATION[role]}
+              />
             ))}
           </div>
+        </div>
+      </section>
 
-          <div className="mt-8 overflow-hidden rounded-2xl border border-border/60 bg-card">
+      {/* Hiérarchie */}
+      <section className="px-4 pb-16 sm:px-6">
+        <div className="mx-auto max-w-6xl">
+          <header className="mb-8 text-center">
+            <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+              1. Hiérarchie des rôles plateforme
+            </h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              La hiérarchie est <strong>stricte</strong> et repose sur{" "}
+              <code>PLATFORM_ROLE_RANK</code>. Un rôle voit tous les items de
+              navigation dont le seuil (<code>minPlatformRole</code>) est{" "}
+              <strong>inférieur ou égal</strong> à son rang.
+            </p>
+          </header>
+
+          <div className="overflow-hidden rounded-2xl border border-border/60 bg-card">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-border/60 bg-muted/30">
+                <tr>
+                  <th className="px-4 py-3 font-semibold text-foreground">
+                    Rôle
+                  </th>
+                  <th className="px-4 py-3 font-semibold text-foreground">
+                    Rang
+                  </th>
+                  <th className="px-4 py-3 font-semibold text-foreground">
+                    Voit les items de seuil…
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {SORTED_PLATFORM_ROLES.map((role) => {
+                  const rank = PLATFORM_ROLE_RANK[role];
+                  const visibleSeuils = SORTED_PLATFORM_ROLES.filter(
+                    (seuil) => PLATFORM_ROLE_RANK[seuil] <= rank,
+                  );
+                  return (
+                    <tr
+                      key={role}
+                      className="border-b border-border/40 last:border-0"
+                    >
+                      <td className="px-4 py-3 font-mono text-xs text-foreground">
+                        {role}
+                      </td>
+                      <td className="px-4 py-3 font-mono text-xs text-foreground">
+                        {rank}
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">
+                        {visibleSeuils.join(", ")}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="mt-6 rounded-xl border border-chart-4/30 bg-chart-4/5 p-4">
+            <h3 className="flex items-center gap-2 text-sm font-bold text-foreground">
+              <ShieldCheck className="size-4 text-chart-4" aria-hidden />
+              Règle « superAdmin voit tout »
+            </h3>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              <code>superAdmin</code> a le rang le plus élevé (3). Via{" "}
+              <code>hasPlatformRank(role, minimum)</code> — qui teste{" "}
+              <code>RANK[role] &gt;= RANK[minimum]</code> —{" "}
+              <code>superAdmin</code> satisfait <strong>tous</strong> les seuils
+              possibles. Il voit donc <strong>tous</strong> les items de
+              navigation, quel que soit leur <code>minPlatformRole</code>. Cette
+              règle est centralisée dans <code>canSee()</code> (
+              <code>components/layout/header/navTypes.ts</code>) et partagée par{" "}
+              <code>Header.tsx</code> et <code>MainNav.tsx</code> — pas de
+              duplication, pas d&apos;incohérence desktop/mobile.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* PlatformRole — tableau des fichiers */}
+      <section className="px-4 pb-16 sm:px-6">
+        <div className="mx-auto max-w-6xl">
+          <header className="mb-8 text-center">
+            <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+              2. PlatformRole — rôle global
+            </h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Source de vérité et gardes serveur du modèle PlatformRole.
+            </p>
+          </header>
+
+          <div className="overflow-hidden rounded-2xl border border-border/60 bg-card">
             <table className="w-full text-left text-sm">
               <thead className="border-b border-border/60 bg-muted/30">
                 <tr>
@@ -359,7 +516,7 @@ export default function RcbaPage() {
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">
                     Source de vérité : PLATFORM_ROLES, PLATFORM_ROLE_LABELS,
-                    PLATFORM_ROLE_RANK, platformRoleSchema.
+                    PLATFORM_ROLE_RANK, platformRoleSchema, hasPlatformRank.
                   </td>
                 </tr>
                 <tr className="border-b border-border/40">
@@ -369,6 +526,15 @@ export default function RcbaPage() {
                   <td className="px-4 py-3 text-muted-foreground">
                     Gardes serveur : requireSession, requirePlatformRole,
                     requirePlatformRank, requireSuperAdmin.
+                  </td>
+                </tr>
+                <tr className="border-b border-border/40">
+                  <td className="px-4 py-3 font-mono text-xs text-foreground">
+                    components/layout/header/navTypes.ts
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    Filtrage de navigation : canSee(item, platformRole) — source
+                    unique partagée par Header.tsx et MainNav.tsx.
                   </td>
                 </tr>
                 <tr className="border-b border-border/40">
@@ -400,7 +566,7 @@ export default function RcbaPage() {
         <div className="mx-auto max-w-6xl">
           <header className="mb-8 text-center">
             <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-              2. WorkerRole — rôle métier (à venir)
+              3. WorkerRole — rôle métier (à venir)
             </h2>
             <p className="mt-2 text-sm text-muted-foreground">
               Un rôle <em>contextuel</em>, lié à une organisation. Un même
@@ -492,7 +658,7 @@ model Worker {
         <div className="mx-auto max-w-6xl">
           <header className="mb-8 text-center">
             <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-              3. Qui attribue quoi
+              4. Qui attribue quoi
             </h2>
             <p className="mt-2 text-sm text-muted-foreground">
               Règles d&apos;attribution. La cohérence entre UI et serveur est
@@ -514,7 +680,8 @@ model Worker {
                   <strong>user</strong> : automatique à la création.
                 </p>
                 <p>
-                  <strong>admin</strong> : par un superAdmin.
+                  <strong>admin</strong> et <strong>dev</strong> : par un
+                  superAdmin.
                 </p>
                 <p>
                   <strong>superAdmin</strong> : par un autre superAdmin, ou
@@ -567,7 +734,7 @@ model Worker {
         <div className="mx-auto max-w-6xl">
           <header className="mb-8 text-center">
             <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-              4. Garde-fous
+              5. Garde-fous
             </h2>
             <p className="mt-2 text-sm text-muted-foreground">
               Empêcher la perte d&apos;accès administrateur et les
@@ -586,9 +753,9 @@ model Worker {
               <CardContent className="text-sm text-muted-foreground">
                 <p>
                   Le <strong>dernier superAdmin actif</strong> ne peut pas être
-                  rétrogradé (ni en <code>admin</code>, ni en <code>user</code>
-                  ). Règle appliquée côté client (<code>UsersTable</code>){" "}
-                  <strong>et</strong> côté serveur (
+                  rétrogradé (ni en <code>dev</code>, ni en <code>admin</code>,
+                  ni en <code>user</code>). Règle appliquée côté client (
+                  <code>UsersTable</code>) <strong>et</strong> côté serveur (
                   <code>updateUserPlatformRoleAction</code>).
                 </p>
                 <p className="mt-2 text-xs">
@@ -623,7 +790,7 @@ model Worker {
         <div className="mx-auto max-w-6xl">
           <header className="mb-8 text-center">
             <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-              5. Procédure de migration vers WorkerRole
+              6. Procédure de migration vers WorkerRole
             </h2>
             <p className="mt-2 text-sm text-muted-foreground">
               Cinq étapes ordonnées. Chaque étape est indépendante et peut être

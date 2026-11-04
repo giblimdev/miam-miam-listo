@@ -16,6 +16,13 @@ role:            Source unique de vérité pour les rôles plateforme.
                  Server Actions (gardes d'accès), et les pages. Aucun
                  accès fichier, aucun effet, importable client ET serveur.
 
+                 Hiérarchie : superAdmin (3) > dev (2) > admin (1) > user (0).
+                 Le rôle "dev" est un rôle technique (accès aux outils de
+                 développement, debug, logs) placé SOUS superAdmin mais
+                 AU-DESSUS d'admin : il ne peut pas gérer les rôles
+                 plateforme, mais peut accéder aux outils réservés aux
+                 développeurs (ex. /genesis, feature flags, diagnostics).
+
 flow:            Module TypeScript pur → constantes + type dérivé +
                  schéma Zod. Aucun état, aucun effet.
 
@@ -28,7 +35,7 @@ relatedFiles:    ["@/lib/validations/auth.ts",
                   "@/config/navigation.ts",
                   "@/components/layout/header/MainNav.tsx",
                   "@/components/layout/header/Header.tsx",
-                  "@/app/super-admin/users/actions.ts"]
+                  "@/app/super-admin/user-manager/actions.ts"]
 
 imports:         ["zod"]
 
@@ -43,8 +50,8 @@ useBy:           ["@/lib/validations/auth.ts",
                   "@/config/navigation.ts",
                   "@/components/layout/header/MainNav.tsx",
                   "@/components/layout/header/Header.tsx",
-                  "@/app/super-admin/users/actions.ts",
-                  "@/app/super-admin/users/page.tsx",
+                  "@/app/super-admin/user-manager/actions.ts",
+                  "@/app/super-admin/user-manager/page.tsx",
                   "@/app/super-admin/page.tsx"]
 
 userStories:     ["*en tant que développeur je veux une source unique pour les rôles plateforme"]
@@ -61,7 +68,7 @@ import { z } from "zod";
 /*  Rôles plateforme (source unique)                                   */
 /* ------------------------------------------------------------------ */
 
-export const PLATFORM_ROLES = ["user", "admin", "superAdmin"] as const;
+export const PLATFORM_ROLES = ["user", "admin", "dev", "superAdmin"] as const;
 
 export type PlatformRole = (typeof PLATFORM_ROLES)[number];
 
@@ -87,6 +94,7 @@ export const platformRoleSchema = z.enum(PLATFORM_ROLES);
 export const PLATFORM_ROLE_LABELS: Record<PlatformRole, string> = {
   user: "Utilisateur",
   admin: "Administrateur",
+  dev: "Développeur",
   superAdmin: "Super-administrateur",
 };
 
@@ -98,6 +106,7 @@ export const PLATFORM_ROLE_DESCRIPTIONS: Record<PlatformRole, string> = {
   user: "Utilisateur standard : peut commander, laisser des avis, cumuler des points.",
   admin:
     "Administrateur metier : valide les commerces, gère les utilisateurs et leurs rôles par commerce, arbitre les litiges.",
+  dev: "Développeur : accès aux outils techniques (Genesis, diagnostics, feature flags, logs). Ne peut pas gérer les rôles plateforme.",
   superAdmin:
     "Super-administrateur : gère les admins, les règles globales de la plateforme et l'audit. Accès en lecture à toutes les données.",
 };
@@ -108,18 +117,25 @@ export const PLATFORM_ROLE_DESCRIPTIONS: Record<PlatformRole, string> = {
 
 /**
  * Rang de chaque rôle plateforme. Utilisé pour les comparaisons
- * hiérarchiques (ex. `superAdmin` a un rang supérieur à `admin`).
+ * hiérarchiques (ex. `superAdmin` a un rang supérieur à `dev`).
  * Plus le rang est élevé, plus les permissions sont larges.
+ *
+ * Hiérarchie : superAdmin (3) > dev (2) > admin (1) > user (0).
+ * "dev" est placé sous "superAdmin" (qui garde la main sur les rôles)
+ * mais au-dessus d'"admin" (accès outils techniques > administration
+ * métier).
  */
 export const PLATFORM_ROLE_RANK: Record<PlatformRole, number> = {
   user: 0,
   admin: 1,
-  superAdmin: 2,
+  dev: 2,
+  superAdmin: 3,
 };
 
 /**
  * Vrai si `role` a un rang ≥ au rang de `minimum`.
- * Exemple : hasPlatformRank("superAdmin", "admin") → true
+ * Exemple : hasPlatformRank("dev", "admin") → true
+ *          hasPlatformRank("admin", "dev") → false
  */
 export function hasPlatformRank(
   role: PlatformRole,

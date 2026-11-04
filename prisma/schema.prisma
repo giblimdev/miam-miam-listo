@@ -102,7 +102,5 @@ model Profile {
 }
 
 ////////////////////////
-/////     Blog     /////
+/////     ****     /////
 ////////////////////////
-
-/// Taxonomie 3 niveaux : Theme → Category → SubCategory
