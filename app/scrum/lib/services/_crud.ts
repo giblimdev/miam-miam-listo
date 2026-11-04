@@ -1,7 +1,7 @@
 /*
-path :           app/core/lib/services/_crud.ts
+path :           app/scrum/lib/services/_crud.ts
 tag :            ["scrum", "service", "crud", "factory", "generic"]
-projectId:       new-genesis
+projectId:       <à fournir>
 type:            helper
 generic:         true
 
@@ -35,47 +35,48 @@ flow:            makeCrudService(collectionKey, schema, options?) →
                  normalise order → write.
 
 ecosystem:       Scrum = [
-                   "@/app/core/lib/scrum/actions/epic.ts",
-                   "@/app/core/lib/scrum/actions/feature.ts",
-                   "@/app/core/lib/scrum/actions/global-json.ts",
-                   "@/app/core/lib/scrum/actions/idee.ts",
-                   "@/app/core/lib/scrum/actions/persona.ts",
-                   "@/app/core/lib/scrum/actions/sprint.ts",
-                   "@/app/core/lib/scrum/actions/task.ts",
-                   "@/app/core/lib/scrum/actions/user-story.ts",
-                   "@/app/core/lib/scrum/services/_crud.ts",
-                   "@/app/core/lib/scrum/services/epic.ts",
-                   "@/app/core/lib/scrum/services/feature.ts",
-                   "@/app/core/lib/scrum/services/global-json.ts",
-                   "@/app/core/lib/scrum/services/idee.ts",
-                   "@/app/core/lib/scrum/services/persona.ts",
-                   "@/app/core/lib/scrum/services/sprint.ts",
-                   "@/app/core/lib/scrum/services/task.ts",
-                   "@/app/core/lib/scrum/services/user-story.ts",
-                   "@/app/core/lib/scrum/storage.ts",
-                   "@/app/core/lib/scrum/types.ts",
-                   "@/app/core/lib/scrum/validations.ts",
+                   "@/app/scrum/lib/actions/_helpers.ts",
+                   "@/app/scrum/lib/actions/epic.ts",
+                   "@/app/scrum/lib/actions/feature.ts",
+                   "@/app/scrum/lib/actions/global-json.ts",
+                   "@/app/scrum/lib/actions/idee.ts",
+                   "@/app/scrum/lib/actions/persona.ts",
+                   "@/app/scrum/lib/actions/sprint.ts",
+                   "@/app/scrum/lib/actions/task.ts",
+                   "@/app/scrum/lib/actions/user-story.ts",
+                   "@/app/scrum/lib/services/_crud.ts",
+                   "@/app/scrum/lib/services/epic.ts",
+                   "@/app/scrum/lib/services/feature.ts",
+                   "@/app/scrum/lib/services/global-json.ts",
+                   "@/app/scrum/lib/services/idee.ts",
+                   "@/app/scrum/lib/services/persona.ts",
+                   "@/app/scrum/lib/services/sprint.ts",
+                   "@/app/scrum/lib/services/task.ts",
+                   "@/app/scrum/lib/services/user-story.ts",
+                   "@/app/scrum/lib/storage.ts",
+                   "@/app/scrum/lib/types.ts",
+                   "@/app/scrum/lib/validations.ts",
                  ]
 
-relatedFiles:    ["@/app/core/lib/scrum/storage.ts",
-                  "@/app/core/lib/scrum/types.ts",
-                  "@/app/core/lib/scrum/validations.ts"]
+relatedFiles:    ["@/app/scrum/lib/storage.ts",
+                  "@/app/scrum/lib/types.ts",
+                  "@/app/scrum/lib/validations.ts"]
 
 imports:         ["node:crypto", "zod",
-                  "@/app/core/lib/scrum/storage",
-                  "@/app/core/lib/scrum/types",
-                  "@/app/core/lib/scrum/validations"]
+                  "@/app/scrum/lib/storage",
+                  "@/app/scrum/lib/types",
+                  "@/app/scrum/lib/validations"]
 
 exports:         ["CrudKey", "EntityOf", "CrudOptions", "CrudService",
                   "makeCrudService"]
 
-useBy:           ["@/app/core/lib/scrum/services/idee.ts",
-                  "@/app/core/lib/scrum/services/feature.ts",
-                  "@/app/core/lib/scrum/services/persona.ts",
-                  "@/app/core/lib/scrum/services/epic.ts",
-                  "@/app/core/lib/scrum/services/user-story.ts",
-                  "@/app/core/lib/scrum/services/sprint.ts",
-                  "@/app/core/lib/scrum/services/task.ts"]
+useBy:           ["@/app/scrum/lib/services/idee.ts",
+                  "@/app/scrum/lib/services/feature.ts",
+                  "@/app/scrum/lib/services/persona.ts",
+                  "@/app/scrum/lib/services/epic.ts",
+                  "@/app/scrum/lib/services/user-story.ts",
+                  "@/app/scrum/lib/services/sprint.ts",
+                  "@/app/scrum/lib/services/task.ts"]
 
 userStories:     ["*en tant que développeur je veux un CRUD Scrum générique factorisé"]
 
@@ -97,7 +98,13 @@ import { reorderInputSchema } from "@/app/scrum/lib/validations";
 /* ------------------------------------------------------------------ */
 
 export type CrudKey =
-  "idea" | "feature" | "persona" | "epic" | "userStory" | "sprint" | "task";
+  | "idea"
+  | "feature"
+  | "persona"
+  | "epic"
+  | "userStory"
+  | "sprint"
+  | "task";
 
 export type EntityOf<K extends CrudKey> = ScrumDocument[K][number];
 
@@ -107,7 +114,11 @@ export interface CrudOptions<K extends CrudKey, TInput> {
    * Peut lever une Error qui sera remontée telle quelle par le service
    * (et convertie en ActionResult par l'action correspondante).
    */
-  readonly validate?: (input: TInput, doc: ScrumDocument, id?: string) => void;
+  readonly validate?: (
+    input: TInput,
+    doc: ScrumDocument,
+    id?: string,
+  ) => void;
 
   /**
    * Hook post-suppression, appelé après avoir retiré l'entité de sa

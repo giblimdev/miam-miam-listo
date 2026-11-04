@@ -1,5 +1,5 @@
 /*
-path :           app/core/lib/storage.ts
+path :           app/scrum/lib/storage.ts
 tag :            ["scrum", "storage", "json", "fs", "server-only"]
 projectId:       new-genesis
 type:            helper
@@ -21,44 +21,44 @@ flow:            readScrumFile(flow) → résout le path → lit → parse +
                  meta.updatedAt → écrit dans .tmp → rename atomique.
 
 ecosystem:       Scrum = [
-                   "@/app/core/lib/scrum/actions/epic.ts",
-                   "@/app/core/lib/scrum/actions/feature.ts",
-                   "@/app/core/lib/scrum/actions/global-json.ts",
-                   "@/app/core/lib/scrum/actions/idee.ts",
-                   "@/app/core/lib/scrum/actions/persona.ts",
-                   "@/app/core/lib/scrum/actions/sprint.ts",
-                   "@/app/core/lib/scrum/actions/task.ts",
-                   "@/app/core/lib/scrum/actions/user-story.ts",
-                   "@/app/core/lib/scrum/services/epic.ts",
-                   "@/app/core/lib/scrum/services/feature.ts",
-                   "@/app/core/lib/scrum/services/global-json.ts",
-                   "@/app/core/lib/scrum/services/idee.ts",
-                   "@/app/core/lib/scrum/services/persona.ts",
-                   "@/app/core/lib/scrum/services/sprint.ts",
-                   "@/app/core/lib/scrum/services/task.ts",
-                   "@/app/core/lib/scrum/services/user-story.ts",
-                   "@/app/core/lib/scrum/storage.ts",
-                   "@/app/core/lib/scrum/types.ts",
-                   "@/app/core/lib/scrum/validations.ts",
+                   "@/app/scrum/lib/actions/epic.ts",
+                   "@/app/scrum/lib/actions/feature.ts",
+                   "@/app/scrum/lib/actions/global-json.ts",
+                   "@/app/scrum/lib/actions/idee.ts",
+                   "@/app/scrum/lib/actions/persona.ts",
+                   "@/app/scrum/lib/actions/sprint.ts",
+                   "@/app/scrum/lib/actions/task.ts",
+                   "@/app/scrum/lib/actions/user-story.ts",
+                   "@/app/scrum/lib/services/epic.ts",
+                   "@/app/scrum/lib/services/feature.ts",
+                   "@/app/scrum/lib/services/global-json.ts",
+                   "@/app/scrum/lib/services/idee.ts",
+                   "@/app/scrum/lib/services/persona.ts",
+                   "@/app/scrum/lib/services/sprint.ts",
+                   "@/app/scrum/lib/services/task.ts",
+                   "@/app/scrum/lib/services/user-story.ts",
+                   "@/app/scrum/lib/storage.ts",
+                   "@/app/scrum/lib/types.ts",
+                   "@/app/scrum/lib/validations.ts",
                  ]
 
-relatedFiles:    ["@/app/core/lib/scrum/types.ts",
-                  "@/app/core/lib/scrum/validations.ts"]
+relatedFiles:    ["@/app/scrum/lib/types.ts",
+                  "@/app/scrum/lib/validations.ts"]
 
 imports:         ["server-only", "node:fs/promises", "node:path",
-                  "@/app/core/lib/scrum/types",
-                  "@/app/core/lib/scrum/validations"]
+                  "@/app/scrum/lib/types",
+                  "@/app/scrum/lib/validations"]
 
 exports:         ["scrumFilePath", "readScrumFile", "writeScrumFile"]
 
-useBy:           ["@/app/core/lib/scrum/services/idee.ts",
-                  "@/app/core/lib/scrum/services/feature.ts",
-                  "@/app/core/lib/scrum/services/persona.ts",
-                  "@/app/core/lib/scrum/services/epic.ts",
-                  "@/app/core/lib/scrum/services/user-story.ts",
-                  "@/app/core/lib/scrum/services/sprint.ts",
-                  "@/app/core/lib/scrum/services/task.ts",
-                  "@/app/core/lib/scrum/services/global-json.ts"]
+useBy:           ["@/app/scrum/lib/services/idee.ts",
+                  "@/app/scrum/lib/services/feature.ts",
+                  "@/app/scrum/lib/services/persona.ts",
+                  "@/app/scrum/lib/services/epic.ts",
+                  "@/app/scrum/lib/services/user-story.ts",
+                  "@/app/scrum/lib/services/sprint.ts",
+                  "@/app/scrum/lib/services/task.ts",
+                  "@/app/scrum/lib/services/global-json.ts"]
 
 userStories:     ["*en tant que développeur je veux lire et écrire les JSON Scrum de manière atomique"]
 

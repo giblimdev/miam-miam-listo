@@ -1,46 +1,36 @@
 /*
 path :           components/layout/header/nav/frontWorkSpace.ts
+tag :            ["navigation", "config", "platform-role", "header"]
 projectId:       new-genesis
 type:            config
 generic:         false
 
 role:            Source unique de navigation de l'application. Exporte
                  mainNavData, consommé exclusivement par Header.tsx.
-                 Branche les pages d'entrée Blog (/blog, /blog/search,
-                 /blog/community, /blog/playlists, /blog/playlists/manage,
-                 /blog/user/favorites, /blog/notifications, /blog/help)
-                 sous l'entrée « Blog », les pages Scrum
-                 (/scrum/scrum-business, /scrum/scrum-app,
-                 /scrum/scrum-genesis, /scrum/help) sous l'entrée
-                 « Conception », et les pages Admin (/admin, /admin/users)
-                 sous l'entrée « Admin ». Les entrées Admin et « Gérer
-                 les playlists » portent roles: ["admin"] ou
-                 roles: ["admin", "author"] — elles ne sont affichées
-                 qu'aux utilisateurs ayant le rôle correspondant
-                 (filtrage effectué dans MainNav via la prop userRole).
-
-                 Depuis la migration core → scrum : les segments
-                 physiques sont /scrum/* (au lieu de /core/*). Les
-                 valeurs de flux (ScrumFlow) restent inchangées :
-                 "scrum-business" | "scrum-app" | "scrum-genesis".
+                 Chaque item porte un champ minPlatformRole (PlatformRole)
+                 qui détermine le rôle plateforme minimum pour voir l'item.
+                 La hiérarchie est stricte : superAdmin > admin > user.
+                 Aligné sur config/roles.ts (source unique des rôles).
 
 flow:            Module TypeScript pur → export d'un tableau readonly
                  de NavItem. Aucun état, aucun effet.
 
 ecosystem:       Layout = [
-                   "@/components/layout/header/nav/frontWorkSpace.ts",
-                   "@/components/layout/header/navTypes.ts",
-                   "@/components/layout/header/MainNav.tsx",
-                   "@/components/layout/header/NavActiveLink.tsx",
+                   "@/components/layout/header/frontWorkSpace.ts",
                    "@/components/layout/header/Header.tsx",
                    "@/components/layout/header/Logo.tsx",
+                   "@/components/layout/header/MainNav.tsx",
                    "@/components/layout/header/UserMenu.tsx",
+                   "@/components/layout/header/navTypes.ts",
+                   "@/config/roles.ts",
                  ]
 
 relatedFiles:    ["@/components/layout/header/navTypes.ts",
-                  "@/components/layout/header/Header.tsx"]
+                  "@/components/layout/header/Header.tsx",
+                  "@/config/roles.ts"]
 
-imports:         ["@/components/layout/header/navTypes"]
+imports:         ["@/components/layout/header/navTypes",
+                  "@/config/roles"]
 
 exports:         ["mainNavData"]
 
@@ -54,7 +44,7 @@ metaDataChecked: ✔true
 scriptChecked:   ✔true
 */
 
-import type { NavItem } from "../navTypes";
+import type { NavItem } from "@/components/layout/header/navTypes";
 
 export const mainNavData: readonly NavItem[] = [
   {
@@ -65,7 +55,7 @@ export const mainNavData: readonly NavItem[] = [
     visible: true,
     disabled: false,
     external: false,
-    roles: undefined,
+    minPlatformRole: "user",
   },
   {
     id: "nav-blog",
@@ -77,89 +67,8 @@ export const mainNavData: readonly NavItem[] = [
     visible: true,
     disabled: false,
     external: false,
-    roles: undefined,
-    children: [
-      {
-        id: "nav-blog-index",
-        label: "Articles",
-        href: "/blog",
-        displayOrder: 10,
-        visible: true,
-        disabled: false,
-        external: false,
-        roles: undefined,
-      },
-      {
-        id: "nav-blog-search",
-        label: "Rechercher",
-        href: "/blog/search",
-        displayOrder: 20,
-        visible: true,
-        disabled: false,
-        external: false,
-        roles: undefined,
-      },
-      {
-        id: "nav-blog-community",
-        label: "Communauté",
-        href: "/blog/community",
-        displayOrder: 30,
-        visible: true,
-        disabled: false,
-        external: false,
-        roles: undefined,
-      },
-      {
-        id: "nav-blog-playlists",
-        label: "Playlists",
-        href: "/blog/playlists",
-        displayOrder: 35,
-        visible: true,
-        disabled: false,
-        external: false,
-        roles: undefined,
-      },
-      {
-        id: "nav-blog-playlists-manage",
-        label: "Gérer les playlists",
-        href: "/blog/playlists/manage",
-        displayOrder: 36,
-        visible: true,
-        disabled: false,
-        external: false,
-        roles: ["admin"],
-      },
-      {
-        id: "nav-blog-favorites",
-        label: "Mes favoris",
-        href: "/blog/user/favorites",
-        displayOrder: 40,
-        visible: true,
-        disabled: false,
-        external: false,
-        roles: undefined,
-      },
-      {
-        id: "nav-blog-notifications",
-        label: "Notifications",
-        href: "/blog/notifications",
-        displayOrder: 50,
-        visible: true,
-        disabled: false,
-        external: false,
-        roles: undefined,
-      },
-      {
-        id: "nav-blog-help",
-        label: "Aide Blog",
-        href: "/blog/help",
-        displayOrder: 60,
-        visible: true,
-        disabled: false,
-        external: false,
-        roles: undefined,
-      },
-    ],
+    minPlatformRole: "user",
+    children: [],
   },
   {
     id: "nav-scrum",
@@ -170,7 +79,7 @@ export const mainNavData: readonly NavItem[] = [
     visible: true,
     disabled: false,
     external: false,
-    roles: undefined,
+    minPlatformRole: "user",
     children: [
       {
         id: "nav-scrum-business",
@@ -180,7 +89,7 @@ export const mainNavData: readonly NavItem[] = [
         visible: true,
         disabled: false,
         external: false,
-        roles: undefined,
+        minPlatformRole: "user",
       },
       {
         id: "nav-scrum-app",
@@ -190,7 +99,7 @@ export const mainNavData: readonly NavItem[] = [
         visible: true,
         disabled: false,
         external: false,
-        roles: undefined,
+        minPlatformRole: "user",
       },
       {
         id: "nav-scrum-genesis",
@@ -200,7 +109,7 @@ export const mainNavData: readonly NavItem[] = [
         visible: true,
         disabled: false,
         external: false,
-        roles: undefined,
+        minPlatformRole: "user",
       },
       {
         id: "nav-scrum-help",
@@ -210,7 +119,7 @@ export const mainNavData: readonly NavItem[] = [
         visible: true,
         disabled: false,
         external: false,
-        roles: undefined,
+        minPlatformRole: "user",
       },
     ],
   },
@@ -223,7 +132,7 @@ export const mainNavData: readonly NavItem[] = [
     visible: true,
     disabled: false,
     external: false,
-    roles: undefined,
+    minPlatformRole: "user",
     children: [
       {
         id: "nav-genesis-copy-to-ia",
@@ -233,7 +142,7 @@ export const mainNavData: readonly NavItem[] = [
         visible: true,
         disabled: false,
         external: false,
-        roles: undefined,
+        minPlatformRole: "user",
       },
       {
         id: "nav-genesis-create-files",
@@ -243,7 +152,7 @@ export const mainNavData: readonly NavItem[] = [
         visible: true,
         disabled: false,
         external: false,
-        roles: undefined,
+        minPlatformRole: "user",
       },
       {
         id: "nav-genesis-read-files",
@@ -253,7 +162,7 @@ export const mainNavData: readonly NavItem[] = [
         visible: true,
         disabled: false,
         external: false,
-        roles: undefined,
+        minPlatformRole: "user",
       },
       {
         id: "nav-genesis-cmd",
@@ -263,7 +172,7 @@ export const mainNavData: readonly NavItem[] = [
         visible: true,
         disabled: false,
         external: false,
-        roles: undefined,
+        minPlatformRole: "user",
       },
       {
         id: "nav-genesis-help",
@@ -273,7 +182,7 @@ export const mainNavData: readonly NavItem[] = [
         visible: true,
         disabled: false,
         external: false,
-        roles: undefined,
+        minPlatformRole: "user",
       },
     ],
   },
@@ -286,17 +195,38 @@ export const mainNavData: readonly NavItem[] = [
     visible: true,
     disabled: false,
     external: false,
-    roles: ["admin"],
+    minPlatformRole: "user",
+  },
+  {
+    id: "nav-super-admin",
+    label: "Super-admin",
+    href: "/super-admin",
+    description: "Règles globales, admins, audit",
+    displayOrder: 60,
+    visible: true,
+    disabled: false,
+    external: false,
+    minPlatformRole: "user",
     children: [
       {
-        id: "nav-admin-users",
-        label: "Utilisateurs",
-        href: "/admin/users",
-        displayOrder: 10,
+        id: "nav-super-admin-rbca",
+        label: "RBCA Role-Based Access Control",
+        href: "/super-admin/rbca",
+        displayOrder: 610,
         visible: true,
         disabled: false,
         external: false,
-        roles: ["admin"],
+        minPlatformRole: "user",
+      },
+      {
+        id: "nav-admin-users",
+        label: "Utilisateurs",
+        href: "/super-admin/user-manager",
+        displayOrder: 620,
+        visible: true,
+        disabled: false,
+        external: false,
+        minPlatformRole: "user",
       },
     ],
   },

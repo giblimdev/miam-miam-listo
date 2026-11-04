@@ -1,6 +1,6 @@
 /*
-path :           app/core/components/SprintStoriesBoard.tsx
-tag :            ["scrum", "sprint", "board", "dnd", "ui"]
+path :           app/scrum/components/SprintStoriesBoard.tsx
+tag :            ["scrum", "sprint", "board", "dnd", "ui", "hydration"]
 projectId:       new-genesis
 type:            component
 generic:         false
@@ -15,66 +15,77 @@ role:            Board DnD à deux colonnes (Backlog ↔ Sprint). La colonne
                  prop `empty: boolean` explicite (plus fiable que tester
                  `children` car SortableContext rend un Fragment).
 
+                 ⚠️ CORRECTIF HYDRATATION : un `id` stable produit par
+                 `useId()` est passé à <DndContext>. Sans cet id, dnd-kit
+                 génère un identifiant via un compteur global
+                 (`DndDescribedBy-N`), qui diverge entre le serveur et le
+                 client — et qui plus est, entre les multiples DndContext
+                 montés dans l'app (SortableList, SprintStoriesBoard) → React
+                 lève « tree hydrated but some attributes of the server
+                 rendered HTML didn't match the client ». `useId()` garantit
+                 la même valeur SSR/client (même position dans l'arbre).
+
 flow:            Reçoit backlog (US) + inSprint (US ordonnées) + onChange
-                 → DndContext + 2 * SortableContext + useDroppable par
-                 colonne → handleDragEnd calcule : réordonnancement (source
-                 = dest = sprint), ajout (backlog → sprint), retrait
-                 (sprint → backlog) → onChange(newIds).
+                 → useId() → dndId stable → DndContext(id=dndId) +
+                 2 * SortableContext + useDroppable par colonne →
+                 handleDragEnd calcule : réordonnancement (source = dest =
+                 sprint), ajout (backlog → sprint), retrait (sprint → backlog)
+                 → onChange(newIds).
 
 ecosystem:       ScrumUI = [
-                   "@/app/core/components/scrum/EpicCard.tsx",
-                   "@/app/core/components/scrum/EpicForm.tsx",
-                   "@/app/core/components/scrum/EpicList.tsx",
-                   "@/app/core/components/scrum/FeatureCard.tsx",
-                   "@/app/core/components/scrum/FeatureForm.tsx",
-                   "@/app/core/components/scrum/FeatureList.tsx",
-                   "@/app/core/components/scrum/FlowSelector.tsx",
-                   "@/app/core/components/scrum/GlobalJsonExport.tsx",
-                   "@/app/core/components/scrum/IdeeCard.tsx",
-                   "@/app/core/components/scrum/IdeeDetailDialog.tsx",
-                   "@/app/core/components/scrum/IdeeForm.tsx",
-                   "@/app/core/components/scrum/IdeeList.tsx",
-                   "@/app/core/components/scrum/PersonaCard.tsx",
-                   "@/app/core/components/scrum/PersonaForm.tsx",
-                   "@/app/core/components/scrum/PersonaList.tsx",
-                   "@/app/core/components/scrum/ScrumNav.tsx",
-                   "@/app/core/components/scrum/SortableItem.tsx",
-                   "@/app/core/components/scrum/SortableList.tsx",
-                   "@/app/core/components/scrum/SprintCard.tsx",
-                   "@/app/core/components/scrum/SprintEditor.tsx",
-                   "@/app/core/components/scrum/SprintForm.tsx",
-                   "@/app/core/components/scrum/SprintList.tsx",
-                   "@/app/core/components/scrum/SprintStoriesBoard.tsx",
-                   "@/app/core/components/scrum/UserStoryCard.tsx",
-                   "@/app/core/components/scrum/UserStoryForm.tsx",
-                   "@/app/core/components/scrum/UserStoryList.tsx",
-                   "@/app/core/components/scrum/UserStoryMiniCard.tsx",
+                   "@/app/scrum/components/EpicCard.tsx",
+                   "@/app/scrum/components/EpicForm.tsx",
+                   "@/app/scrum/components/EpicList.tsx",
+                   "@/app/scrum/components/FeatureCard.tsx",
+                   "@/app/scrum/components/FeatureForm.tsx",
+                   "@/app/scrum/components/FeatureList.tsx",
+                   "@/app/scrum/components/FlowSelector.tsx",
+                   "@/app/scrum/components/GlobalJsonExport.tsx",
+                   "@/app/scrum/components/IdeeCard.tsx",
+                   "@/app/scrum/components/IdeeDetailDialog.tsx",
+                   "@/app/scrum/components/IdeeForm.tsx",
+                   "@/app/scrum/components/IdeeList.tsx",
+                   "@/app/scrum/components/PersonaCard.tsx",
+                   "@/app/scrum/components/PersonaForm.tsx",
+                   "@/app/scrum/components/PersonaList.tsx",
+                   "@/app/scrum/components/ScrumNav.tsx",
+                   "@/app/scrum/components/SortableItem.tsx",
+                   "@/app/scrum/components/SortableList.tsx",
+                   "@/app/scrum/components/SprintCard.tsx",
+                   "@/app/scrum/components/SprintEditor.tsx",
+                   "@/app/scrum/components/SprintForm.tsx",
+                   "@/app/scrum/components/SprintList.tsx",
+                   "@/app/scrum/components/SprintStoriesBoard.tsx",
+                   "@/app/scrum/components/UserStoryCard.tsx",
+                   "@/app/scrum/components/UserStoryForm.tsx",
+                   "@/app/scrum/components/UserStoryList.tsx",
+                   "@/app/scrum/components/UserStoryMiniCard.tsx",
                  ]
 
-relatedFiles:    ["@/app/core/lib/scrum/types.ts",
-                  "@/app/core/components/scrum/UserStoryMiniCard.tsx",
-                  "@/app/core/components/scrum/SprintEditor.tsx"]
+relatedFiles:    ["@/app/scrum/lib/types.ts",
+                  "@/app/scrum/components/UserStoryMiniCard.tsx",
+                  "@/app/scrum/components/SprintEditor.tsx"]
 
 imports:         ["react", "@dnd-kit/core", "@dnd-kit/sortable",
-                  "@/app/core/lib/scrum/types",
-                  "@/app/core/components/scrum/UserStoryMiniCard"]
+                  "@/app/scrum/lib/types",
+                  "@/app/scrum/components/UserStoryMiniCard"]
 
 exports:         ["SprintStoriesBoard", "SprintStoriesBoardProps"]
 
-useBy:           ["@/app/core/components/scrum/SprintEditor.tsx"]
+useBy:           ["@/app/scrum/components/SprintEditor.tsx"]
 
 userStories:     ["*en tant qu'utilisateur je veux déplacer les US entre backlog et sprint par DnD"]
 
-status:          planned
-pathChecked:     ✘false
-metaDataChecked: ✘false
-scriptChecked:   ✘false
+status:          wip
+pathChecked:     ✔true
+metaDataChecked: ✔true
+scriptChecked:   ✔true
 */
 
 "use client";
 // "use client" justifié : DndContext + useDroppable (interaction DnD côté client).
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import {
   DndContext,
   KeyboardSensor,
@@ -132,6 +143,9 @@ export function SprintStoriesBoard({
   onChange,
   disabled = false,
 }: SprintStoriesBoardProps) {
+  /* Id stable SSR/client : évite le mismatch d'hydratation sur les
+     aria-describedby générés par dnd-kit pour chaque poignée. */
+  const dndId = useId();
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const sprintIds = inSprint.map((s) => s.id);
@@ -222,6 +236,7 @@ export function SprintStoriesBoard({
 
   return (
     <DndContext
+      id={dndId}
       sensors={sensors}
       collisionDetection={closestCorners}
       onDragStart={handleDragStart}

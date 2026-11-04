@@ -1,26 +1,25 @@
 /*
 path :           app/scrum/[flow]/page.tsx
-tag :            ["flow", "overview", "scrum"]
+tag :            ["scrum", "flow", "overview", "page"]
 projectId:       new-genesis
 type:            page
 generic:         false
 
 role:            Vue d'ensemble d'un flux Scrum. Affiche les compteurs de chaque
-                 section (idées, features, personas, epics, user stories, sprints,
-                 tasks) sous forme de cartes cliquables menant à la section
-                 correspondante. Le composant page est synchrone et monte un
-                 Suspense ; la lecture des données et la validation du flow sont
-                 isolées dans un composant async. Le préfixe d'URL est
-                 `/core/${flow}` (source de vérité unique : ScrumNav et le layout
-                 du flow utilisent le même préfixe ; il n'existe PAS de route
-                 /core/help/[flow]).
+                 section (idées, features, personas, epics, user stories,
+                 sprints, tasks) sous forme de cartes cliquables menant à la
+                 section correspondante. Le composant page est synchrone et
+                 monte un Suspense ; la lecture des données et la validation
+                 du flow sont isolées dans un composant async. Le préfixe
+                 d'URL est `/scrum/${flow}` (source de vérité unique :
+                 ScrumNav et le layout du flow utilisent le même préfixe).
 
 flow:            Server Component sync → <Suspense fallback=<OverviewSkeleton />> →
                  <FlowOverview params={params} /> async → await params → validation
                  → getGlobalJson(flow) → calcule les compteurs → rend les cartes
-                 pointant vers `/core/${flow}/${section.slug}`.
+                 pointant vers `/scrum/${flow}/${section.slug}`.
 
-ecosystem:       Help = [
+ecosystem:       Scrum = [
                    "@/app/scrum/[flow]/epic/page.tsx",
                    "@/app/scrum/[flow]/feature/page.tsx",
                    "@/app/scrum/[flow]/global-json/page.tsx",
@@ -31,30 +30,57 @@ ecosystem:       Help = [
                    "@/app/scrum/[flow]/sprint/page.tsx",
                    "@/app/scrum/[flow]/task/page.tsx",
                    "@/app/scrum/[flow]/user-story/page.tsx",
+                   "@/app/scrum/components/EpicCard.tsx",
+                   "@/app/scrum/components/EpicForm.tsx",
+                   "@/app/scrum/components/EpicList.tsx",
+                   "@/app/scrum/components/FeatureCard.tsx",
+                   "@/app/scrum/components/FeatureForm.tsx",
+                   "@/app/scrum/components/FeatureList.tsx",
+                   "@/app/scrum/components/FlowSelector.tsx",
+                   "@/app/scrum/components/GlobalJsonExport.tsx",
+                   "@/app/scrum/components/IdeeCard.tsx",
+                   "@/app/scrum/components/IdeeDetailDialog.tsx",
+                   "@/app/scrum/components/IdeeForm.tsx",
+                   "@/app/scrum/components/IdeeList.tsx",
+                   "@/app/scrum/components/PersonaCard.tsx",
+                   "@/app/scrum/components/PersonaForm.tsx",
+                   "@/app/scrum/components/PersonaList.tsx",
+                   "@/app/scrum/components/ScrumNav.tsx",
+                   "@/app/scrum/components/SortableItem.tsx",
+                   "@/app/scrum/components/SortableList.tsx",
+                   "@/app/scrum/components/SprintCard.tsx",
+                   "@/app/scrum/components/SprintEditor.tsx",
+                   "@/app/scrum/components/SprintForm.tsx",
+                   "@/app/scrum/components/SprintList.tsx",
+                   "@/app/scrum/components/SprintStoriesBoard.tsx",
+                   "@/app/scrum/components/TaskCard.tsx",
+                   "@/app/scrum/components/TaskForm.tsx",
+                   "@/app/scrum/components/TaskList.tsx",
+                   "@/app/scrum/components/UserStoryCard.tsx",
+                   "@/app/scrum/components/UserStoryForm.tsx",
+                   "@/app/scrum/components/UserStoryList.tsx",
+                   "@/app/scrum/components/UserStoryMiniCard.tsx",
                    "@/app/scrum/layout.tsx",
                    "@/app/scrum/page.tsx",
                  ]
 
-relatedFiles:    ["@/app/scrum/lib/scrum/services/global-json.ts",
-                  "@/app/scrum/lib/scrum/types.ts",
-                  "@/app/scrum/components/ScrumNav.tsx",
-                  "@/app/scrum/[flow]/layout.tsx"]
+relatedFiles:    ["@/app/scrum/lib/services/global-json.ts",
+                  "@/app/scrum/lib/types.ts"]
 
 imports:         ["react", "next/link", "next/navigation", "lucide-react",
                   "@/app/scrum/lib/types",
-                  "@/app/scrum/lib//services/global-json",
+                  "@/app/scrum/lib/services/global-json",
                   "@/components/ui/skeleton"]
 
 exports:         ["default FlowOverviewPage"]
 
-useBy:           []
+useBy:           ["@/app/scrum/components/ScrumNav.tsx"]
 
 userStories:     ["*en tant qu'utilisateur je veux une vue d'ensemble des sections Scrum"]
-
-status:          planned
-pathChecked:     ✘false
-metaDataChecked: ✘false
-scriptChecked:   ✘false
+status:          wip
+pathChecked:     ✔true
+metaDataChecked: ✔true
+scriptChecked:   ✔true
 */
 
 import { Suspense } from "react";
@@ -67,7 +93,7 @@ import {
   Layers,
   ListChecks,
   Rocket,
-  ListTodo, // ← AJOUT
+  ListTodo,
   ArrowRight,
   type LucideIcon,
 } from "lucide-react";
@@ -93,7 +119,7 @@ interface SectionEntry {
   readonly accent: string;
   readonly key: keyof Pick<
     ScrumDocument,
-    "idea" | "feature" | "persona" | "epic" | "userStory" | "sprint" | "task" // ← AJOUT
+    "idea" | "feature" | "persona" | "epic" | "userStory" | "sprint" | "task"
   >;
 }
 
@@ -102,55 +128,13 @@ interface SectionEntry {
 /* ------------------------------------------------------------------ */
 
 const SECTIONS: readonly SectionEntry[] = [
-  {
-    slug: "idee",
-    label: "Idées",
-    icon: Lightbulb,
-    accent: "chart-1",
-    key: "idea",
-  },
-  {
-    slug: "feature",
-    label: "Features",
-    icon: Sparkles,
-    accent: "chart-2",
-    key: "feature",
-  },
-  {
-    slug: "persona",
-    label: "Personas",
-    icon: Users,
-    accent: "chart-3",
-    key: "persona",
-  },
-  {
-    slug: "epic",
-    label: "Epics",
-    icon: Layers,
-    accent: "chart-4",
-    key: "epic",
-  },
-  {
-    slug: "user-story",
-    label: "User stories",
-    icon: ListChecks,
-    accent: "chart-5",
-    key: "userStory",
-  },
-  {
-    slug: "sprint",
-    label: "Sprints",
-    icon: Rocket,
-    accent: "chart-1",
-    key: "sprint",
-  },
-  {
-    slug: "task",
-    label: "Tasks",
-    icon: ListTodo,
-    accent: "chart-2",
-    key: "task",
-  }, // ← AJOUT
+  { slug: "idee",       label: "Idées",        icon: Lightbulb,  accent: "chart-1", key: "idea" },
+  { slug: "feature",    label: "Features",     icon: Sparkles,   accent: "chart-2", key: "feature" },
+  { slug: "persona",    label: "Personas",     icon: Users,      accent: "chart-3", key: "persona" },
+  { slug: "epic",       label: "Epics",        icon: Layers,     accent: "chart-4", key: "epic" },
+  { slug: "user-story", label: "User stories", icon: ListChecks, accent: "chart-5", key: "userStory" },
+  { slug: "sprint",     label: "Sprints",      icon: Rocket,     accent: "chart-1", key: "sprint" },
+  { slug: "task",       label: "Tasks",        icon: ListTodo,   accent: "chart-2", key: "task" },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -186,9 +170,9 @@ async function FlowOverview({ params }: { readonly params: PageParams }) {
 
   const doc = await getGlobalJson(flow);
 
-  // Préfixe de route unique pour tout le flux : identique à ScrumNav
-  // (cf. @/app/core/components/scrum/ScrumNav.tsx) et au layout du flow.
-  const base = `/core/${flow}`;
+  /* Préfixe de route unique pour tout le flux : identique à ScrumNav
+     (@/app/scrum/components/ScrumNav.tsx) et au layout du flow. */
+  const base = `/scrum/${flow}`;
 
   return (
     <div className="space-y-6">
@@ -213,9 +197,7 @@ async function FlowOverview({ params }: { readonly params: PageParams }) {
               href={`${base}/${section.slug}`}
               className="group relative flex items-center gap-4 overflow-hidden rounded-2xl border border-border/60 bg-card p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg"
               style={
-                {
-                  "--accent": `var(--${section.accent})`,
-                } as React.CSSProperties
+                { "--accent": `var(--${section.accent})` } as React.CSSProperties
               }
             >
               <div
@@ -269,7 +251,6 @@ function OverviewSkeleton() {
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 7 }).map((_, i) => (
-          // ← MODIFIÉ (6 → 7)
           <Skeleton key={i} className="h-24 rounded-2xl" />
         ))}
       </div>

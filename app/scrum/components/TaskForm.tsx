@@ -1,55 +1,66 @@
 /*
-path :           app/core/components/TaskForm.tsx
-tag :            ["scrum", "task", "form", "ui"]
-projectId:       new-genesis
+path :           app/scrum/components/TaskForm.tsx
+tag :            ["scrum", "task", "form", "ui", "backlog"]
+projectId:       <à fournir>
 type:            component
 generic:         false
 
 role:            Formulaire de création / édition d'une task Scrum.
-                 Structure 3 zones : corps scrollable + footer sticky.
-                 Le champ storyId utilise NativeSelect (options = titres
-                 des UserStories disponibles) et status un NativeSelect
-                 à 3 valeurs. Description capée (max-h-56).
+                 Structure 3 zones : corps scrollable + footer sticky. Le
+                 champ storyId utilise NativeSelect (options = titres des
+                 UserStories disponibles + option vide « Aucune US (non
+                 rattachée) ») pour le backlog implicite : une task peut
+                 exister sans être rattachée à une US. Le champ status
+                 utilise un NativeSelect à 3 valeurs. Description capée
+                 (max-h-56).
 
 flow:            useForm → handleSubmit → FormData → onSubmit(formData).
+                 storyId vide → chaîne vide "" (transformée en undefined
+                 par taskInputSchema.storyId via optionalText).
 
-ecosystem:       ScrumUI = [
-                   "@/app/core/components/scrum/EpicCard.tsx",
-                   "@/app/core/components/scrum/EpicForm.tsx",
-                   "@/app/core/components/scrum/EpicList.tsx",
-                   "@/app/core/components/scrum/FeatureCard.tsx",
-                   "@/app/core/components/scrum/FeatureForm.tsx",
-                   "@/app/core/components/scrum/FeatureList.tsx",
-                   "@/app/core/components/scrum/FlowSelector.tsx",
-                   "@/app/core/components/scrum/GlobalJsonExport.tsx",
-                   "@/app/core/components/scrum/IdeeCard.tsx",
-                   "@/app/core/components/scrum/IdeeForm.tsx",
-                   "@/app/core/components/scrum/IdeeList.tsx",
-                   "@/app/core/components/scrum/PersonaCard.tsx",
-                   "@/app/core/components/scrum/PersonaForm.tsx",
-                   "@/app/core/components/scrum/PersonaList.tsx",
-                   "@/app/core/components/scrum/ScrumNav.tsx",
-                   "@/app/core/components/scrum/SortableItem.tsx",
-                   "@/app/core/components/scrum/SortableList.tsx",
-                   "@/app/core/components/scrum/SprintCard.tsx",
-                   "@/app/core/components/scrum/SprintForm.tsx",
-                   "@/app/core/components/scrum/SprintList.tsx",
-                   "@/app/core/components/scrum/TaskCard.tsx",
-                   "@/app/core/components/scrum/TaskForm.tsx",
-                   "@/app/core/components/scrum/TaskList.tsx",
-                   "@/app/core/components/scrum/UserStoryCard.tsx",
-                   "@/app/core/components/scrum/UserStoryForm.tsx",
-                   "@/app/core/components/scrum/UserStoryList.tsx",
+ecosystem:       Scrum = [
+                   "@/app/scrum/components/EpicCard.tsx",
+                   "@/app/scrum/components/EpicForm.tsx",
+                   "@/app/scrum/components/EpicList.tsx",
+                   "@/app/scrum/components/FeatureCard.tsx",
+                   "@/app/scrum/components/FeatureForm.tsx",
+                   "@/app/scrum/components/FeatureList.tsx",
+                   "@/app/scrum/components/FlowSelector.tsx",
+                   "@/app/scrum/components/GlobalJsonExport.tsx",
+                   "@/app/scrum/components/IdeeCard.tsx",
+                   "@/app/scrum/components/IdeeDetailDialog.tsx",
+                   "@/app/scrum/components/IdeeForm.tsx",
+                   "@/app/scrum/components/IdeeList.tsx",
+                   "@/app/scrum/components/PersonaCard.tsx",
+                   "@/app/scrum/components/PersonaForm.tsx",
+                   "@/app/scrum/components/PersonaList.tsx",
+                   "@/app/scrum/components/ScrumNav.tsx",
+                   "@/app/scrum/components/SortableItem.tsx",
+                   "@/app/scrum/components/SortableList.tsx",
+                   "@/app/scrum/components/SprintCard.tsx",
+                   "@/app/scrum/components/SprintEditor.tsx",
+                   "@/app/scrum/components/SprintForm.tsx",
+                   "@/app/scrum/components/SprintList.tsx",
+                   "@/app/scrum/components/SprintStoriesBoard.tsx",
+                   "@/app/scrum/components/TaskBoard.tsx",
+                   "@/app/scrum/components/TaskCard.tsx",
+                   "@/app/scrum/components/TaskForm.tsx",
+                   "@/app/scrum/components/TaskList.tsx",
+                   "@/app/scrum/components/UserStoryBoard.tsx",
+                   "@/app/scrum/components/UserStoryCard.tsx",
+                   "@/app/scrum/components/UserStoryForm.tsx",
+                   "@/app/scrum/components/UserStoryList.tsx",
+                   "@/app/scrum/components/UserStoryMiniCard.tsx",
                  ]
 
-relatedFiles:    ["@/app/core/lib/scrum/types.ts",
-                  "@/app/core/lib/scrum/validations.ts",
-                  "@/app/core/components/scrum/TaskList.tsx"]
+relatedFiles:    ["@/app/scrum/lib/types.ts",
+                  "@/app/scrum/lib/validations.ts",
+                  "@/app/scrum/components/TaskList.tsx"]
 
 imports:         ["react-hook-form", "@hookform/resolvers/zod",
                   "lucide-react",
-                  "@/app/core/lib/scrum/types",
-                  "@/app/core/lib/scrum/validations",
+                  "@/app/scrum/lib/types",
+                  "@/app/scrum/lib/validations",
                   "@/components/ui/button",
                   "@/components/ui/field",
                   "@/components/ui/input",
@@ -58,14 +69,14 @@ imports:         ["react-hook-form", "@hookform/resolvers/zod",
 
 exports:         ["TaskForm", "TaskFormProps"]
 
-useBy:           ["@/app/core/components/scrum/TaskList.tsx"]
+useBy:           ["@/app/scrum/components/TaskList.tsx"]
 
 userStories:     ["*en tant qu'utilisateur je veux créer ou éditer une task Scrum"]
 
-status:          planned
-pathChecked:     ✘false
-metaDataChecked: ✘false
-scriptChecked:   ✘false
+status:          wip
+pathChecked:     ✔true
+metaDataChecked: ✔true
+scriptChecked:   ✔true
 */
 
 "use client";
@@ -92,8 +103,9 @@ import { Textarea } from "@/components/ui/textarea";
 
 export interface TaskFormProps {
   /**
-   * UserStories disponibles pour rattacher la task. Non vide en pratique :
-   * TaskList bloque la création si aucune story n'existe.
+   * UserStories disponibles pour rattacher la task. Peut être vide :
+   * dans ce cas, l'option « Aucune US (non rattachée) » est la seule
+   * disponible et la task est créée dans le backlog implicite.
    */
   readonly stories: readonly UserStory[];
   readonly defaultValues?: Task;
@@ -121,7 +133,7 @@ export function TaskForm({
       title: defaultValues?.title ?? "",
       description: defaultValues?.description ?? "",
       status: defaultValues?.status ?? "todo",
-      storyId: defaultValues?.storyId ?? stories[0]?.id ?? "",
+      storyId: defaultValues?.storyId ?? "",
       assignee: defaultValues?.assignee ?? "",
       estimate: defaultValues?.estimate ?? "",
     },
@@ -134,7 +146,7 @@ export function TaskForm({
     formData.set("title", values.title);
     formData.set("description", values.description ?? "");
     formData.set("status", values.status);
-    formData.set("storyId", values.storyId);
+    formData.set("storyId", values.storyId ?? "");
     formData.set("assignee", values.assignee ?? "");
     formData.set("estimate", values.estimate ?? "");
     void onSubmit(formData);
@@ -223,15 +235,13 @@ export function TaskForm({
               render={({ field }) => (
                 <NativeSelect
                   {...field}
+                  value={field.value ?? ""}
                   id="task-story"
                   aria-invalid={errors.storyId ? true : undefined}
-                  disabled={stories.length === 0}
                 >
-                  {stories.length === 0 && (
-                    <NativeSelectOption value="">
-                      Aucune user story disponible
-                    </NativeSelectOption>
-                  )}
+                  <NativeSelectOption value="">
+                    Aucune US (non rattachée)
+                  </NativeSelectOption>
                   {stories.map((story) => (
                     <NativeSelectOption key={story.id} value={story.id}>
                       {story.title}

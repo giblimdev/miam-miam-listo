@@ -1,81 +1,104 @@
 /*
-path :           app/core/components/IdeeList.tsx
-tag :            ["scrum", "idee", "list", "ui"]
-projectId:       new-genesis
+path :           app/scrum/components/IdeeList.tsx
+tag :            ["scrum", "idee", "list", "ui", "dnd", "featured"]
+projectId:       <à fournir>
 type:            component
 generic:         false
 
-role:            Liste des idées d'un flux Scrum. Gère l'état local (dialog de
-                 lecture, création, édition, confirmation de suppression).
-                 Tous les DialogContent utilisent `flex h-[85vh] flex-col`
-                 (hauteur DÉFINIE, pas max-h-*) + `overflow-hidden`. En CSS
-                 Grid, une track `1fr` dans un conteneur `max-h-*` (indéfini)
-                 se résout à max-content et ne shrinke pas ; `h-[85vh]` force
-                 la résolution et garantit que le body du formulaire scrolle
-                 pendant que le footer bouton reste visible.
+role:            Liste des idées d'un flux Scrum avec DnD. État optimiste
+                 (useState + useEffect resync) pour un réordonnancement
+                 immédiat côté client, rollback + toast en cas d'échec.
+                 Gère l'état local (dialog de lecture, création, édition,
+                 confirmation de suppression). MODE ÉDITORIAL : si une
+                 seule idée existe (cas typique d'un flux fondateur), la
+                 carte est rendue en pleine largeur (featured) sans
+                 SortableItem — le DnD n'a aucun sens sur 1 élément. Dès
+                 qu'il y a ≥ 2 idées, on bascule sur la grille DnD
+                 classique (SortableList + SortableItem). Tous les
+                 DialogContent utilisent `flex h-[85vh] flex-col` +
+                 `overflow-hidden`.
 
-flow:            Reçoit flow + idees (server) → useState pour lire / éditer /
-                 créer / supprimer → IdeeDetailDialog (lecture) +
-                 IdeeForm (création/édition) dans Dialog → submit →
-                 Server Action → toast → router.refresh().
+flow:            flow + idees (server) → useState(optimistic) → useEffect
+                 resync → isSingle = optimistic.length === 1 → si isSingle :
+                 <IdeeCard featured /> sans SortableItem ; sinon :
+                 SortableList + SortableItem → handleReorder → Server
+                 Action → refresh ou rollback. Lecture : IdeeDetailDialog.
+                 Création/édition : Dialog + IdeeForm → Server Action →
+                 toast → router.refresh().
 
-ecosystem:       ScrumUI = [
-                   "@/app/core/components/scrum/EpicCard.tsx",
-                   "@/app/core/components/scrum/EpicForm.tsx",
-                   "@/app/core/components/scrum/EpicList.tsx",
-                   "@/app/core/components/scrum/FeatureCard.tsx",
-                   "@/app/core/components/scrum/FeatureForm.tsx",
-                   "@/app/core/components/scrum/FeatureList.tsx",
-                   "@/app/core/components/scrum/FlowSelector.tsx",
-                   "@/app/core/components/scrum/GlobalJsonExport.tsx",
-                   "@/app/core/components/scrum/IdeeCard.tsx",
-                   "@/app/core/components/scrum/IdeeDetailDialog.tsx",
-                   "@/app/core/components/scrum/IdeeForm.tsx",
-                   "@/app/core/components/scrum/IdeeList.tsx",
-                   "@/app/core/components/scrum/PersonaCard.tsx",
-                   "@/app/core/components/scrum/PersonaForm.tsx",
-                   "@/app/core/components/scrum/PersonaList.tsx",
-                   "@/app/core/components/scrum/ScrumNav.tsx",
-                   "@/app/core/components/scrum/SprintCard.tsx",
-                   "@/app/core/components/scrum/SprintForm.tsx",
-                   "@/app/core/components/scrum/SprintList.tsx",
-                   "@/app/core/components/scrum/UserStoryCard.tsx",
-                   "@/app/core/components/scrum/UserStoryForm.tsx",
-                   "@/app/core/components/scrum/UserStoryList.tsx",
+ecosystem:       Scrum = [
+                   "@/app/scrum/components/BoardColumn.tsx",
+                   "@/app/scrum/components/EpicCard.tsx",
+                   "@/app/scrum/components/EpicForm.tsx",
+                   "@/app/scrum/components/EpicList.tsx",
+                   "@/app/scrum/components/FeatureCard.tsx",
+                   "@/app/scrum/components/FeatureForm.tsx",
+                   "@/app/scrum/components/FeatureList.tsx",
+                   "@/app/scrum/components/FlowSelector.tsx",
+                   "@/app/scrum/components/GlobalJsonExport.tsx",
+                   "@/app/scrum/components/IdeeCard.tsx",
+                   "@/app/scrum/components/IdeeDetailDialog.tsx",
+                   "@/app/scrum/components/IdeeForm.tsx",
+                   "@/app/scrum/components/IdeeList.tsx",
+                   "@/app/scrum/components/PersonaCard.tsx",
+                   "@/app/scrum/components/PersonaForm.tsx",
+                   "@/app/scrum/components/PersonaList.tsx",
+                   "@/app/scrum/components/ScrumNav.tsx",
+                   "@/app/scrum/components/SortableItem.tsx",
+                   "@/app/scrum/components/SortableList.tsx",
+                   "@/app/scrum/components/SprintCard.tsx",
+                   "@/app/scrum/components/SprintEditor.tsx",
+                   "@/app/scrum/components/SprintForm.tsx",
+                   "@/app/scrum/components/SprintList.tsx",
+                   "@/app/scrum/components/SprintStoriesBoard.tsx",
+                   "@/app/scrum/components/TaskBoard.tsx",
+                   "@/app/scrum/components/TaskCard.tsx",
+                   "@/app/scrum/components/TaskForm.tsx",
+                   "@/app/scrum/components/TaskList.tsx",
+                   "@/app/scrum/components/UserStoryBoard.tsx",
+                   "@/app/scrum/components/UserStoryCard.tsx",
+                   "@/app/scrum/components/UserStoryForm.tsx",
+                   "@/app/scrum/components/UserStoryList.tsx",
+                   "@/app/scrum/components/UserStoryMiniCard.tsx",
+                   "@/app/scrum/lib/types.ts",
                  ]
 
-relatedFiles:    ["@/app/core/components/scrum/IdeeCard.tsx",
-                  "@/app/core/components/scrum/IdeeDetailDialog.tsx",
-                  "@/app/core/components/scrum/IdeeForm.tsx",
-                  "@/app/core/lib/scrum/types.ts",
-                  "@/app/core/lib/scrum/actions/idee.ts"]
+relatedFiles:    ["@/app/scrum/components/IdeeCard.tsx",
+                  "@/app/scrum/components/IdeeDetailDialog.tsx",
+                  "@/app/scrum/components/IdeeForm.tsx",
+                  "@/app/scrum/components/SortableItem.tsx",
+                  "@/app/scrum/components/SortableList.tsx",
+                  "@/app/scrum/lib/types.ts",
+                  "@/app/scrum/lib/actions/idee.ts"]
 
 imports:         ["react", "next/navigation", "lucide-react", "sonner",
-                  "@/app/core/lib/scrum/types",
-                  "@/app/core/lib/scrum/actions/idee",
-                  "@/app/core/components/scrum/IdeeCard",
-                  "@/app/core/components/scrum/IdeeDetailDialog",
-                  "@/app/core/components/scrum/IdeeForm",
+                  "@/app/scrum/lib/types",
+                  "@/app/scrum/lib/actions/idee",
+                  "@/app/scrum/components/IdeeCard",
+                  "@/app/scrum/components/IdeeDetailDialog",
+                  "@/app/scrum/components/IdeeForm",
+                  "@/app/scrum/components/SortableItem",
+                  "@/app/scrum/components/SortableList",
                   "@/components/ui/button",
                   "@/components/ui/dialog",
                   "@/components/ui/alert-dialog"]
 
 exports:         ["IdeeList", "IdeeListProps"]
 
-useBy:           ["@/app/core/[flow]/idee/page.tsx"]
+useBy:           ["@/app/scrum/[flow]/idee/page.tsx"]
 
-userStories:     ["*en tant qu'utilisateur je veux lister, lire et gérer les idées Scrum"]
+userStories:     ["*en tant qu'utilisateur je veux lister, lire, réorganiser et gérer les idées Scrum"]
 
-status:          planned
-pathChecked:     ✘false
-metaDataChecked: ✘false
-scriptChecked:   ✘false
+status:          wip
+pathChecked:     ✔true
+metaDataChecked: ✔true
+scriptChecked:   ✔true
 */
 
 "use client";
-// "use client" justifié : useState (dialogs), router.refresh, toast.
+// "use client" justifié : useState (dialogs + optimiste), useEffect, DnD, toast.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Lightbulb, Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -84,11 +107,14 @@ import type { Idee, ScrumFlow } from "@/app/scrum/lib/types";
 import {
   createIdeeAction,
   deleteIdeeAction,
+  reorderIdeesAction,
   updateIdeeAction,
 } from "@/app/scrum/lib/actions/idee";
 import { IdeeCard } from "@/app/scrum/components/IdeeCard";
 import { IdeeDetailDialog } from "@/app/scrum/components/IdeeDetailDialog";
 import { IdeeForm } from "@/app/scrum/components/IdeeForm";
+import { SortableItem } from "@/app/scrum/components/SortableItem";
+import { SortableList } from "@/app/scrum/components/SortableList";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -123,11 +149,20 @@ export interface IdeeListProps {
 
 export function IdeeList({ flow, idees }: IdeeListProps) {
   const router = useRouter();
+  const [optimistic, setOptimistic] = useState<readonly Idee[]>(idees);
   const [reading, setReading] = useState<Idee | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<Idee | null>(null);
   const [deleting, setDeleting] = useState<Idee | null>(null);
   const [pending, setPending] = useState(false);
+
+  useEffect(() => {
+    setOptimistic(idees);
+  }, [idees]);
+
+  /* Mode éditorial : une seule idée = carte fondatrice pleine largeur. */
+  const isSingle = optimistic.length === 1;
+  const singleIdee = isSingle ? optimistic[0]! : null;
 
   /* --- Création --- */
   async function handleCreate(formData: FormData) {
@@ -176,6 +211,26 @@ export function IdeeList({ flow, idees }: IdeeListProps) {
     }
   }
 
+  /* --- Réordonnancement (DnD) --- */
+  async function handleReorder(orderedIds: string[]) {
+    const previous = optimistic;
+    const reordered = orderedIds
+      .map((id) => previous.find((item) => item.id === id))
+      .filter((item): item is Idee => item !== undefined);
+
+    setOptimistic(reordered);
+    setPending(true);
+    const result = await reorderIdeesAction(flow, orderedIds);
+    setPending(false);
+
+    if (result.ok) {
+      router.refresh();
+    } else {
+      setOptimistic(previous);
+      toast.error(result.error);
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* En-tête de liste */}
@@ -185,7 +240,12 @@ export function IdeeList({ flow, idees }: IdeeListProps) {
             Idées
           </h2>
           <p className="text-sm text-muted-foreground">
-            {idees.length} idée{idees.length > 1 ? "s" : ""}
+            {isSingle
+              ? "Idée fondatrice"
+              : `${optimistic.length} idée${optimistic.length > 1 ? "s" : ""}`}
+            {!isSingle &&
+              optimistic.length > 1 &&
+              " — glissez la poignée pour réordonner"}
           </p>
         </div>
 
@@ -196,7 +256,7 @@ export function IdeeList({ flow, idees }: IdeeListProps) {
       </div>
 
       {/* État vide */}
-      {idees.length === 0 && (
+      {optimistic.length === 0 && (
         <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border/60 bg-muted/20 p-12 text-center">
           <div className="grid size-12 place-items-center rounded-full bg-chart-1/10 text-chart-1">
             <Lightbulb className="size-6" aria-hidden />
@@ -219,19 +279,37 @@ export function IdeeList({ flow, idees }: IdeeListProps) {
         </div>
       )}
 
-      {/* Grille des cartes */}
-      {idees.length > 0 && (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {idees.map((idee) => (
-            <IdeeCard
-              key={idee.id}
-              idee={idee}
-              onRead={setReading}
-              onEdit={setEditing}
-              onDelete={setDeleting}
-            />
-          ))}
-        </div>
+      {/* Mode éditorial : une seule idée → carte fondatrice pleine largeur */}
+      {isSingle && singleIdee && (
+        <IdeeCard
+          idee={singleIdee}
+          onRead={setReading}
+          onEdit={setEditing}
+          onDelete={setDeleting}
+          featured
+        />
+      )}
+
+      {/* Mode liste : ≥ 2 idées → grille DnD */}
+      {!isSingle && optimistic.length > 0 && (
+        <SortableList
+          items={optimistic}
+          onReorder={handleReorder}
+          disabled={pending}
+        >
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {optimistic.map((idee) => (
+              <SortableItem key={idee.id} id={idee.id} disabled={pending}>
+                <IdeeCard
+                  idee={idee}
+                  onRead={setReading}
+                  onEdit={setEditing}
+                  onDelete={setDeleting}
+                />
+              </SortableItem>
+            ))}
+          </div>
+        </SortableList>
       )}
 
       {/* Lecture */}
@@ -241,7 +319,7 @@ export function IdeeList({ flow, idees }: IdeeListProps) {
         onOpenChange={(open) => !open && setReading(null)}
       />
 
-      {/* CRÉATION — h-[85vh] définie + flex-col */}
+      {/* Création — h-[85vh] définie + flex-col */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="flex h-[85vh] flex-col gap-4 overflow-hidden sm:max-w-2xl">
           <DialogHeader className="shrink-0">
@@ -254,7 +332,7 @@ export function IdeeList({ flow, idees }: IdeeListProps) {
         </DialogContent>
       </Dialog>
 
-      {/* ÉDITION — même pattern */}
+      {/* Édition — même pattern */}
       <Dialog
         open={editing !== null}
         onOpenChange={(open) => !open && setEditing(null)}

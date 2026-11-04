@@ -3,910 +3,694 @@
     {
       "id": "7c9e2f4a-1b3d-4e5f-8a6c-2d9e1f3b5c7a",
       "createdAt": "2026-10-17T11:00:00.000Z",
-      "updatedAt": "2026-10-17T17:30:00.000Z",
+      "updatedAt": "2026-11-03T18:00:00.000Z",
       "order": 0,
-      "title": "Blog moderne universel blog2voz",
-      "problem": "dans nex-genesis ke bog et la parie business. Les solutions externes (WordPress, Ghost, Hashnode) imposent leur auth, leur design system et leur modèle de données, et ne proposent pas nativement : taxonomie à 3 niveaux (thème/catégorie/sous-catégorie) + tags slugifiés, contenu structuré en blocs hiérarchiques (sections imbriquées, médias inline, TOC auto, ancres de deep-linking), statut éditorial (brouillon/publié/archivé), visibilité par article, ni interactions communautaires (commentaires imbriqués, likes, favoris, groupes de discussion). Chaque nouveau projet doit soit réinventer un blog (3 à 5 jours-homme), soit accepter un outil déconnecté du reste de l'écosystème.",
-      "hypotheses": "H1. Taxonomie 3 niveaux + tags libres couvre 95 % des besoins.\r\nH2. Stockage 100 % JSON dans un unique fichier data/blog.json, organisé en sous-objets/sous-tableaux pour la composition (taxonomy.themes[].categories[].subCategories[], group.members[]) et en tableaux plats d'ids pour les références transverses (article.tagIds, userContent[userId].notifications[]), plus un pattern unifié d'arbre plat (parentId + order) pour content[], comments[] et posts[] dont la racine est respectivement article.id, article.id et discussion.id.\r\nH3. Un modèle Article unique couvre tous les formats éditoriaux.\r\nH4. Better Auth + rôles communautaires (owner/moderator/member) suffisent à modérer.\r\nH5. Réutiliser les briques existantes (storage.ts, slugify, Server Actions, Cache Components, shadcn) réduit le coût de 50 %.\r\nH6. Un mutex applicatif unique + écriture atomique suffit à garantir l'intégrité pour une démo (charge faible, un seul process Node).\r\nH7. Pour le MVP, les images sont stockées en dur dans /public/blog/ et résolues via un utilitaire resolveMediaUrl ; le basculement vers un CDN en prod se fait par variable d'environnement STORAGE_DRIVER sans modifier le code appelant.\r\nH8. Le corps éditorial est un tableau plat de blocs ContentBlock[] avec parentId dont la racine est article.id ; n'importe quel bloc peut avoir des enfants ; la profondeur est plafonnée à 6 ; le même pattern d'arbre plat (parentId + order) est réutilisé pour comments[] et posts[] afin de n'avoir qu'un seul validateur Zod, un seul helper de tree (buildTree/insert/remove/move) et un seul aplatisseur Prisma.",
-      "context": "Genesis — module Blog. Stack : Next.js 16, React 19, Better Auth, shadcn/base-ui, Tailwind v4, Zod 4. Persistance : 100 % JSON dans data/blog.json, aucune base relationnelle. Écriture via storage.ts uniquement, en deux temps : fichier temporaire + rename, protégée par un mutex global (une seule mutation à la fois). Auth : authClient côté client pour l'UI conditionnelle, jamais pour autoriser une mutation ; tout userId est dérivé de getSession() côté serveur. Organisation du fichier — imbrication (sous-tableaux/sous-objets) pour la composition : taxonomy.themes[].categories[].subCategories[], group.members[] ; tableaux plats d'ids pour les références transverses : taxonomy.tags[] référencés par article.tagIds, articles[] à plat, userContent[userId].notifications[] et .favoriteFolders[].articleIds ; pattern unifié d'arbre plat (parentId + order, racine = article.id / discussion.id) pour article.content[], article.comments[] et group.discussions[].posts[]. Aucune duplication : un like vit uniquement dans le tableau likedBy de la cible ; l'unicité est garantie par l'appartenance au tableau, pas par une contrainte relationnelle. Médias MVP : images/vidéos/documents placés manuellement dans /public/blog/, référencés par chemin relatif dans les blocs de contenu (type image/video/audio/document/embed) et résolus en URL publique par resolveMediaUrl (driver local en MVP, driver distant en prod via STORAGE_DRIVER). Patterns à réutiliser : data/scrum-*.json (écriture atomique), services + Server Actions, Cache Components, slugifyWithFallback + findFreeSlug, getSession. Contraintes : pas de Markdown, pas de HTML arbitraire, mobile-first, pages publiques streamées via Suspense, profondeur de blocs plafonnée à 6, absence de cycle dans les arbres (content[], comments[], posts[])."
+      "title": "miam-miam Listo",
+      "problem": "Aujourd'hui, un restaurant ou un food truck qui veut vendre en ligne, gérer ses stocks et fidéliser ses clients doit jongler entre 3 à 5 outils déconnectés : \nune plateforme de livraison (Uber Eats, Deliveroo, Bolt Food, Rapy), \n -un POS de caisse (Zelty, Loyverse, PosBytz, Elementary POS, Mobi POS, Sapaad, Linga POS…), \n - un module de gestion de stock/recettes (souvent inexistant ou mal intégré), \n - un programme de fidélité séparé (Yalt Business, Remy Rewards, Memberly…). \nRésultat : doubles saisies, erreurs de stock, ruptures d'ingrédients non anticipées, clients non reconnus d'un canal à l'autre, commissions opaques (20-30 %) qui étranglent les marges, et une expérience terrain inadaptée au mobile \n — particulièrement pénalisante pour les food trucks qui n'ont ni place ni temps pour un poste fixe. \nCôté client, l'expérience est fragmentée : \n -pas de suivi temps réel fiable, programmes de fidélité cloisonnés par enseigne, et prix finaux gonflés par les frais cachés. \nLes livreurs indépendants, enfin, subissent des rémunérations non transparentes et des tournées mal optimisées qui allongent les délais et multiplient les trajets à vide. \nAucune plateforme existante ne réunit, dans une même interface mobile-first pensée pour le terrain, le POS, le stock déduit automatiquement des recettes, la fidélité client et la livraison hyperlocale\n — avec une commission maîtrisée et une rémunération équitable des livreurs./n ",
+      "hypotheses": "MVP : suivie des ventes  PAS DE FACTURATION — pas d'export comptable, pas de reçu PDF ou mail.\nnUn champ `kind` sur le modèle Commerce distingue les deux verticals :\n- kind = \"restaurant\" | \"food-truck\" → REPAS\n- kind = \"grocery\" | \"market\" | \"greengrocer\" → COURSES\n- kind = iam-miam Listo — plateforme tout-en-un de livraison du quotidien (repas, courses, petits colis) pour restaurants et food trucks.\n\nMVP : DEUX MARCHÉS — les REPAS (restaurants + food trucks) et les\nCOURSES (supérettes, épiceries, primeurs, marchés). Les petits colis\nsont REPORTÉS EN V2. Le MVP ne code AUCUNE spécificité colis\n(dimensions, assurance, suivi dédié).\n\nMVP : UNE SEULE CIBLE PRINCIPALE — les COMMERÇANTS (B2B).\nLe commerçant est le payeur (abonnement mensuel mock en MVP).\nLe client final est un utilisateur secondaire (commande via catalogue).\nLMVP : LA LIVRAISON EST UN BONUS OPTIONNEL, pas le cœur du produit.\nLe cœur = POS mobile-first + stock déduit + fidélité par commerce.\nLa livraison est un mode de commande parmi sur place / à emporter /\nlivraison (repas) OU retrait / livraison (courses). Coçnfigurable pour chaque piont de ventes\n\nMVP : PAS DE SUIVI TEMPS RÉEL (SSE/polling) — statut consultable\nmanuellement. Pas d'ETA dynamique. Pas de géolocalisation livreur.\n\nMVP : PAS DE PAIEMENT RÉEL — encaissement mock (validation sans\ntr\"other\" → autre (V2)\n\nLes features communes (POS, stock, fidélité, commandes, dashboard,\nadmin) s'appliquent aux DEUX verticals avec des aménagements :\n\nREPAS :\n- Produits : plat, entrée, dessert, boisson. Options (taille, cuisson,\n  suppléments). Temps de préparation. Allergènes.\n- Stock : recettes (plat → ingrédients avec quantités). Déduction à\n  la vente. Pertes (ingrédients périmés).\n- Fidélité : points par euro dépensé et point EXP , récompenses (produit offert,\n  réduction, palier).\n- Commande : sur place / à emporter / livraison. Créneau ou ETA.\n\nCOURSES :\n- Produits : article avec UNITÉ DE VENTE (pièce, kg, L, botte).\n  Pas d'options de cuisson. Pas de temps de préparation.\n  Poids variable : le client peut demander \"1 kg de tomates\" et le\n  commerçant ajuste le poids réel à la préparation (écart accepté\n  ±10 %, prix ajusté).\n- Stock : stock par LOT (date de péremption, quantité). Déduction\n  FIFO (premier entré, premier sorti). Alertes de péremption\n  (J-2, J-1, J-0). Mouvements : vente, approvisionnement, perte\n  (périmé), ajustement (inventaire).\n- Fidélité : points par euro dépensé et point EXP (même règle que repas).\n  Récompenses adaptées (bon d'achat, produit offert, livraison\n  offerte).\n- Commande : retrait (click & collect) / livraison. Créneau\n  obligatoire (pas d'ETA dynamique). Pas de \"sur place\".\n\nLe POS s'adapte au `kind` du commerce :\n- REPAS : grille de produits avec images, options, note.\n- COURSES : liste avec recherche, unité de vente, poids variable,\n  code-barres (V2).\nMODÈLE ÉCONOMIQUE \n\nAbonnement mensuel par commerce : 49 € / mois (mock en MVP).\nAucune commission sur les commandes en MVP (différenciant vs Uber Eats).\nCommission maîtrisée annoncée = 0 % en MVP, à définir en V2 (5-10 % max).\nRémunération livreur a présenter.\n : forfait + pourcentage, transparent, visible par le livreur\net l'admin. Calcul dans le dashboard admin.\nCA plateforme en MVP = nombre de commerces × 49 €.\nAucun prélèvement réel en MVP — mock de facturation dans l'admin.\nZONE DE LIVRAISON (nouveau — était absente)\nChaque commerce définit sa propre zone de livraison : rayon en km\n(1-10) .\nFrais de livraison : forfait + prix/km, configurables par commerce.\nPlage horaire de livraison : alignée sur les horaires du commerce.\nLe client voit la zone et les frais AVANT de commander.\nSi l'adresse est hors zone → commande refusée avec message clair.\nPour les COURSES : zone généralement plus large (5-10 km) car les\nclients commandent leurs courses hebdomadaires.\nONBOARDING COMMERÇANT \n1. Inscription self-service : email + mot de passe + nom du commerce.\n2. Choix du type (restaurant / food-truck / supérette / épicerie /\n   primeur / marché) → détermine le `kind` et les écrans adaptés.\n3. Formulaire commerce : type, adresse, horaires, zone de livraison.\n4. Upload documents : Kbis, attestation hygiène (mock en MVP — pas de\n   vérification réelle, juste stockage + affichage admin).\n5. Validation admin : statut pending → actif (ou suspendu).\n6. Le commerce ne peut PAS recevoir de commandes tant que status ≠ actif.\n\n═══════════════════════════════════════════════════════════════════\nSTACK TECHNIQUE\n═══════════════════════════════════════════════════════════════════\n\nNext.js 16 (App Router, Cache Components), React 19, Better Auth\n(rôles commerçant / client / livreur / admin), Prisma 7 + SQLite\n(better-sqlite3) pour le MVP, Tailwind v4 + shadcn/base-ui, Zod 4\npour la validation.\n\nArchitecture modulaire : un seul monolithe Next.js, découpé en\ndomaines métier (Auth, Commerce, Catalog, Stock, Fidelity, Orders,\nDelivery, Tracking, Admin), avec services + Server Actions par\ndomaine et validation Zod partagée.\n\nPersistance : Prisma pour les données relationnelles (commerces,\nutilisateurs, commandes, produits, recettes, ingrédients, lots,\nmouvements de stock, points de fidélité). AUCUNE donnée métier en JSON.\n\nAuth : authClient côté client pour l'UI conditionnelle, jamais pour\nautoriser une mutation ; tout userId dérivé de getSession() côté serveur.\n\nRôles : client, merchant (propriétaire ou staff d'un commerce),\ncourier (livreur indépendant — V2), admin (MiamMiam), superAdmin\n(plateforme).\n\nMulti-tenant par commerce : chaque commerce a son catalogue, son stock,\nson programme de fidélité ; un utilisateur peut être client d'un\ncommerce A et merchant d'un commerce B.\n\n═══════════════════════════════════════════════════════════════════\nDOMAINES MÉTIER DU MVP\n═══════════════════════════════════════════════════════════════════\n\nPOS : interface mobile-first, adaptée au `kind` du commerce.\n- REPAS : prise de commande sur place / à emporter / livraison, panier,\n  options, calcul de total, encaissement mock.\n- COURSES : liste de produits avec recherche, unité de vente (pièce,\n  kg, L, botte), poids variable (ajustement à la préparation),\n  panier, calcul de total, encaissement mock.\nImpression ticket : V2.\n\nStock :\n- REPAS : ingrédients (nom, unité, stock actuel, seuil d'alerte),\n  recettes (plat → liste d'ingrédients avec quantités), déduction\n  automatique à chaque vente, alertes de rupture, mouvements\n  (vente, approvisionnement, ajustement, perte).\n- COURSES : stock par LOT (lotId, date de péremption, quantité\n  initiale, quantité restante, prix d'achat), déduction FIFO à chaque\n  vente, alertes de péremption (J-2, J-1, J-0), mouvements (vente,\n  approvisionnement, perte/périmé, ajustement inventaire).\n\nFidélité : par commerce, points gagnés à chaque commande (règle\nconfigurable), catalogue de récompenses, historique client. CRM léger\n(segments : nouveau, régulier, VIP, dormant) reporté en V2.\n\nCommande client :\n- REPAS : catalogue du commerce, panier, options (taille,\n  suppléments), adresse de livraison, créneau, paiement mock, statut\n  (received → preparing → ready → picked_up → delivering → delivered).\n  Sans livreur en MVP : picked_up/delivering/delivered gérés par le\n  commerce lui-même.\n- COURSES : catalogue du commerce, recherche, panier, poids variable\n  (ajustement à la préparation), retrait (click & collect) OU\n  livraison, créneau obligatoire, paiement mock, statut (received →\n  preparing → ready → picked_up → delivering → delivered).\n  Pas de \"sur place\".\n\nNotifications : in-app uniquement en MVP (nouvelle commande côté\nmerchant, changement de statut côté client). Assignment livreur : V2.\nEmail/push : V2.\n\nDashboard commerçant : CA jour/semaine/mois, commandes par statut, top\nproduits, alertes stock bas (REPAS) OU alertes péremption (COURSES),\npoints distribués. Cartes cliquables. Rendu streamé Cache Components\n+ skeleton fidèle.\n\nAdmin plateforme : validation/suspension commerces, gestion utilisateurs\net rôles par commerce, modération, config règles globales (taux\ncommission, rémunération livreur par défaut — V2), journal d'audit.\nVue séparée REPAS / COURSES pour la supervision.\n\n═══════════════════════════════════════════════════════════════════\nCONCURRENCE\n═══════════════════════════════════════════════════════════════════\n\nLast-write-wins documentée pour les mutations admin. Commandes et\ndéductions de stock passent par des transactions Prisma pour éviter\nles doubles déductions. Pour les COURSES : la déduction FIFO d'un lot\nest verrouillée par une transaction (SELECT ... FOR UPDATE simulé via\nbetter-sqlite3 IMMEDIATE) pour éviter les doubles ventes sur le même\nlot.\n\n═══════════════════════════════════════════════════════════════════\nCONFORMITÉ / RGPD \n═══════════════════════════════════════════════════════════════════\n\nDonnées personnelles : adresses, téléphones, historique de commandes.\nConsentement explicite à l'inscription (case à cocher).\nDroit à l'oubli : suppression de compte → anonymisation des commandes\n(conservation comptable) en V2, suppression simple en MVP.\nDPO : non applicable en MVP (pas de traitement à grande échelle).\nHébergement : local (SQLite) en MVP, migration cloud + conformité en V2.\n\nPour les COURSES : les données de poids variable (\"1,2 kg de tomates\")\nsont considérées comme des données de commande, pas de données\nsensibles. Aucun traitement particulier au-delà du RGPD standard.",
+      "context": "Stack cible : Next.js 16 (App Router, Cache Components), React 19, Better Auth (rôles commerçant / client / livreur / admin), Prisma 7 + SQLite (better-sqlite3) pour le MVP, Tailwind v4 + shadcn/base-ui, Zod 4 pour la validation. Périmètre MVP : DEUX VERTICALS — REPAS (restaurants + food trucks) et COURSES (supérettes, épiceries, primeurs, marchés). Les petits colis sont reportés en V2. Cible commerçants (B2B), livraison bonus optionnelle, pas de livreur indépendant en MVP, pas de paiement réel, pas de suivi temps réel. Modèle économique : abonnement 49 €/mois par commerce (mock). Zone de livraison par commerce (rayon km ou codes postaux). Onboarding commerçant : inscription self-service + choix du kind (repas/courses) + validation admin + documents (mock). Spécificités COURSES : unité de vente (pièce, kg, L, botte), poids variable ajusté à la préparation, stock par LOT avec date de péremption, déduction FIFO, alertes péremption J-2/J-1/J-0, retrait ou livraison (pas de sur place), créneau obligatoire. Spécificités REPAS : recettes, déduction par ingrédient, sur place / à emporter / livraison, options de cuisson. Tests : 1 test d'intégration par feature critique (REPAS et COURSES). Go-to-market : 6 à 10 commerces pilotes (3-5 REPAS + 3-5 COURSES) via réseau local.\n═══════════════════════════════════════════════════════════════════\nTESTS\n═══════════════════════════════════════════════════════════════════\n\nAu moins un test d'intégration par feature critique :\n- createOrder transactionnel (commande + stock + points atomiques) —\n  REPAS et COURSES.\n- decrementStockFromRecipes (REPAS : déduction par recette).\n- decrementStockFIFO (COURSES : déduction par lot, ordre FIFO,\n  gestion du poids variable).\n- Attribution des points fidélité (règle configurable).\n- Validation Zod du document (scrumDocumentSchema) sur seed et export.\nTests unitaires sur les helpers (slugify, findFreeSlug, date,\najustement poids variable).\nPas de tests e2e en MVP (à ajouter en V2).\n\n═══════════════════════════════════════════════════════════════════\nDESIGN SYSTEM\n═══════════════════════════════════════════════════════════════════\n\nTailwind v4 + @theme ; composants shadcn/base-ui ; mobile-first,\nresponsive, accessibilité (labels, focus, contraste) ; états UX\ncomplets (chargement, vide, erreur, succès, désactivé).\n          "
     }
   ],
   "feature": [
     {
-      "id": "a1b2c3d4-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
-      "createdAt": "2026-10-17T12:30:00.000Z",
-      "updatedAt": "2026-10-17T12:30:00.000Z",
+      "id": "fa000001-0001-4001-8001-000000000001",
+      "createdAt": "2026-11-03T15:00:00.000Z",
+      "updatedAt": "2026-11-03T15:00:00.000Z",
       "order": 0,
-      "title": "Taxonomie 3 niveaux",
-      "description": "Classification hiérarchique imbriquée : Thème (Technologie, Art, Science…) → Catégorie (Développement, Design…) → Sous-catégorie (React, UI/UX…). Stockage en sous-tableaux : taxonomy.themes[].categories[].subCategories[]. Chaque niveau possède son slug, sa description et un ordre d'affichage. Validation Zod stricte du document complet.",
-      "interest": "Navigation claire, SEO structuré et découverte progressive du contenu, sans imposer un niveau unique trop rigide.",
+      "title": "Socle multi-tenant par commerce",
+      "description": "Modèle Commerce à plat dans commerces[] : id, slug (slugifyWithFallback + findFreeSlug), nom, type (restaurant / food-truck / autre), description, couverture, adresse, coordonnées, téléphone, horaires d'ouverture, visibilité (public / unlisted / fermé), statut (actif / suspendu). Un utilisateur peut être client d'un commerce A et merchant (owner ou staff) d'un commerce B — jamais les deux sur le même commerce. Les rôles sont portés par une table de jointure commerce_members (userId, commerceId, role, status) qui remplace le champ role global : un user peut cumuler plusieurs rôles par commerce.",
+      "interest": "Décision structurante du produit : sans multi-tenant propre par commerce, ni le POS, ni le stock, ni la fidélité ne peuvent être correctement isolés. Permet à un livreur d'être aussi client, et à un propriétaire de gérer plusieurs enseignes.",
       "personas": [
-        "Auteur",
-        "Modérateur / Éditeur",
-        "Lecteur connecté"
+        "Propriétaire de commerce",
+        "Administrateur metier",
+        "Développeur / Intégrateur"
       ]
     },
     {
-      "id": "b2c3d4e5-6f7a-4b8c-9d0e-1f2a3b4c5d6e",
-      "createdAt": "2026-10-17T12:30:00.000Z",
-      "updatedAt": "2026-10-17T12:30:00.000Z",
+      "id": "fa000002-0002-4002-8002-000000000002",
+      "createdAt": "2026-11-03T15:00:00.000Z",
+      "updatedAt": "2026-11-03T15:00:00.000Z",
       "order": 1,
-      "title": "Tags libres slugifiés",
-      "description": "Tags transverses stockés à plat dans taxonomy.tags[] et référencés par les articles via un tableau plat d'ids (article.tagIds). Slug généré automatiquement via slugifyWithFallback + findFreeSlug. Dédoublonnage insensible à la casse.",
-      "interest": "Complète la taxonomie rigide par une indexation libre et favorise le maillage interne et la navigation par thème transverse.",
+      "title": "Catalogue produits et options",
+      "description": "Catalogue par commerce : produits[] (nom, description, prix, catégorie, image, disponibilité, ordre, allergènes, temps de préparation), catégories[] (entrées, plats, desserts, boissons…) et options[] (taille, suppléments, cuisson) avec prix delta et disponibilité indépendante. Chaque produit référence sa recette (feature Stock) pour la déduction automatique. Le catalogue est éditable par owner/staff du commerce ; un client ne voit que les produits disponibles.",
+      "interest": "Base de toute commande : sans catalogue structuré et options typées, le POS et la commande client n'ont aucune matière. Les options à prix delta évitent de dupliquer un produit par variante.",
       "personas": [
-        "Auteur",
-        "Lecteur connecté"
+        "Propriétaire de commerce",
+        "Merchant (staff)",
+        "Client"
       ]
     },
     {
-      "id": "c3d4e5f6-7a8b-4c9d-0e1f-2a3b4c5d6e7f",
-      "createdAt": "2026-10-17T12:30:00.000Z",
-      "updatedAt": "2026-10-17T17:30:00.000Z",
+      "id": "fa000003-0003-4003-8003-000000000003",
+      "createdAt": "2026-11-03T15:00:00.000Z",
+      "updatedAt": "2026-11-03T15:00:00.000Z",
       "order": 2,
-      "title": "Article éditorial complet",
-      "description": "Modèle Article unique à plat dans articles[] : slug, titre, résumé dédié, couverture, temps de lecture calculé (mots/200 sur le texte des blocs paragraph), compteur de vues, featured, auteur, themeId, categoryId, subCategoryId, tagIds[]. Le corps éditorial est un tableau plat content[] de ContentBlocks avec parentId (racine = article.id) et order : n'importe quel bloc peut avoir des enfants (section, paragraph, image, video, audio, code, embed, document). Les commentaires et les likes sont imbriqués sous l'article (article.comments[] en flat parentId, article.likedBy[]). La table des matières (TOC) et les ancres de deep-linking (#id) sont dérivées gratuitement de la hiérarchie.",
-      "interest": "Un seul modèle validé par Zod couvre tous les formats éditoriaux (article court, tutoriel, critique, portfolio, note de veille), avec sections imbriquées, médias inline, TOC auto et deep-linking par ancre — sans Markdown ni HTML arbitraire.",
+      "title": "POS mobile-first",
+      "description": "Interface de prise de commande mobile-first par commerce : sélection du type de commande (sur place / à emporter / livraison), ajout de produits avec options, gestion du panier (quantité, retrait, note), calcul du total (sous-total + frais éventuels), validation et encaissement (mock en MVP, Stripe en v2). Le POS crée une Commande (feature Commandes) et déclenche la déduction de stock (feature Stock) et l'attribution de points fidélité (feature Fidélité) dans la même transaction. Pensé pour un usage terrain, y compris food truck (pas de poste fixe, pas de matériel dédié).",
+      "interest": "Cœur de métier du commerçant : sans POS utilisable en service (rapide, tactile, tolérant aux erreurs), les features stock et fidélité n'ont aucun point d'entrée. Le POS mobile est l'avantage différenciant face aux POS de caisse fixes.",
       "personas": [
-        "Auteur",
-        "Lecteur connecté",
-        "Lecteur anonyme"
+        "Propriétaire de commerce",
+        "Merchant (staff)"
       ]
     },
     {
-      "id": "d4e5f6a7-8b9c-4d0e-1f2a-3b4c5d6e7f8a",
-      "createdAt": "2026-10-17T12:30:00.000Z",
-      "updatedAt": "2026-10-17T12:30:00.000Z",
+      "id": "fa000004-0004-4004-8004-000000000004",
+      "createdAt": "2026-11-03T15:00:00.000Z",
+      "updatedAt": "2026-11-03T15:00:00.000Z",
       "order": 3,
-      "title": "Statut éditorial et visibilité",
-      "description": "Chaque article porte un statut (draft / published / archived) et une visibilité (public / private / unlisted). Publication enregistre publishedAt, archivage ne supprime pas.",
-      "interest": "Permet le travail en brouillon, la publication contrôlée, l'archivage sans perte et les articles non listés (partage par lien).",
+      "title": "Stock et recettes",
+      "description": "Gestion du stock par commerce : ingrédients[] (nom, unité, stock actuel, seuil d'alerte, coût unitaire), recettes[] (produit → liste d'ingrédients avec quantités), mouvements de stock (vente, approvisionnement, ajustement, perte) avec horodatage et auteur. La déduction est automatique à chaque vente : la vente d'un produit déclenche la déduction des ingrédients de sa recette, dans la même transaction que la création de la commande. Alertes de rupture (stock actuel ≤ seuil) affichées dans le POS et dans un tableau de bord. Réconciliation périodique (inventaire manuel qui crée un mouvement d'ajustement).",
+      "interest": "Évite les doubles saisies et les ruptures en service : c'est ce que les outils séparés (POS + stock déconnectés) ne savent pas faire. La recette est la projection théorique du stock, pas une donnée dupliquée.",
       "personas": [
-        "Auteur",
-        "Modérateur / Éditeur"
+        "Propriétaire de commerce",
+        "Merchant (staff)"
       ]
     },
     {
-      "id": "e5f6a7b8-9c0d-4e1f-2a3b-4c5d6e7f8a9b",
-      "createdAt": "2026-10-17T12:30:00.000Z",
-      "updatedAt": "2026-10-17T17:30:00.000Z",
+      "id": "fa000005-0005-4005-8005-000000000005",
+      "createdAt": "2026-11-03T15:00:00.000Z",
+      "updatedAt": "2026-11-03T15:00:00.000Z",
       "order": 4,
-      "title": "Blocs de contenu hiérarchiques",
-      "description": "Corps éditorial stocké en tableau plat content[] sous l'article : chaque bloc porte id, parentId (racine = article.id), type, order. Types conteneur (section) et feuilles (paragraph, image, video, audio, code, embed, document). N'importe quel bloc peut avoir des enfants (sous-section, paragraphe illustré…). Validation Zod : parentId résolvable (article.id ou bloc existant), absence de cycle, profondeur ≤ 6, order unique parmi les frères. Rendu par reconstruction d'arbre (buildTree), TOC et ancres générées depuis la hiérarchie. Les médias sont des blocs feuilles référençant /public/blog/ via resolveMediaUrl. La suppression d'un bloc supprime ses descendants (récursif).",
-      "interest": "Un seul modèle couvre texte, images, code, embeds et sections imbriquées, avec TOC gratuite et deep-linking par ancre — sans introduire de Markdown ni HTML arbitraire.",
+      "title": "Fidélité et CRM",
+      "description": "Programme de fidélité par commerce : points gagnés selon une règle configurable (ex. 1 € = 1 point), catalogue de récompenses (réduction, produit offert, palier), historique client (solde de points, récompenses utilisées), CRM léger avec segments (nouveau, régulier, VIP, dormant) calculés à partir des commandes. Attribution des points dans la même transaction que la commande. Un client cumule des points par commerce (pas de fusion inter-enseignes).",
+      "interest": "Complète le POS par la rétention : sans fidélité unifiée par commerce, le client repart chez le concurrent. Le CRM léger évite d'ajouter un outil tiers.",
       "personas": [
-        "Auteur",
-        "Lecteur connecté",
-        "Lecteur anonyme"
+        "Propriétaire de commerce",
+        "Client"
       ]
     },
     {
-      "id": "f6a7b8c9-0d1e-4f2a-3b4c-5d6e7f8a9b0c",
-      "createdAt": "2026-10-17T12:30:00.000Z",
-      "updatedAt": "2026-10-17T17:30:00.000Z",
+      "id": "fa000006-0006-4006-8006-000000000006",
+      "createdAt": "2026-11-03T15:00:00.000Z",
+      "updatedAt": "2026-11-03T15:00:00.000Z",
       "order": 5,
-      "title": "Commentaires imbriqués",
-      "description": "Commentaires stockés en tableau plat sous l'article (article.comments[]), chaque commentaire portant parentId (racine = article.id) et order. Pas de replies[] imbriqué : la hiérarchie est reconstruite par parentId, identique au pattern content[]. Soft delete (deletedAt) pour la modération non destructive. Profondeur max 5. Le même schéma d'arbre plat est réutilisé pour les posts de discussion (group.discussions[].posts[] avec parentId racine = discussion.id).",
-      "interest": "Échanges structurés, modération non destructive, un seul pattern d'arbre (parentId + order) partagé avec content[] et posts[] pour n'avoir qu'un validateur, un helper de tree et un aplatisseur Prisma.",
+      "title": "Commandes et statuts",
+      "description": "Modèle Commande : id, commerceId, clientId, type (sur place / à emporter / livraison), lignes[] (produitId, options, quantité, prix unitaire, total ligne), sous-total, frais, total, adresse de livraison (si livraison), créneau ou ETA, statut (received → preparing → ready → picked_up → delivering → delivered / cancelled), paiement (mock en MVP, Stripe en v2). Création via POS (staff) ou via le catalogue client. Transitions de statut tracées (horodatage, acteur). Annulation possible tant que la commande n'est pas en préparation, par le client ou le commerçant, avec restauration du stock si la déduction a déjà eu lieu.",
+      "interest": "Objet pivot entre POS, client, livreur et fidélité. Sans un modèle de commande avec statuts tracés, ni le suivi temps réel ni la livraison ne peuvent se greffer proprement.",
       "personas": [
-        "Lecteur connecté",
-        "Modérateur / Éditeur"
+        "Client",
+        "Propriétaire de commerce",
+        "Merchant (staff)",
+        "Livreur indépendant"
       ]
     },
     {
-      "id": "a7b8c9d0-1e2f-4a3b-4c5d-6e7f8a9b0c1d",
-      "createdAt": "2026-10-17T12:30:00.000Z",
-      "updatedAt": "2026-10-17T12:30:00.000Z",
+      "id": "fa000007-0007-4007-8007-000000000007",
+      "createdAt": "2026-11-03T15:00:00.000Z",
+      "updatedAt": "2026-11-03T15:00:00.000Z",
       "order": 6,
-      "title": "Likes par tableau",
-      "description": "Like stocké directement dans la cible sous forme de tableau d'ids utilisateurs : article.likedBy[] pour un article, comment.likedBy[] (ou post.likedBy[]) pour un commentaire ou une réponse. Toggle = push/filter sous mutex. L'unicité est garantie par vérification d'absence avant push (pas de doublon dans un tableau), sans table dédiée ni polymorphisme.",
-      "interest": "Mesure l'engagement au niveau article et commentaire avec un seul mécanisme uniforme, et rend le compteur trivial (longueur du tableau).",
+      "title": "Commande client (catalogue + panier)",
+      "description": "Expérience client : catalogue du commerce (produits disponibles, catégories, options), recherche dans le catalogue, panier (ajout/retrait, quantités, options), choix du mode (sur place / à emporter / livraison), saisie d'adresse (si livraison), choix d'un créneau ou affichage de l'ETA, confirmation. Le client peut voir son historique de commandes par commerce, suivre l'état de sa commande en cours, et recommander une commande passée en un clic. Paiement mock en MVP (validation sans transaction réelle).",
+      "interest": "Sans point d'entrée client, le produit n'est qu'un outil interne. Le parcours « commander en 3 clics » est l'argument face aux plateformes qui forcent création de compte et paiement en plusieurs étapes.",
       "personas": [
-        "Lecteur connecté"
+        "Client"
       ]
     },
     {
-      "id": "b8c9d0e1-2f3a-4b4c-5d6e-7f8a9b0c1d2e",
-      "createdAt": "2026-10-17T12:30:00.000Z",
-      "updatedAt": "2026-10-17T12:30:00.000Z",
+      "id": "fa000008-0008-4008-8008-000000000008",
+      "createdAt": "2026-11-03T15:00:00.000Z",
+      "updatedAt": "2026-11-03T15:00:00.000Z",
       "order": 7,
-      "title": "Favoris avec dossiers",
-      "description": "Favoris personnels rangés sous userContent[userId] : dossiers nommés et ordonnés (favoriteFolders[] avec articleIds[]) et favoris non classés (unfiledFavorites[]). Un article figure au plus une fois dans l'ensemble (dossiers + non classés) — déplacement d'id entre les deux, sans duplication.",
-      "interest": "Sauvegarder un article pour plus tard et l'organiser dans des collections personnelles (veille, tutoriels, à lire).",
+      "title": "Attribution et espace livreur",
+      "description": "Livreurs indépendants : profil livreur (nom, téléphone, véhicule, zone), statut (disponible / en course / hors ligne), assignment manuel d'une commande à un livreur (MVP), acceptation/refus, marquage des statuts picked_up / delivering / delivered. Un livreur voit uniquement ses commandes assignées et son historique. Pas d'algorithme de tournée en MVP (feature v2), pas de géolocalisation temps réel (ETA statique). Rémunération : calcul d'un montant livreur par commande (règle simple : forfait + pourcentage), visible par le livreur et par l'admin.",
+      "interest": "Sans livreur, pas de livraison — et sans rémunération transparente, pas de fidélisation des livreurs, ce qui est l'un des points d'échec des plateformes existantes.",
       "personas": [
-        "Lecteur connecté"
+        "Livreur indépendant",
+        "Administrateur metier"
       ]
     },
     {
-      "id": "c9d0e1f2-3a4b-4c5d-6e7f-8a9b0c1d2e3f",
-      "createdAt": "2026-10-17T12:30:00.000Z",
-      "updatedAt": "2026-10-17T12:30:00.000Z",
+      "id": "fa000009-0009-4009-8009-000000000009",
+      "createdAt": "2026-11-03T15:00:00.000Z",
+      "updatedAt": "2026-11-03T15:00:00.000Z",
       "order": 8,
-      "title": "Groupes de discussion",
-      "description": "Groupes stockés à plat (groups[]) avec slug, nom, description, couverture, visibilité (public / private / unlisted) et ownerId. Les members[] sont imbriqués dans le groupe et portent userId, rôle (owner / moderator / member) et statut (active / pending / banned).",
-      "interest": "Crée des espaces thématiques où la communauté peut débattre et partager, rattachés au blog éditorial.",
+      "title": "Suivi temps réel (SSE)",
+      "description": "Suivi de commande en temps réel côté client et livreur via Server-Sent Events ou polling court : statut courant, ETA, position approximative du livreur (en v2), historique des transitions. Pas de WebSocket, pas d'infrastructure temps réel dédiée en MVP — SSE suffit pour 3 à 5 commerces pilotes. Le commerçant voit un tableau de bord des commandes en cours avec compteurs par statut. Le client peut suivre sa commande sans recharger la page.",
+      "interest": "Le suivi temps réel est la promesse client la plus visible. Il peut être livré sans infra temps réel coûteuse en restant sur SSE/polling, ce qui laisse la porte ouverte à WebSocket si le volume explose.",
       "personas": [
-        "Propriétaire de groupe",
-        "Lecteur connecté"
+        "Client",
+        "Livreur indépendant",
+        "Propriétaire de commerce"
       ]
     },
     {
-      "id": "d0e1f2a3-4b5c-4d6e-7f8a-9b0c1d2e3f4a",
-      "createdAt": "2026-10-17T12:30:00.000Z",
-      "updatedAt": "2026-10-17T17:30:00.000Z",
+      "id": "fa000010-0010-4010-8010-000000000010",
+      "createdAt": "2026-11-03T15:00:00.000Z",
+      "updatedAt": "2026-11-03T15:00:00.000Z",
       "order": 9,
-      "title": "Discussions dans les groupes",
-      "description": "Fil de discussion imbriqué sous le groupe (group.discussions[]) : titre, contenu, auteur, et posts[] stockés en tableau plat avec parentId (racine = discussion.id) et order, soft delete (deletedAt) et likedBy[]. Distinct des commentaires d'article, mais même pattern d'arbre plat (parentId + order) partagé avec article.content[] et article.comments[].",
-      "interest": "Offre un espace de débat structuré (fil + réponses imbriquées) distinct des commentaires d'article, modéré par le propriétaire du groupe, avec le même outillage de tree que les autres arbres du document.",
-      "personas": [
-        "Propriétaire de groupe",
-        "Lecteur connecté",
-        "Modérateur / Éditeur"
-      ]
-    },
-    {
-      "id": "e1f2a3b4-5c6d-4e7f-8a9b-0c1d2e3f4a5b",
-      "createdAt": "2026-10-17T12:30:00.000Z",
-      "updatedAt": "2026-10-17T17:30:00.000Z",
-      "order": 10,
-      "title": "Recherche et filtres",
-      "description": "Recherche plein texte en mémoire sur le document JSON (title + summary + texte des blocs paragraph du content[]) et filtres combinables : thème, catégorie, sous-catégorie, tag, auteur, statut, période, featured. Pagination applicative. Aucun index externe, aucune requête SQL.",
-      "interest": "Rend le contenu découvrable au-delà de la navigation taxonomique, essentiel dès que le volume dépasse 50 articles, en incluant le texte des blocs pour ne rien manquer du corps éditorial.",
-      "personas": [
-        "Lecteur anonyme",
-        "Lecteur connecté"
-      ]
-    },
-    {
-      "id": "f2a3b4c5-6d7e-4f8a-9b0c-1d2e3f4a5b6c",
-      "createdAt": "2026-10-17T12:30:00.000Z",
-      "updatedAt": "2026-10-17T17:30:00.000Z",
-      "order": 11,
-      "title": "Rendu public cache-friendly",
-      "description": "Pages publiques via Cache Components : page sync + Suspense + composant async, skeleton fidèle, interactions dynamiques côté client. La page article reconstruit l'arbre content[] (buildTree) et génère la TOC + les ancres de section (#id) à partir de la hiérarchie, puis rend chaque bloc par un renderer récursif typé.",
-      "interest": "Premier rendu rapide, streaming possible, SEO préservé, TOC et deep-linking gratuits, sans bloquer les interactions.",
-      "personas": [
-        "Lecteur anonyme",
-        "Lecteur connecté"
-      ]
-    },
-    {
-      "id": "0a1b2c3d-4e5f-4a6b-7c8d-9e0f1a2b3c4d",
-      "createdAt": "2026-10-17T15:00:00.000Z",
-      "updatedAt": "2026-10-17T15:00:00.000Z",
-      "order": 12,
       "title": "Notifications in-app",
-      "description": "Notifications stockées sous userContent[destinataireId].notifications[] : type (reply, group_invite, group_join_approved, group_new_discussion), actorId, targetType, targetId, excerpt, readAt, createdAt. Badge non-lu, page /blog/notifications, marquage lu, plafond 200 entrées + purge > 90 jours. Les likes ne notifient pas.",
-      "interest": "Referme la boucle communautaire : sans notification, un membre ne sait jamais qu'on lui a répondu ou invité. C'est le chaînon manquant entre contenu et communauté.",
+      "description": "Notifications stockées par utilisateur : type (new_order, order_status_changed, order_assigned, stock_low, reward_unlocked, delivery_proof_required), actorId, targetType, targetId, excerpt, readAt, createdAt. Badge non-lu, page dédiée, marquage lu (unitaire + tout lire), suppression. Plafond 200 entrées + purge > 90 jours. Anti-auto-notification (pas de notif sur ses propres actions). Email/push en v2, préférences fines par type en v2.",
+      "interest": "Referme la boucle terrain : un livreur doit savoir qu'une commande lui est assignée, un commerçant qu'une commande est arrivée, un client que sa commande est prête. Sans notification, personne ne surveille les écrans.",
       "personas": [
-        "Lecteur connecté",
-        "Propriétaire de groupe",
-        "Modérateur / Éditeur"
+        "Client",
+        "Propriétaire de commerce",
+        "Livreur indépendant",
+        "Merchant (staff)"
       ]
     },
     {
-      "id": "1b2c3d4e-5f6a-4b7c-8d9e-0f1a2b3c4d5e",
-      "createdAt": "2026-10-17T16:00:00.000Z",
-      "updatedAt": "2026-10-17T16:00:00.000Z",
+      "id": "fa000011-0011-4011-8011-000000000011",
+      "createdAt": "2026-11-03T15:00:00.000Z",
+      "updatedAt": "2026-11-03T15:00:00.000Z",
+      "order": 10,
+      "title": "Tableau de bord commerçant",
+      "description": "Vue commerçant consolidée : chiffre d'affaires du jour / semaine / mois, nombre de commandes par statut, produits les plus vendus, alertes de stock bas, solde de points fidélité distribués, top clients. Chaque carte est cliquable et mène à la section correspondante (POS, stock, fidélité, commandes). Rendu streamé via Cache Components avec skeleton fidèle.",
+      "interest": "Le commerçant n'a pas le temps de chercher l'information : il doit voir en un écran ce qui va mal (ruptures, commandes bloquées) et ce qui marche (top produits, CA).",
+      "personas": [
+        "Propriétaire de commerce",
+        "Merchant (staff)"
+      ]
+    },
+    {
+      "id": "fa000012-0012-4012-8012-000000000012",
+      "createdAt": "2026-11-03T15:00:00.000Z",
+      "updatedAt": "2026-11-03T15:00:00.000Z",
+      "order": 11,
+      "title": "Administration plateforme",
+      "description": "Back-office admin : validation des commerces (statut actif / suspendu), gestion des utilisateurs et de leurs rôles par commerce, modération (commerces signalés, livreurs signalés), configuration des règles globales (taux de commission, rémunération livreur par défaut), journal d'audit des actions sensibles (suspension, changement de rôle, modification de commission). Réservé au rôle admin global (distinct du rôle merchant).",
+      "interest": "Sans back-office admin, la plateforme n'est pas opérable : on ne peut ni suspendre un commerce qui fraude, ni ajuster une commission, ni promouvoir un nouvel opérateur. C'est la couche minimale pour que le produit soit exploitable en production.",
+      "personas": [
+        "Administrateur metier",
+        "Super-administrateur"
+      ]
+    },
+    {
+      "id": "fa000013-0013-4013-8013-000000000013",
+      "createdAt": "2026-11-03T15:00:00.000Z",
+      "updatedAt": "2026-11-03T15:00:00.000Z",
+      "order": 12,
+      "title": "Socle technique et portabilité",
+      "description": "Fondations transverses : schéma Zod canonique par domaine (Commerce, Produit, Ingrédient, Recette, Commande, Mouvement de stock, Récompense, Point fidélité, Livreur, Notification), types z.infer source unique de vérité, service storage Prisma (transactions pour les mutations multi-tables : commande + déduction stock + attribution points), ActionResult partagé, useActionResult client, bootstrap admin idempotent. Fixtures versionnées par domaine (data/fixtures/*.seed.json) + script de seed idempotent. Script d'export vers une base Prisma cible (le projet cible déjà Prisma en MVP, donc export = dump SQL + vérification des FK). Backup horodaté. Aucun JSON métier — le module Blog (supprimé) reste l'exception historique à ne pas reproduire.",
+      "interest": "Rend le MVP exécutable et migrable : transactions atomiques pour ne pas créer de commande sans déduire le stock ou sans attribuer les points, schéma unique par domaine pour ne pas diverger entre POS, client et admin, seed reproductible pour les 3 à 5 commerces pilotes.",
+      "personas": [
+        "Développeur / Intégrateur",
+        "Super-administrateur"
+      ]
+    },
+    {
+      "id": "fa000014-0014-4014-8014-000000000014",
+      "createdAt": "2026-11-03T18:30:00.000Z",
+      "updatedAt": "2026-11-03T18:30:00.000Z",
       "order": 13,
-      "title": "Résolution de médias locaux",
-      "description": "Utilitaire resolveMediaUrl(relativePath) qui résout un chemin d'image en URL publique : MVP = préfixe /blog/ vers /public/blog/ ; prod = lecture via STORAGE_DRIVER (S3, Cloudinary, etc.) sans changer le code appelant. Fonction getMediaManifest() qui liste les fichiers disponibles dans /public/blog/ pour l'autocomplétion dans le formulaire d'article. Validation fs.existsSync côté serveur pour empêcher les chemins arbitraires (path traversal).",
-      "interest": "Permet de démarrer sans CDN ni upload serveur tout en gardant une porte de sortie propre : un seul point à modifier (STORAGE_DRIVER) pour basculer en prod.",
+      "title": "Onboarding commerçant",
+      "description": "Parcours d'inscription self-service pour un commerçant : (1) inscription email + mot de passe + nom du commerce via Better Auth, (2) choix du kind (restaurant / food-truck / grocery / market / greengrocer) qui détermine les écrans adaptés, (3) formulaire commerce (type, adresse, horaires d'ouverture, zone de livraison, description, couverture), (4) upload documents (Kbis, attestation hygiène — mock en MVP : stockage + affichage admin, pas de vérification réelle), (5) statut initial pending → validation admin → actif ou suspendu, (6) email de bienvenue in-app. Tant que le statut n'est pas actif, le commerce ne peut PAS recevoir de commandes ni apparaître dans le catalogue public. Un écran /commerce/onboarding/<step> guide le commerçant étape par étape avec sauvegarde brouillon. L'admin dispose d'une file d'attente /admin/commerces/pending avec aperçu des documents et boutons Approuver / Suspendre.",
+      "interest": "Sans onboarding clair, aucun commerce ne peut s'inscrire : c'est la porte d'entrée B2B du produit. La validation admin est la garantie minimale de sérieux (Kbis, hygiène) avant qu'un commerce ne soit visible des clients. Le mock documents en MVP évite d'intégrer un service de vérification KYC, tout en posant la structure pour la V2.",
       "personas": [
-        "Développeur / Intégrateur",
-        "Auteur"
+        "Propriétaire de commerce",
+        "Administrateur metier"
       ]
     },
     {
-      "id": "2c3d4e5f-6a7b-4c8d-9e0f-1a2b3c4d5e6f",
-      "createdAt": "2026-10-17T16:00:00.000Z",
-      "updatedAt": "2026-10-17T17:30:00.000Z",
+      "id": "fa000015-0015-4015-8015-000000000015",
+      "createdAt": "2026-11-03T18:30:00.000Z",
+      "updatedAt": "2026-11-03T18:30:00.000Z",
       "order": 14,
-      "title": "Socle storage & schéma canonique",
-      "description": "Schéma Zod canonique validant le document data/blog.json entier au chargement (meta.schemaVersion === 2 contrôlée, types TS dérivés via z.infer) incluant contentBlockSchema récursif (vérification parentId résolvable, absence de cycle, profondeur ≤ 6, order unique parmi les frères) et le même contrôle d'arbre pour comments[] et posts[]. Service storage atomique (fichier temporaire + rename) protégé par un mutex global. Helpers de tree exportés (buildTree, insertBlock, removeBlock récursif, moveBlock avec anti-cycle) réutilisés par content[], comments[] et posts[]. Bootstrap admin idempotent (premier utilisateur ou ADMIN_EMAIL) pour rendre le CRUD utilisable dès la première connexion.",
-      "interest": "Rend le fichier JSON fiable comme source de vérité : pas de corruption possible entre deux écritures concurrentes, typage strict bout en bout, et un seul jeu de helpers de tree pour tous les arbres du document.",
+      "title": "Gestion des lots et péremption (courses)",
+      "description": "Gestion du stock spécifique aux COURSES (kind = grocery / market / greengrocer) : modèle Lot (lotId, commerceId, produitId, datePeremption, quantiteInitiale, quantiteRestante, prixAchat) rattaché à chaque produit. Déduction FIFO (premier entré, premier sorti) à chaque vente : on consomme d'abord le lot dont la date de péremption est la plus proche. Alertes de péremption J-2, J-1, J-0 affichées dans le POS et dans le dashboard commerçant (badge rouge). Mouvements de stock dédiés : vente (déduction FIFO), approvisionnement (création de lot), perte/périmé (sortie de lot), ajustement inventaire (réconciliation manuelle). Le POS affiche pour chaque produit la quantité disponible par lot et la date de péremption la plus proche. Le commerçant peut saisir un inventaire physique qui crée un mouvement d'ajustement. Concurrence : la déduction FIFO est verrouillée par une transaction better-sqlite3 IMMEDIATE pour éviter les doubles ventes sur le même lot.",
+      "interest": "Sans gestion par lots, les courses ne peuvent pas être vendues de manière fiable : un produit périmé vendu = risque sanitaire et client mécontent ; un produit non déduit FIFO = ruptures fantômes. C'est la spécificité n°1 des courses vs les repas (qui utilisent des recettes et des ingrédients). Le verrouillage transactionnel est critique : deux ventes simultanées du dernier lot ne doivent pas réussir toutes les deux.",
       "personas": [
-        "Développeur / Intégrateur",
-        "Administrateur"
+        "Propriétaire de commerce",
+        "Merchant (staff)"
       ]
     },
     {
-      "id": "3d4e5f6a-7b8c-4d9e-0f1a-2b3c4d5e6f7a",
-      "createdAt": "2026-10-17T16:00:00.000Z",
-      "updatedAt": "2026-10-17T17:30:00.000Z",
+      "id": "fa000016-0016-4016-8016-000000000016",
+      "createdAt": "2026-11-03T18:30:00.000Z",
+      "updatedAt": "2026-11-03T18:30:00.000Z",
       "order": 15,
-      "title": "Seed & portabilité Prisma",
-      "description": "Fixtures versionnées (data/fixtures/blog.seed.json) contenant des articles avec content[] en blocs hiérarchiques, script pnpm seed idempotent (upsert par slug, flag --reset, préservation des likedBy/comments existants), script pnpm export:prisma qui mappe le JSON vers un prisma/seed.ts testé (aplatissement des arbres content[]/comments[]/posts[] vers les tables ContentBlock/Comment/Post avec parentId résolu), et backup horodaté avant toute opération risquée. Le passage en prod consiste à lancer seed, export:prisma, puis migrer.",
-      "interest": "Transforme un prototype JSON en projet migrable : la démo est reproductible, la prod n'est pas une réécriture manuelle, et aucun backup n'est perdu en cas de fausse manip.",
+      "title": "Annulation et remboursement",
+      "description": "Gestion du cycle d'annulation d'une commande : (1) qui peut annuler — le client avant le statut preparing, le commerçant avant le statut ready, l'admin à tout moment (avec motif obligatoire) ; (2) statut cancelled tracé avec horodatage, acteur et motif ; (3) restauration automatique du stock si la déduction a déjà eu lieu (recréation de MouvementStock type=ajustement inverse) ; (4) restauration des points fidélité si déjà attribués (déduction du solde client) ; (5) remboursement mock en MVP (pas de transaction réelle) — un avoir est crédité sur le compte client, visible dans son historique ; (6) notification in-app au client et au commerçant avec le motif ; (7) journal d'audit des annulations dans l'admin. Une commande déjà delivered ne peut pas être annulée (seulement un litige). Un litige peut être ouvert par le client dans les 24h après delivered : il remonte dans l'admin avec la commande et les échanges.",
+      "interest": "Sans annulation ni remboursement, une commande erronée bloque le client et le commerçant : le client ne peut pas récupérer son argent, le commerçant ne peut pas libérer le stock, la plateforme ne peut pas arbitrer. C'est la soupape de sécurité minimale du produit. Le mock remboursement en MVP évite d'intégrer Stripe, tout en posant la structure pour la V2 (remboursement réel).",
       "personas": [
-        "Développeur / Intégrateur",
-        "Administrateur"
+        "Client",
+        "Propriétaire de commerce",
+        "Merchant (staff)",
+        "Administrateur metier"
+      ]
+    },
+    {
+      "id": "fa000017-0017-4017-8017-000000000017",
+      "createdAt": "2026-11-03T18:30:00.000Z",
+      "updatedAt": "2026-11-03T18:30:00.000Z",
+      "order": 16,
+      "title": "RGPD et consentement",
+      "description": "Conformité RGPD minimale pour le MVP : (1) consentement explicite à l'inscription (case à cocher « J'accepte les CGU et la politique de confidentialité » — non pré-cochée, stockée avec timestamp et version des CGU) ; (2) page /legal/privacy avec politique de confidentialité et page /legal/terms avec CGU ; (3) consentement cookies analytiques (bandeau) — MVP : pas de cookies analytiques, donc pas de bandeau, mais structure prête ; (4) droit à l'oubli : page /account/delete qui supprime le compte et anonymise les commandes (nom → « Utilisateur supprimé », email → « deleted-<uuid>@local ») pour conserver les données comptables ; (5) export des données personnelles : page /account/export qui génère un JSON avec toutes les données de l'utilisateur (commandes, adresses, points, notifications) ; (6) journal des consentements dans l'admin ; (7) DPO non applicable en MVP (pas de traitement à grande échelle) ; (8) hébergement local SQLite en MVP, migration cloud + conformité en V2.",
+      "interest": "Sans consentement explicite ni droit à l'oubli, le produit n'est pas conforme au RGPD : risque juridique réel en France (amendes CNIL). La conformité est souvent perçue comme un coût, mais c'est un gage de sérieux pour les commerçants et les clients. L'anonymisation des commandes permet de conserver les données comptables (obligation légale) tout en respectant le droit à l'oubli.",
+      "personas": [
+        "Client",
+        "Propriétaire de commerce",
+        "Administrateur metier",
+        "Super-administrateur"
       ]
     }
   ],
   "persona": [
     {
-      "id": "11111111-1111-4111-8111-111111111111",
-      "createdAt": "2026-10-17T12:30:00.000Z",
-      "updatedAt": "2026-10-17T12:30:00.000Z",
-      "order": 0,
-      "name": "Lecteur anonyme",
-      "kind": "visiteur non authentifié",
-      "need": "Lire les articles publics sans compte, découvrir par thème/catégorie/tag, voir les articles à la une, partager un lien, revenir par la recherche.",
-      "relatedFeatures": [
-        "Article éditorial complet",
-        "Taxonomie 3 niveaux",
-        "Recherche et filtres",
-        "Rendu public cache-friendly"
-      ]
-    },
-    {
-      "id": "22222222-2222-4222-8222-222222222222",
-      "createdAt": "2026-10-17T12:30:00.000Z",
-      "updatedAt": "2026-10-17T12:30:00.000Z",
+      "id": "4fcdc24e-dd5a-4a07-b356-4cd6b46a1e40",
+      "createdAt": "2026-11-03T16:05:05.628Z",
+      "updatedAt": "2026-11-03T16:05:05.628Z",
       "order": 1,
-      "name": "Lecteur connecté",
-      "kind": "utilisateur authentifié (lecteur)",
-      "need": "Lire, commenter, liker, sauvegarder en favoris, suivre des tags/auteurs, participer aux groupes de discussion, et être notifié des réponses et invitations.",
+      "name": "Super-administrateur",
+      "kind": "superAdmin",
+      "need": "Persona plateforme : gère les admins, les règles globales, l'audit.",
       "relatedFeatures": [
-        "Article éditorial complet",
-        "Commentaires imbriqués",
-        "Likes par tableau",
-        "Favoris avec dossiers",
-        "Groupes de discussion",
-        "Recherche et filtres",
-        "Rendu public cache-friendly",
-        "Notifications in-app"
+        "Administration plateforme",
+        "Socle technique et portabilité"
       ]
     },
     {
-      "id": "33333333-3333-4333-8333-333333333333",
-      "createdAt": "2026-10-17T12:30:00.000Z",
-      "updatedAt": "2026-10-17T17:30:00.000Z",
-      "order": 2,
-      "name": "Auteur",
-      "kind": "créateur de contenu",
-      "need": "Écrire un article structuré (couverture, résumé, corps en blocs hiérarchiques), le classer dans la taxonomie + tags, gérer statut et visibilité, enrichir le contenu de blocs média locaux via l'utilitaire resolveMediaUrl, suivre les vues.",
-      "relatedFeatures": [
-        "Article éditorial complet",
-        "Taxonomie 3 niveaux",
-        "Tags libres slugifiés",
-        "Statut éditorial et visibilité",
-        "Blocs de contenu hiérarchiques",
-        "Résolution de médias locaux"
-      ]
-    },
-    {
-      "id": "44444444-4444-4444-8444-444444444444",
-      "createdAt": "2026-10-17T12:30:00.000Z",
-      "updatedAt": "2026-10-17T12:30:00.000Z",
-      "order": 3,
-      "name": "Modérateur / Éditeur",
-      "kind": "modération / édition",
-      "need": "Valider les brouillons, publier/archiver, modérer les commentaires (soft delete), gérer la taxonomie, intervenir dans les discussions de groupe.",
-      "relatedFeatures": [
-        "Statut éditorial et visibilité",
-        "Commentaires imbriqués",
-        "Taxonomie 3 niveaux",
-        "Discussions dans les groupes"
-      ]
-    },
-    {
-      "id": "55555555-5555-4555-8555-555555555555",
-      "createdAt": "2026-10-17T12:30:00.000Z",
-      "updatedAt": "2026-10-17T12:30:00.000Z",
-      "order": 4,
-      "name": "Propriétaire de groupe",
-      "kind": "communauté",
-      "need": "Créer un groupe, inviter des membres, attribuer des rôles (moderator/member), ouvrir des discussions, modérer les fils et les réponses, et être notifié des demandes d'adhésion.",
-      "relatedFeatures": [
-        "Groupes de discussion",
-        "Discussions dans les groupes",
-        "Commentaires imbriqués",
-        "Notifications in-app"
-      ]
-    },
-    {
-      "id": "66666666-6666-4666-8666-666666666666",
-      "createdAt": "2026-10-17T12:30:00.000Z",
-      "updatedAt": "2026-10-17T12:30:00.000Z",
-      "order": 5,
-      "name": "Administrateur",
-      "kind": "administration",
-      "need": "Gérer la taxonomie globale, les utilisateurs, les rôles, surveiller les signalements, exporter les données du blog, promouvoir d'autres admins.",
-      "relatedFeatures": [
-        "Taxonomie 3 niveaux",
-        "Statut éditorial et visibilité",
-        "Groupes de discussion",
-        "Socle storage & schéma canonique"
-      ]
-    },
-    {
-      "id": "77777777-7777-4777-8777-777777777777",
-      "createdAt": "2026-10-17T16:00:00.000Z",
-      "updatedAt": "2026-10-17T16:00:00.000Z",
-      "order": 6,
+      "id": "bbff2fd4-9b7f-4ffa-9e04-cd353309b4bb",
+      "createdAt": "2026-11-03T16:06:01.291Z",
+      "updatedAt": "2026-11-03T16:06:01.291Z",
+      "order": 0,
       "name": "Développeur / Intégrateur",
-      "kind": "outillage / migration / seed",
-      "need": "Bootstraper la démo, seeder le blog avec des fixtures versionnées, vérifier que data/blog.json reste valide (schéma Zod incluant les arbres content[]/comments[]/posts[]), exporter vers Prisma pour la prod (aplatissement des arbres), gérer les images locales /public/blog via un utilitaire et les basculer vers un CDN en prod via STORAGE_DRIVER.",
+      "kind": "dev",
+      "need": "Persona technique : schéma Prisma, seed, transactions, SSE.",
       "relatedFeatures": [
-        "Socle storage & schéma canonique",
-        "Résolution de médias locaux",
-        "Seed & portabilité Prisma"
+        "Socle technique et portabilité"
+      ]
+    },
+    {
+      "id": "c5584db2-da2f-45cf-a815-117403581e5e",
+      "createdAt": "2026-11-03T16:04:44.812Z",
+      "updatedAt": "2026-11-03T16:04:44.812Z",
+      "order": 2,
+      "name": "Administrateur metier",
+      "kind": "admin",
+      "need": "Persona back-office Miam-miam : valide les commerces, gère les litiges, ajuste les commissions.",
+      "relatedFeatures": [
+        "Administration plateforme",
+        "Attribution et espace livreur"
+      ]
+    },
+    {
+      "id": "a1b2c3d4-0002-4002-8002-000000000002",
+      "createdAt": "2026-11-03T19:00:00.000Z",
+      "updatedAt": "2026-11-03T19:00:00.000Z",
+      "order": 3,
+      "name": "Comptable / Gestionnaire financier",
+      "kind": "finance",
+      "need": "Persona financier : suit les abonnements commerces (49 €/mois mock), génère les factures (V2), réconcilie les paiements, calcule le CA plateforme, suit les impayés, exporte les données comptables. En MVP : consultation du dashboard admin + mock de facturation. En V2 : intégration Stripe + export comptable.",
+      "relatedFeatures": [
+        "Administration plateforme",
+        "Tableau de bord commerçant",
+        "Annulation et remboursement"
+      ]
+    },
+    {
+      "id": "4ccbba5f-e9e8-480e-981a-4c8e9024b570",
+      "createdAt": "2026-11-03T16:02:23.178Z",
+      "updatedAt": "2026-11-03T16:02:23.178Z",
+      "order": 4,
+      "name": "Propriétaire de commerce",
+      "kind": "owner",
+      "need": "Persona décisionnel : catalogue, prix, fidélité, embauche du staff, KPI.",
+      "relatedFeatures": [
+        "Catalogue produits et options",
+        "Fidélité et CRM",
+        "Tableau de bord commerçant"
+      ]
+    },
+    {
+      "id": "7819ab66-1069-4f35-9490-f763be4fc0d5",
+      "createdAt": "2026-11-03T16:01:47.117Z",
+      "updatedAt": "2026-11-03T16:01:47.117Z",
+      "order": 5,
+      "name": "Merchant (staff)",
+      "kind": "staff",
+      "need": "Persona terrain : prend les commandes au POS, ajuste le stock. Distinct du propriétaire car les permissions diffèrent.",
+      "relatedFeatures": [
+        "POS mobile-first",
+        "Stock et recettes",
+        "Commandes et statuts"
+      ]
+    },
+    {
+      "id": "a1b2c3d4-0003-4003-8003-000000000003",
+      "createdAt": "2026-11-03T19:00:00.000Z",
+      "updatedAt": "2026-11-03T19:00:00.000Z",
+      "order": 6,
+      "name": "DPO / Responsable conformité",
+      "kind": "dpo",
+      "need": "Persona conformité : valide les consentements (CGU, cookies), traite les demandes d'export et de suppression de compte, anonymise les commandes, tient le registre des traitements. En MVP : rôle partiel porté par l'Administrateur metier. En V2 : rôle dédié si volume > seuil CNIL.",
+      "relatedFeatures": [
+        "RGPD et consentement",
+        "Administration plateforme"
+      ]
+    },
+    {
+      "id": "a1b2c3d4-0001-4001-8001-000000000001",
+      "createdAt": "2026-11-03T19:00:00.000Z",
+      "updatedAt": "2026-11-03T19:00:00.000Z",
+      "order": 7,
+      "name": "Équipe Support / Modérateur",
+      "kind": "support",
+      "need": "Persona opérationnel : traite les litiges (commande non livrée, produit périmé, annulation contestée), modère les commerces et livreurs signalés, répond aux demandes RGPD (export, suppression de compte), gère les remboursements mock. Distinct de l'Administrateur metier qui valide les commerces et ajuste les commissions.",
+      "relatedFeatures": [
+        "Annulation et remboursement",
+        "RGPD et consentement",
+        "Administration plateforme",
+        "Notifications in-app"
+      ]
+    },
+    {
+      "id": "103d8783-f1de-4333-85ac-e61272c4f553",
+      "createdAt": "2026-11-03T16:00:57.555Z",
+      "updatedAt": "2026-11-03T16:00:57.555Z",
+      "order": 8,
+      "name": "Client",
+      "kind": "client",
+      "need": "Persona central côté demande : commander, suivre, cumuler des points.",
+      "relatedFeatures": [
+        "Commande client (catalogue + panier)",
+        "Fidélité et CRM",
+        "Suivi temps réel (SSE)",
+        "Notifications in-app"
+      ]
+    },
+    {
+      "id": "b7b7a5bb-7ddf-49ac-af68-478a21f82783",
+      "createdAt": "2026-11-03T16:02:57.160Z",
+      "updatedAt": "2026-11-03T16:03:26.122Z",
+      "order": 9,
+      "name": "Livreur indépendant",
+      "kind": "courier",
+      "need": "Persona logistique : accepte/refuse les courses, marque les statuts, suit sa rémunération.",
+      "relatedFeatures": [
+        "Attribution et espace livreur",
+        "Suivi temps réel (SSE)",
+        "Notifications in-app"
       ]
     }
   ],
   "epic": [
     {
-      "id": "e1000001-0001-4001-8001-000000000001",
-      "createdAt": "2026-10-17T14:00:00.000Z",
-      "updatedAt": "2026-10-17T17:30:00.000Z",
+      "id": "e1000007-0007-4007-8007-000000000007",
+      "createdAt": "2026-11-03T16:30:00.000Z",
+      "updatedAt": "2026-11-03T16:30:00.000Z",
       "order": 0,
-      "name": "Fondations éditoriales",
-      "goal": "Permettre à un auteur de créer un article structuré en blocs hiérarchiques, de le classer dans une taxonomie à 3 niveaux + tags, et de le publier selon un statut éditorial contrôlé. Sans cette brique, aucun contenu n'existe.",
-      "scope": "Inclus : CRUD Thème, Catégorie, Sous-catégorie (imbriqués dans taxonomy.themes[]), Tag (à plat dans taxonomy.tags[]) ; CRUD Article (couverture, résumé, corps en blocs hiérarchiques content[], temps de lecture) ; statut draft/published/archived + visibilité public/private/unlisted ; publication avec publishedAt ; blocs de contenu (section, paragraph, image, video, audio, code, embed, document) stockés en tableau plat avec parentId (racine = article.id), validés par Zod (cycle, profondeur ≤ 6, order unique), référençant les fichiers locaux via resolveMediaUrl ; TOC et ancres (#id) dérivées de la hiérarchie ; suppression récursive d'un bloc avec ses descendants.\nExclu : interactions lecteur (commentaires, likes, favoris) → epic Interactions. Groupes → epic Communauté. Recherche avancée → epic Découverte. Socle technique → epic Fondations techniques & portabilité.",
+      "name": "Socle multi-tenant par commerce",
+      "goal": "Poser le modèle de données qui conditionne toutes les autres features : un Commerce est une entité de premier niveau (id, slug, nom, type restaurant/food-truck/autre, description, couverture, adresse, coordonnées, horaires, visibilité, statut), et un utilisateur peut cumuler plusieurs rôles par commerce via une table de jointure commerce_members (userId, commerceId, role owner/staff/client/courier, status). Un utilisateur peut être client du commerce A et merchant du commerce B, jamais les deux sur le même commerce. Les rôles plateforme (admin, superAdmin) sont distincts des rôles commerce. Le schéma Zod canonique par domaine (Commerce, Produit, Ingrédient, Recette, Commande, MouvementStock, Récompense, PointFidelite, Livreur, Notification) sert de source unique de vérité pour les types et les Server Actions.",
+      "scope": "Inclus : modèle Prisma Commerce + CommerceMember, migration SQLite, schémas Zod canoniques par domaine, ActionResult partagé, seed de 3 à 5 commerces pilotes. Exclu : UI d'inscription/connexion, Better Auth, OAuth social, facturation, gestion des abonnements.",
       "personas": [
-        "Auteur",
-        "Modérateur / Éditeur",
-        "Administrateur"
+        "Propriétaire de commerce",
+        "Administrateur metier",
+        "Super-administrateur",
+        "Développeur / Intégrateur"
       ]
     },
     {
-      "id": "e1000002-0002-4002-8002-000000000002",
-      "createdAt": "2026-10-17T14:00:00.000Z",
-      "updatedAt": "2026-10-17T17:30:00.000Z",
+      "id": "e1000014-0014-4014-8014-000000000014",
+      "createdAt": "2026-11-03T16:30:00.000Z",
+      "updatedAt": "2026-11-03T16:30:00.000Z",
       "order": 1,
-      "name": "Interactions lecteur",
-      "goal": "Donner au lecteur connecté des moyens d'interagir avec le contenu : commenter, répondre, liker (article et commentaire), sauvegarder en favoris dans des dossiers. Modération non destructive via soft delete.",
-      "scope": "Inclus : commentaires imbriqués sous article (article.comments[] stocké en tableau plat avec parentId, racine = article.id, order=max+1, profondeur max 5) ; soft delete (deletedAt) ; likes par tableau likedBy[] sur article et commentaire ; favoris + dossiers sous userContent[userId] (unfiledFavorites[] et favoriteFolders[].articleIds[]) avec ordre ; toggle push/filter sous mutex ; helpers de tree partagés (buildTree, insertBlock, removeBlock récursif).\nExclu : discussions de groupe → epic Communauté. Signalements → epic Modération (non prioritaire).",
+      "name": "Authentification & RBAC par commerce",
+      "goal": "Fournir le socle d'identité et d'autorisation qui conditionne toutes les autres features du produit : un utilisateur s'authentifie via Better Auth (email/password + OAuth GitHub/Google optionnels), une session serveur est dérivée de getSession() et jamais d'un paramètre client. L'autorisation repose sur un modèle RBAC à deux niveaux : (1) rôles plateforme globaux (user, admin, superAdmin) stockés sur l'utilisateur, (2) rôles commerce par tenant (owner, staff, client, courier) portés par la table de jointure commerce_members (userId, commerceId, role, status). Un utilisateur peut cumuler plusieurs rôles par commerce et être client du commerce A tout en étant merchant du commerce B — jamais les deux sur le même commerce. Des helpers serveur (requireSession, requireRole, requireCommerceMember, requireCommerceRole) centralisent les gardes d'accès pour toutes les Server Actions et pages protégées. L'objectif est qu'aucune mutation ni aucune lecture sensible ne puisse être exécutée sans vérification serveur du rôle et du tenant, et que l'UI (masquage conditionnel des boutons, navigation adaptée) reste alignée sur ces règles sans jamais les remplacer.",
+      "scope": "Inclus : configuration Better Auth (adapter Prisma, email/password, OAuth GitHub/Google optionnels selon env, sessions 7 jours avec renouvellement), auth-client pour l'UI conditionnelle, wrapper getSession() mémoïsé via React.cache, table commerce_members avec rôles et statuts (pending/active/banned), helpers serveur requireSession / requireRole(global) / requireCommerceMember(commerceId) / requireCommerceRole(commerceId, roles[]) / requireSuperAdmin(), schémas Zod partagés (registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema, changePasswordSchema), pages /auth/login, /auth/register, /auth/welcome, composants PasswordInput et PasswordStrength, bootstrap admin idempotent (premier user ou email ADMIN_EMAIL promu admin), journal d'audit des changements de rôle sensibles. Exclu : gestion multi-facteurs (v2), SSO entreprise (v2), délégation de rôles inter-commerces (v2), inscription self-service d'un commerce sans validation admin (v2), facturation liée aux sièges (v2).",
       "personas": [
-        "Lecteur connecté",
-        "Modérateur / Éditeur"
+        "Client",
+        "Propriétaire de commerce",
+        "Merchant (staff)",
+        "Livreur indépendant",
+        "Administrateur metier",
+        "Super-administrateur",
+        "Développeur / Intégrateur"
       ]
     },
     {
-      "id": "e1000003-0003-4003-8003-000000000003",
-      "createdAt": "2026-10-17T14:00:00.000Z",
-      "updatedAt": "2026-10-17T17:30:00.000Z",
+      "id": "e1000008-0008-4008-8008-000000000008",
+      "createdAt": "2026-11-03T16:30:00.000Z",
+      "updatedAt": "2026-11-03T16:30:00.000Z",
       "order": 2,
-      "name": "Communauté",
-      "goal": "Créer des espaces thématiques où la communauté peut débattre : groupes (public/private/unlisted) avec owner + membres + rôles, fils de discussion, réponses imbriquées. Distinct de l'éditorial pur.",
-      "scope": "Inclus : CRUD Groupe (slug, nom, description, couverture, visibilité, ownerId) à plat dans groups[] ; members[] imbriqués + rôles (owner/moderator/member) et statut (active/pending/banned) ; demandes d'adhésion ; discussions imbriquées sous le groupe (group.discussions[]) ; posts[] en tableau plat avec parentId (racine = discussion.id) et order, soft delete (deletedAt) ; modération par owner/modérateur ; helpers de tree partagés avec content[] et comments[].\nExclu : articles → epic Fondations. Notifications → epic Notifications.",
+      "name": "Catalogue & POS",
+      "goal": "Donner au commerçant la matière première de toute commande (catalogue structuré par commerce : produits, catégories, options à prix delta, disponibilité, allergènes, temps de préparation, image) et l'outil de prise de commande terrain (POS mobile-first : type sur place / à emporter / livraison, ajout de produits avec options, panier, note, calcul du total, encaissement mock). Le POS crée une Commande et déclenche la déduction de stock et l'attribution de points fidélité dans la même transaction Prisma. L'objectif est qu'un food truck puisse encaisser un service complet depuis un téléphone, sans poste fixe.",
+      "scope": "Inclus : CRUD Produit / Catégorie / Option (image, prix, disponibilité, ordre, allergènes), UI catalogue commerçant, POS mobile-first avec panier et options, calcul de total (sous-total + frais), encaissement mock, création de Commande transactionnelle (stock + fidélité déclenchés). Exclu : paiement Stripe réel (v2), impression ticket (v2), gestion de plusieurs devises à l'écran (v2), programmes de prix dynamiques.",
       "personas": [
-        "Propriétaire de groupe",
-        "Lecteur connecté",
-        "Modérateur / Éditeur"
+        "Propriétaire de commerce",
+        "Merchant (staff)"
       ]
     },
     {
-      "id": "e1000004-0004-4004-8004-000000000004",
-      "createdAt": "2026-10-17T14:00:00.000Z",
-      "updatedAt": "2026-10-17T17:30:00.000Z",
+      "id": "e1000009-0009-4009-8009-000000000009",
+      "createdAt": "2026-11-03T16:30:00.000Z",
+      "updatedAt": "2026-11-03T16:30:00.000Z",
       "order": 3,
-      "name": "Découverte et rendu public",
-      "goal": "Rendre le contenu découvrable et rapide à charger : recherche plein texte (incluant le texte des blocs), filtres combinables (thème, catégorie, sous-catégorie, tag, auteur, statut, période, featured), pages publiques streamées via Cache Components avec skeleton fidèle.",
-      "scope": "Inclus : page listing public par taxonomie (theme/[slug], tag/[slug]) ; recherche + filtres combinables en mémoire ; page article publique /blog/[slug] avec reconstruction de l'arbre content[] (buildTree), TOC auto et ancres de section (#id), incrément de viewCount ; Cache Components (page sync + Suspense + composant async).\nExclu : recherche full-text avancée (index inversé) → hors scope v1, on reste sur un `includes` en mémoire filtré.",
+      "name": "Stock & recettes",
+      "goal": "Éliminer la double saisie POS / stock et les ruptures en service : un ingrédient (nom, unité, stock actuel, seuil d'alerte, coût unitaire) et une recette (produit → liste d'ingrédients avec quantités) permettent de déduire automatiquement le stock à chaque vente, dans la même transaction que la création de commande. Les mouvements de stock (vente, approvisionnement, ajustement, perte) sont horodatés et attribués à un auteur. Les alertes de rupture (stock ≤ seuil) remontent dans le POS et dans un tableau de bord. Une réconciliation périodique (inventaire manuel) crée un mouvement d'ajustement.",
+      "scope": "Inclus : CRUD Ingrédient / Recette, déduction transactionnelle à la vente, mouvements de stock avec horodatage/auteur, seuils d'alerte, tableau de bord des ruptures, réconciliation/inventaire manuel, restauration du stock en cas d'annulation de commande. Exclu : gestion multi-dépôts (v2), prédiction de consommation par ML (v3), facturation fournisseur (v2).",
       "personas": [
-        "Lecteur anonyme",
-        "Lecteur connecté",
-        "Auteur"
+        "Propriétaire de commerce",
+        "Merchant (staff)"
       ]
     },
     {
-      "id": "e1000005-0005-4005-8005-000000000005",
-      "createdAt": "2026-10-17T15:00:00.000Z",
-      "updatedAt": "2026-10-17T15:00:00.000Z",
+      "id": "e1000010-0010-4010-8010-000000000010",
+      "createdAt": "2026-11-03T16:30:00.000Z",
+      "updatedAt": "2026-11-03T16:30:00.000Z",
       "order": 4,
-      "name": "Notifications",
-      "goal": "Refermer la boucle communautaire : notifier un utilisateur lorsqu'on répond à son commentaire, lorsqu'il est invité dans un groupe, lorsque sa demande d'adhésion est approuvée, ou lorsqu'une nouvelle discussion est ouverte dans un groupe dont il est membre. Notifications in-app uniquement, avec badge non-lu et marquage lu.",
-      "scope": "Inclus : stockage sous userContent[userId].notifications[] ; types reply / group_invite / group_join_approved / group_new_discussion ; badge non-lu ; page /blog/notifications ; marquage lu (unitaire + tout lire) ; suppression ; plafond 200 + purge > 90 jours ; anti-auto-notification (pas de notif sur ses propres actions).\nExclu : notifications de like (anti-bruit assumé) ; email ; push navigateur ; préférences fines par type → hors scope v1.",
+      "name": "Commandes & livraison",
+      "goal": "Faire de la Commande l'objet pivot entre le POS, le client, le livreur et la fidélité : modèle Commande avec lignes, options, sous-total, frais, total, adresse, créneau/ETA, statut (received → preparing → ready → picked_up → delivering → delivered / cancelled) et transitions tracées (horodatage, acteur). Le client commande depuis le catalogue (catalogue + panier + adresse + créneau, 3 clics), voit son historique par commerce, suit sa commande en cours et peut rejouer une commande passée. Le livreur indépendant reçoit une attribution manuelle, accepte/refuse, marque les statuts et voit sa rémunération (forfait + pourcentage) transparente.",
+      "scope": "Inclus : modèle Commande + statuts + transitions tracées, annulation avec restauration du stock, parcours commande client (catalogue + panier + adresse + créneau + confirmation), historique client par commerce, recommandation en 1 clic, profil livreur, assignment manuel, acceptation/refus, marquage picked_up/delivering/delivered, calcul de rémunération livreur visible par livreur et admin. Exclu : algorithme d'optimisation de tournée (v2), géolocalisation temps réel du livreur (v2), preuve de livraison photo/QR (v2), paiement Stripe (v2).",
       "personas": [
-        "Lecteur connecté",
-        "Propriétaire de groupe",
-        "Modérateur / Éditeur"
+        "Client",
+        "Propriétaire de commerce",
+        "Merchant (staff)",
+        "Livreur indépendant",
+        "Administrateur metier"
       ]
     },
     {
-      "id": "e1000006-0006-4006-8006-000000000006",
-      "createdAt": "2026-10-17T16:00:00.000Z",
-      "updatedAt": "2026-10-17T17:30:00.000Z",
+      "id": "e1000011-0011-4011-8011-000000000011",
+      "createdAt": "2026-11-03T16:30:00.000Z",
+      "updatedAt": "2026-11-03T16:30:00.000Z",
       "order": 5,
-      "name": "Fondations techniques & portabilité",
-      "goal": "Poser le socle qui rend le fichier JSON fiable comme source de vérité (schéma Zod canonique incluant les arbres ContentBlock, storage atomique + mutex, helpers de tree partagés, bootstrap admin, utilitaire de résolution de médias locaux) et fournir les outils de seed / export Prisma / backup qui transforment le prototype en projet migrable en prod.",
-      "scope": "Inclus : schéma Zod canonique du document complet (schemaVersion === 2, ContentBlock récursif avec vérification cycle/profondeur/order, même contrôle pour comments[] et posts[], types z.infer) ; service readBlog/mutateBlog atomique + mutex global ; helpers de tree exportés (buildTree, insertBlock, removeBlock récursif, moveBlock avec anti-cycle, flattenBlocks) ; bootstrap admin idempotent ; utilitaire resolveMediaUrl + getMediaManifest + validateMediaPath (driver local MVP, driver distant prod via STORAGE_DRIVER) ; fixtures versionnées data/fixtures/blog.seed.json avec content[] en blocs ; script pnpm seed idempotent (upsert par slug, flag --reset, préservation des likedBy/comments) ; script pnpm export:prisma avec mapping testé (aplatissement content[]/comments[]/posts[] vers ContentBlock/Comment/Post avec parentId résolu) ; script pnpm backup + restore.\nExclu : toute interface utilisateur (ces US sont des fondations / scripts, pas des écrans) ; migration effective des données réelles (hors scope, l'export produit le seed Prisma prêt à l'emploi).",
+      "name": "Fidélité & CRM",
+      "goal": "Compléter le POS par la rétention : programme de fidélité par commerce (règle configurable, ex. 1 € = 1 point), catalogue de récompenses (réduction, produit offert, palier), historique client (solde, récompenses utilisées), CRM léger avec segments calculés à partir des commandes (nouveau, régulier, VIP, dormant). Les points sont attribués dans la même transaction que la commande. Un client cumule des points par commerce, sans fusion inter-enseignes — ce qui évite d'ajouter un outil tiers et donne au commerçant un vrai levier de rétention.",
+      "scope": "Inclus : règle de gain configurable par commerce, catalogue de récompenses, attribution transactionnelle des points, solde et historique client par commerce, consommation de récompenses, calcul des segments CRM (nouveau/régulier/VIP/dormant), vue commerçant (top clients, points distribués). Exclu : programme de parrainage (v2), cartes de fidélité physiques/QR (v2), segmentation ML (v3), cashback réel (v2).",
       "personas": [
-        "Développeur / Intégrateur",
-        "Administrateur"
+        "Propriétaire de commerce",
+        "Client"
+      ]
+    },
+    {
+      "id": "e1000012-0012-4012-8012-000000000012",
+      "createdAt": "2026-11-03T16:30:00.000Z",
+      "updatedAt": "2026-11-03T16:30:00.000Z",
+      "order": 6,
+      "name": "Temps réel & notifications",
+      "goal": "Refermer la boucle terrain : le client et le livreur suivent l'état de la commande en temps réel (SSE ou polling court — pas de WebSocket ni d'infra temps réel dédiée en MVP), le commerçant voit un tableau de bord des commandes en cours avec compteurs par statut. Des notifications in-app (stockées par utilisateur, avec badge non-lu, page dédiée, marquage lu, suppression, plafond 200 entrées et purge > 90 jours, anti-auto-notification) couvrent les événements new_order, order_status_changed, order_assigned, stock_low, reward_unlocked. Sans ce socle, personne ne surveille les écrans.",
+      "scope": "Inclus : SSE/polling court côté client/livreur, tableau de bord commerçant des commandes en cours + compteurs par statut, modèle Notification (type, actorId, targetType, targetId, excerpt, readAt, createdAt), badge non-lu, page notifications, marquage lu unitaire + tout lire, suppression, plafond 200, purge 90 jours, anti-auto-notification, notifications par événement. Exclu : email (v2), push mobile (v2), préférences fines par type (v2), WebSocket haute fréquence (v2+).",
+      "personas": [
+        "Client",
+        "Livreur indépendant",
+        "Propriétaire de commerce",
+        "Merchant (staff)"
+      ]
+    },
+    {
+      "id": "e1000013-0013-4013-8013-000000000013",
+      "createdAt": "2026-11-03T16:30:00.000Z",
+      "updatedAt": "2026-11-03T16:30:00.000Z",
+      "order": 7,
+      "name": "Dashboard & Admin plateforme",
+      "goal": "Rendre le produit exploitable en production : un tableau de bord commerçant consolidé (CA jour/semaine/mois, commandes par statut, top produits, alertes de stock bas, solde de points distribués, top clients) avec cartes cliquables et rendu streamé (Cache Components + skeleton fidèle), et un back-office admin plateforme (validation/suspension des commerces, gestion des utilisateurs et de leurs rôles par commerce, modération, configuration des règles globales — taux de commission, rémunération livreur par défaut —, journal d'audit des actions sensibles). Réservé aux rôles admin/superAdmin distincts des rôles commerce.",
+      "scope": "Inclus : dashboard commerçant (CA jour/semaine/mois, commandes par statut, top produits, alertes stock, points distribués, top clients), cartes cliquables, rendu streamé Cache Components, back-office admin (validation commerces, gestion utilisateurs + rôles par commerce, modération commerces/livreurs signalés, config commissions + rémunération livreur par défaut, journal d'audit). Exclu : BI avancée (v2), export comptable (v2), self-service onboarding commerçant sans validation admin (v2).",
+      "personas": [
+        "Propriétaire de commerce",
+        "Merchant (staff)",
+        "Administrateur metier",
+        "Super-administrateur"
       ]
     }
   ],
   "userStory": [
     {
-      "id": "us1100001-0001-4001-8001-000000000001",
-      "createdAt": "2026-10-17T14:00:00.000Z",
-      "updatedAt": "2026-10-17T14:00:00.000Z",
+      "id": "us2000001-0001-4001-8001-000000000001",
+      "createdAt": "2026-11-03T17:00:00.000Z",
+      "updatedAt": "2026-11-03T17:00:00.000Z",
       "order": 0,
-      "title": "CRUD Thème",
-      "story": "En tant qu'Administrateur, je veux créer, lister, éditer et supprimer des thèmes (nom, description, couleur, icône, ordre) afin de structurer la navigation éditoriale de premier niveau.",
-      "acceptance": "Étant donné que je suis authentifié avec le rôle administrateur, quand je soumets le formulaire de création d'un thème valide, alors le thème est ajouté à taxonomy.themes[] avec slug généré (slugifyWithFallback + findFreeSlug) et order = max + 1, sous mutex. Le listing affiche les thèmes triés par order. La suppression retire le thème et échoue si des catégories y sont rattachées. Les erreurs Zod sont renvoyées dans ActionResult.",
-      "estimate": "3",
-      "epicId": "e1000001-0001-4001-8001-000000000001"
+      "title": "Créer un commerce multi-tenant",
+      "story": "En tant que Propriétaire de commerce, je veux créer un commerce (nom, type, adresse, horaires, visibilité) afin d'ouvrir mon enseigne sur Miam-miam Listo.",
+      "acceptance": "Étant donné que je suis authentifié et que j'ai le rôle admin ou superAdmin, quand je soumets le formulaire de création d'un commerce valide, alors le commerce est créé avec un slug unique (slugifyWithFallback + findFreeSlug), statut=actif, et je deviens automatiquement membre avec role=owner et status=active dans commerce_members. Un autre utilisateur peut être client de ce commerce et merchant d'un autre commerce, jamais les deux sur le même. Les erreurs Zod sont renvoyées dans ActionResult.",
+      "estimate": "5",
+      "epicId": "e1000007-0007-4007-8007-000000000007"
     },
     {
-      "id": "us1100002-0002-4002-8002-000000000002",
-      "createdAt": "2026-10-17T14:00:00.000Z",
-      "updatedAt": "2026-10-17T14:00:00.000Z",
+      "id": "us2000002-0002-4002-8002-000000000002",
+      "createdAt": "2026-11-03T17:00:00.000Z",
+      "updatedAt": "2026-11-03T17:00:00.000Z",
       "order": 1,
-      "title": "CRUD Catégorie",
-      "story": "En tant qu'Administrateur, je veux créer, lister, éditer et supprimer des catégories rattachées à un thème afin d'organiser la navigation au deuxième niveau.",
-      "acceptance": "Étant donné un thème existant, quand je crée une catégorie, elle est poussée dans theme.categories[] avec slug unique et order = max + 1 dans sa branche. Le listing affiche catégorie + nom du thème parent. La suppression échoue si des sous-catégories y sont rattachées. Le formulaire liste les thèmes disponibles via un select.",
-      "estimate": "3",
-      "epicId": "e1000001-0001-4001-8001-000000000001"
+      "title": "S'authentifier et lire son rôle",
+      "story": "En tant qu'utilisateur, je veux m'inscrire, me connecter et voir mon rôle par commerce afin d'accéder aux fonctionnalités adaptées à mon profil.",
+      "acceptance": "Étant donné que je soumets le formulaire d'inscription, alors mon compte est créé via Better Auth et je suis redirigé vers /auth/welcome. À chaque requête serveur, getSession() dérive mon userId (jamais un paramètre client). Mes rôles commerce sont lus depuis commerce_members (role owner/staff/client/courier, status pending/active/banned). Les helpers requireSession / requireRole / requireCommerceMember / requireCommerceRole lèvent une erreur 401/403 si la vérification échoue. Le premier utilisateur est promu admin via bootstrap idempotent (ou email ADMIN_EMAIL).",
+      "estimate": "5",
+      "epicId": "e1000014-0014-4014-8014-000000000014"
     },
     {
-      "id": "us1100003-0003-4003-8003-000000000003",
-      "createdAt": "2026-10-17T14:00:00.000Z",
-      "updatedAt": "2026-10-17T14:00:00.000Z",
+      "id": "us2000003-0003-4003-8003-000000000003",
+      "createdAt": "2026-11-03T17:00:00.000Z",
+      "updatedAt": "2026-11-03T17:00:00.000Z",
       "order": 2,
-      "title": "CRUD Sous-catégorie",
-      "story": "En tant qu'Administrateur, je veux créer, lister, éditer et supprimer des sous-catégories rattachées à une catégorie afin d'affiner la navigation au troisième niveau.",
-      "acceptance": "Étant donné une catégorie existante, quand je crée une sous-catégorie, elle est poussée dans category.subCategories[] avec slug unique et order = max + 1. Le listing affiche sous-catégorie + catégorie + thème parent. La suppression retire la sous-catégorie et laisse les articles associés avec subCategoryId orphelin (affichage fallback).",
-      "estimate": "3",
-      "epicId": "e1000001-0001-4001-8001-000000000001"
+      "title": "Gérer le catalogue produits",
+      "story": "En tant que Propriétaire de commerce ou Merchant, je veux créer, éditer, lister et supprimer des produits (nom, prix, catégorie, options, image, disponibilité) afin de tenir mon catalogue à jour.",
+      "acceptance": "Quand je crée un produit, il est ajouté à produits[] avec order=max+1, disponibilité=disponible, et ses options (taille, suppléments) sont portées par options[] avec un prix delta. Un client ne voit que les produits disponibles. Le listing est responsive (grid-cols-1 sm:grid-cols-2 lg:grid-cols-3). Les mutations passent par des Server Actions et revalident /scrum/{flow}/catalogue.",
+      "estimate": "8",
+      "epicId": "e1000008-0008-4008-8008-000000000008"
     },
     {
-      "id": "us1100004-0004-4004-8004-000000000004",
-      "createdAt": "2026-10-17T14:00:00.000Z",
-      "updatedAt": "2026-10-17T14:00:00.000Z",
+      "id": "us2000004-0004-4004-8004-000000000004",
+      "createdAt": "2026-11-03T17:00:00.000Z",
+      "updatedAt": "2026-11-03T17:00:00.000Z",
       "order": 3,
-      "title": "CRUD Tag",
-      "story": "En tant qu'Auteur, je veux créer et lister des tags transverses (nom, couleur, slug) afin d'indexer librement mes articles au-delà de la taxonomie stricte.",
-      "acceptance": "Quand je crée un tag, il est ajouté à taxonomy.tags[] avec un slug unique dédoublonné case-insensitive. Le listing affiche le nombre d'articles dont tagIds contient ce tag. Un auteur peut attacher n'importe quel tag existant à son article sans permission spéciale. La suppression d'un tag le retire de tous les article.tagIds.",
-      "estimate": "2",
-      "epicId": "e1000001-0001-4001-8001-000000000001"
+      "title": "Prendre une commande au POS",
+      "story": "En tant que Merchant (staff), je veux prendre une commande (sur place / à emporter / livraison), ajouter des produits avec options, gérer le panier et valider l'encaissement mock afin de servir un client en service.",
+      "acceptance": "Le POS est mobile-first et utilisable depuis un téléphone (pas de poste fixe). Le panier affiche sous-total + frais et le total. À la validation, une Commande est créée et déclenche dans la même transaction Prisma : la déduction de stock (via les recettes des produits) et l'attribution de points fidélité. Les erreurs de stock (ingrédient sous zéro) sont rejetées et le panier reste intact. Un toast confirme la création et la commande apparaît dans /scrum/{flow}/commandes.",
+      "estimate": "13",
+      "epicId": "e1000008-0008-4008-8008-000000000008"
     },
     {
-      "id": "us1100005-0005-4005-8005-000000000005",
-      "createdAt": "2026-10-17T14:00:00.000Z",
-      "updatedAt": "2026-10-17T17:30:00.000Z",
+      "id": "us2000005-0005-4005-8005-000000000005",
+      "createdAt": "2026-11-03T17:00:00.000Z",
+      "updatedAt": "2026-11-03T17:00:00.000Z",
       "order": 4,
-      "title": "CRUD Article",
-      "story": "En tant qu'Auteur, je veux créer, éditer, lister et supprimer mes articles (titre, résumé, corps en blocs hiérarchiques, couverture, taxonomie, tags, featured) afin de publier du contenu structuré.",
-      "acceptance": "Quand je crée un article avec status=draft, il est ajouté à articles[] avec authorId dérivé de getSession() (jamais d'un paramètre client), readingTimeMin calculé (mots/200 sur le texte des blocs paragraph), viewCount=0, order=max+1, tagIds=[], content=[], comments=[], likedBy=[]. Le formulaire est un éditeur de blocs : ajout (section, paragraph, image, video, audio, code, embed, document), déplacement (parentId + order) via moveBlock (anti-cycle), suppression récursive via removeBlock (un bloc supprimé supprime ses descendants). Chaque bloc reçoit id (uuid), parentId (racine = article.id), order=max+1 parmi les frères. La profondeur est plafonnée à 6. Le listing admin affiche mes articles avec badge de statut + boutons Éditer/Supprimer. Le formulaire valide via articleInputSchema (blocs inclus, superRefine sur cycle/profondeur/order). Le slug est unique et l'URL publique /blog/[slug] est réservée même en draft. Un bouton Preview permet à l'auteur/admin de voir l'article en draft à /blog/[slug]?preview=1 (avec un bandeau « brouillon » visible uniquement par l'auteur et les admins). La règle de concurrence est last-write-wins documentée.",
-      "estimate": "8",
-      "epicId": "e1000001-0001-4001-8001-000000000001"
+      "title": "Déduire le stock automatiquement",
+      "story": "En tant que Propriétaire de commerce, je veux que la vente d'un produit déduise automatiquement les ingrédients de sa recette afin d'éviter les doubles saisies et les ruptures en service.",
+      "acceptance": "Quand une commande est créée au POS ou côté client, chaque ligne produit résout sa recette et déduit les quantités d'ingrédients dans la même transaction. Un mouvement de stock (vente) est enregistré avec horodatage + acteur. Si le stock résultant est ≤ seuil d'alerte, une alerte de rupture est affichée dans le POS et dans le tableau de bord. Une annulation de commande restaure le stock déduit. La réconciliation (inventaire manuel) crée un mouvement d'ajustement.",
+      "estimate": "13",
+      "epicId": "e1000009-0009-4009-8009-000000000009"
     },
     {
-      "id": "us1100006-0006-4006-8006-000000000006",
-      "createdAt": "2026-10-17T14:00:00.000Z",
-      "updatedAt": "2026-10-17T17:30:00.000Z",
+      "id": "us2000006-0006-4006-8006-000000000006",
+      "createdAt": "2026-11-03T17:00:00.000Z",
+      "updatedAt": "2026-11-03T17:00:00.000Z",
       "order": 5,
-      "title": "Publication et archivage d'article",
-      "story": "En tant qu'Auteur ou Modérateur, je veux publier (draft→published) ou archiver (→archived) un article afin de contrôler son cycle de vie éditorial.",
-      "acceptance": "Quand je publie un article, status=published et publishedAt est renseigné (une seule fois). Un article published reste éditable (updatedAt change) sans perdre publishedAt. L'archivage ne supprime pas l'article et préserve le content[], les commentaires, likedBy et favoris existants. Un article archived n'apparaît plus dans le listing public mais reste accessible par URL directe si visibilité=unlisted.",
-      "estimate": "3",
-      "epicId": "e1000001-0001-4001-8001-000000000001"
-    },
-    {
-      "id": "us1100007-0007-4007-8007-000000000007",
-      "createdAt": "2026-10-17T14:00:00.000Z",
-      "updatedAt": "2026-10-17T17:30:00.000Z",
-      "order": 6,
-      "title": "Ajouter un bloc média",
-      "story": "En tant qu'Auteur, je veux ajouter un bloc média (image, vidéo, audio, document, embed) dans le contenu de mon article, avec alt, caption, crédit, dimensions, durée, en référençant les fichiers locaux de /public/blog/ via l'utilitaire de résolution.",
-      "acceptance": "Depuis l'éditeur de blocs d'article, je peux ajouter un bloc média en choisissant un fichier existant dans /public/blog/ (liste fournie par getMediaManifest()) ou en saisissant un chemin relatif. Le bloc est poussé dans article.content[] avec parentId (racine = article.id ou un autre bloc), order = max + 1 parmi les frères, et les champs spécifiques au type (image : alt requis + crédit/caption optionnels ; video/audio : durée ; document : titre ; embed : url + provider). La validation Zod par type de bloc vérifie alt, paths, etc. Le chemin est validé côté serveur par validateMediaPath() : rejet des chemins avec '..' ou absolus, vérification fs.existsSync(). L'URL publique est produite par resolveMediaUrl() (MVP : /blog/[path] ; prod : via STORAGE_DRIVER). Le rendu public affiche les blocs média dans l'ordre de l'arbre (avec caption + crédit si présents). La suppression d'un bloc média ne supprime que lui et ses descendants (pas l'article).",
-      "estimate": "5",
-      "epicId": "e1000001-0001-4001-8001-000000000001"
-    },
-    {
-      "id": "us2100001-0001-4001-8001-000000000011",
-      "createdAt": "2026-10-17T14:00:00.000Z",
-      "updatedAt": "2026-10-17T17:30:00.000Z",
-      "order": 7,
-      "title": "Commenter un article",
-      "story": "En tant que Lecteur connecté, je veux poster un commentaire sur un article publié afin de réagir au contenu.",
-      "acceptance": "Étant donné que je suis authentifié (getSession côté serveur), quand je soumets un commentaire (content non vide), il est poussé dans article.comments[] avec authorId issu de la session, parentId=article.id (commentaire racine), order=max+1, likedBy=[] et deletedAt=null. Le fil est reconstruit à l'affichage par buildTree (parentId racine = article.id) et trié par createdAt ASC. Un commentaire soft-deleted (deletedAt non null) affiche « Commentaire supprimé » à la place du contenu. Un visiteur anonyme voit un bouton « Se connecter pour commenter ».",
-      "estimate": "3",
-      "epicId": "e1000002-0002-4002-8002-000000000002"
-    },
-    {
-      "id": "us2100002-0002-4002-8002-000000000012",
-      "createdAt": "2026-10-17T14:00:00.000Z",
-      "updatedAt": "2026-10-17T17:30:00.000Z",
-      "order": 8,
-      "title": "Répondre à un commentaire",
-      "story": "En tant que Lecteur connecté, je veux répondre à un commentaire existant afin de poursuivre une discussion filaire.",
-      "acceptance": "Quand je réponds à un commentaire, ma réponse est poussée dans article.comments[] avec parentId=commentaire parent (pas de replies[] imbriqué), order=max+1. La hiérarchie est reconstruite à l'affichage par buildTree (parentId racine = article.id). Le fil affiche les réponses imbriquées avec indentation visuelle. La suppression d'un commentaire parent ne supprime pas les réponses (elles restent visibles avec mention « en réponse à un commentaire supprimé »). La profondeur d'imbrication est plafonnée à 5.",
-      "estimate": "3",
-      "epicId": "e1000002-0002-4002-8002-000000000002"
-    },
-    {
-      "id": "us2100003-0003-4003-8003-000000000013",
-      "createdAt": "2026-10-17T14:00:00.000Z",
-      "updatedAt": "2026-10-17T14:00:00.000Z",
-      "order": 9,
-      "title": "Liker un article",
-      "story": "En tant que Lecteur connecté, je veux liker/unliker un article afin de marquer mon appréciation.",
-      "acceptance": "Quand je clique sur le bouton Like d'un article, mon userId est ajouté à article.likedBy[] (push) sous mutex ; un second clic le retire (filter). Le compteur de likes = article.likedBy.length, mis à jour de manière optimiste côté client puis revalidé. L'unicité est garantie par construction (le service vérifie l'absence avant push). Le bouton est aria-pressed=true quand mon userId figure dans likedBy.",
-      "estimate": "2",
-      "epicId": "e1000002-0002-4002-8002-000000000002"
-    },
-    {
-      "id": "us2100004-0004-4004-8004-000000000014",
-      "createdAt": "2026-10-17T14:00:00.000Z",
-      "updatedAt": "2026-10-17T14:00:00.000Z",
-      "order": 10,
-      "title": "Liker un commentaire",
-      "story": "En tant que Lecteur connecté, je veux liker/unliker un commentaire afin de saluer une contribution pertinente.",
-      "acceptance": "Comportement identique au like article mais sur comment.likedBy[] (ou post.likedBy[] dans un groupe). La même Server Action toggleLikeAction gère les deux cas via un chemin de cible typé. Le compteur par commentaire est affiché à côté du bouton. Un utilisateur peut liker son propre commentaire (pas de restriction).",
-      "estimate": "2",
-      "epicId": "e1000002-0002-4002-8002-000000000002"
-    },
-    {
-      "id": "us2100005-0005-4005-8005-000000000015",
-      "createdAt": "2026-10-17T14:00:00.000Z",
-      "updatedAt": "2026-10-17T14:00:00.000Z",
-      "order": 11,
-      "title": "Sauvegarder un favori",
-      "story": "En tant que Lecteur connecté, je veux sauvegarder un article en favori afin de le retrouver plus tard.",
-      "acceptance": "Quand je clique sur le bouton Favori d'un article, son id est ajouté à userContent[moi].unfiledFavorites[] (ou au dossier choisi). Un second clic le retire. Le bouton est aria-pressed=true quand l'article est présent dans mes favoris. La page /blog/user/favorites liste mes favoris triés par createdAt DESC (ordre d'ajout déduit du tableau). L'unicité est garantie par vérification d'absence avant push, sous mutex.",
-      "estimate": "3",
-      "epicId": "e1000002-0002-4002-8002-000000000002"
-    },
-    {
-      "id": "us2100006-0006-4006-8006-000000000016",
-      "createdAt": "2026-10-17T14:00:00.000Z",
-      "updatedAt": "2026-10-17T14:00:00.000Z",
-      "order": 12,
-      "title": "Organiser les favoris en dossiers",
-      "story": "En tant que Lecteur connecté, je veux organiser mes favoris dans des dossiers nommés (veille, tutoriels, à lire) afin de structurer ma lecture.",
-      "acceptance": "Je peux créer un dossier userContent[moi].favoriteFolders[] (name, order=max+1, articleIds=[]). Depuis le bouton Favori, je peux choisir un dossier existant (déplacement d'id entre unfiledFavorites et folder.articleIds). La page favorites liste mes dossiers triés par order et, sous chacun, les favoris correspondants. Supprimer un dossier remet ses articleIds dans unfiledFavorites[] (aucun favori perdu).",
-      "estimate": "3",
-      "epicId": "e1000002-0002-4002-8002-000000000002"
-    },
-    {
-      "id": "us3100001-0001-4001-8001-000000000021",
-      "createdAt": "2026-10-17T14:00:00.000Z",
-      "updatedAt": "2026-10-17T14:00:00.000Z",
-      "order": 13,
-      "title": "Créer un groupe",
-      "story": "En tant que Propriétaire de groupe, je veux créer un groupe (slug, nom, description, couverture, visibilité) afin d'ouvrir un espace de discussion thématique.",
-      "acceptance": "Quand je crée un groupe, il est ajouté à groups[] avec ownerId dérivé de getSession(), visibility=public|private|unlisted, slug unique. Je deviens automatiquement membre avec role=owner et status=active dans members[]. Le groupe apparaît dans /blog/community. La page /blog/community/[groupSlug] affiche header + nombre de membres + liste des discussions. Les groupes private sont masqués du listing public.",
-      "estimate": "5",
-      "epicId": "e1000003-0003-4003-8003-000000000003"
-    },
-    {
-      "id": "us3100002-0002-4002-8002-000000000022",
-      "createdAt": "2026-10-17T14:00:00.000Z",
-      "updatedAt": "2026-10-17T14:00:00.000Z",
-      "order": 14,
-      "title": "Rejoindre un groupe",
-      "story": "En tant que Lecteur connecté, je veux rejoindre un groupe public ou demander à rejoindre un groupe private afin de participer aux discussions.",
-      "acceptance": "Un groupe public permet un join immédiat (members[] reçoit {userId, role:member, status:active}). Un groupe private génère une entrée status=pending visible par l'owner. Un groupe unlisted est accessible par lien direct uniquement. Le propriétaire voit la demande dans /blog/community/[groupSlug]/requests et peut approuver (status=active) ou refuser (retrait de members[]). Un membre peut quitter le groupe (sauf l'owner).",
-      "estimate": "5",
-      "epicId": "e1000003-0003-4003-8003-000000000003"
-    },
-    {
-      "id": "us3100003-0003-4003-8003-000000000023",
-      "createdAt": "2026-10-17T14:00:00.000Z",
-      "updatedAt": "2026-10-17T17:30:00.000Z",
-      "order": 15,
-      "title": "Ouvrir une discussion",
-      "story": "En tant que Membre de groupe, je veux ouvrir une discussion (titre, contenu) afin de lancer un débat dans le groupe.",
-      "acceptance": "Étant donné que je suis membre actif du groupe, quand je crée une discussion, elle est poussée dans group.discussions[] avec authorId issu de la session, title, content, posts=[]. Elle apparaît en tête du listing (tri createdAt DESC). La page /blog/community/[groupSlug]/[discussionId] affiche le post racine (discussion.content) + les réponses (posts[] en tableau plat avec parentId racine = discussion.id, reconstruit par buildTree). Un non-membre voit un bouton « Rejoindre pour participer ».",
-      "estimate": "3",
-      "epicId": "e1000003-0003-4003-8003-000000000003"
-    },
-    {
-      "id": "us3100004-0004-4004-8004-000000000024",
-      "createdAt": "2026-10-17T14:00:00.000Z",
-      "updatedAt": "2026-10-17T17:30:00.000Z",
-      "order": 16,
-      "title": "Répondre dans une discussion",
-      "story": "En tant que Membre de groupe, je veux répondre à une discussion avec des réponses imbriquées afin de poursuivre un échange structuré.",
-      "acceptance": "Quand je réponds à une discussion, ma réponse est poussée dans discussion.posts[] avec parentId (racine = discussion.id pour une réponse top-level, ou id d'un autre post pour une réponse imbriquée) et order=max+1. La hiérarchie est reconstruite par buildTree (même pattern que content[] et comments[]). Le fil affiche les réponses imbriquées avec soft delete (deletedAt). Un membre peut liker une réponse (post.likedBy[]). La suppression d'une réponse parente préserve les enfants avec mention « en réponse à une réponse supprimée ». Profondeur max 5.",
-      "estimate": "5",
-      "epicId": "e1000003-0003-4003-8003-000000000003"
-    },
-    {
-      "id": "us3100005-0005-4005-8005-000000000025",
-      "createdAt": "2026-10-17T14:00:00.000Z",
-      "updatedAt": "2026-10-17T14:00:00.000Z",
-      "order": 17,
-      "title": "Modérer un groupe",
-      "story": "En tant que Propriétaire ou Modérateur de groupe, je veux modérer les discussions et réponses (soft delete, changement de rôle, bannissement) afin de maintenir un espace sain.",
-      "acceptance": "Le propriétaire peut passer un member à role=moderator ou le révoquer. Un moderator peut soft-delete toute réponse du groupe (deletedAt non null). L'owner ne peut pas être banni (status reste active). La modération est journalisée dans un tableau auditLog[] du fichier JSON (actorId, action=group.moderate, resourceId). Un membre avec status=banned ne peut plus poster de réponse ni créer de discussion.",
-      "estimate": "5",
-      "epicId": "e1000003-0003-4003-8003-000000000003"
-    },
-    {
-      "id": "us4100001-0001-4001-8001-000000000031",
-      "createdAt": "2026-10-17T14:00:00.000Z",
-      "updatedAt": "2026-10-17T17:30:00.000Z",
-      "order": 18,
-      "title": "Rechercher un article",
-      "story": "En tant que Lecteur anonyme, je veux rechercher un article par titre ou résumé afin de trouver du contenu pertinent sans naviguer dans la taxonomie.",
-      "acceptance": "La page /blog/search accepte un query param `q`. La recherche s'applique en mémoire sur title + summary + texte des blocs paragraph du content[] (case-insensitive, insensible aux accents via normalizeToLowercase). Seuls les articles published + visibility=public sont retournés. Le résultat est paginé (20 par page). Une recherche vide affiche un état vide avec suggestions de tags populaires.",
-      "estimate": "5",
-      "epicId": "e1000004-0004-4004-8004-000000000004"
-    },
-    {
-      "id": "us4100002-0002-4002-8002-000000000032",
-      "createdAt": "2026-10-17T14:00:00.000Z",
-      "updatedAt": "2026-10-17T14:00:00.000Z",
-      "order": 19,
-      "title": "Filtrer les articles",
-      "story": "En tant que Lecteur, je veux filtrer les articles par thème, catégorie, sous-catégorie, tag, auteur, période et featured afin d'affiner ma découverte.",
-      "acceptance": "Les filtres sont combinables via query params (`?theme=x&tag=y&author=z`). L'application simultanée de plusieurs filtres retourne l'intersection. Un panneau de filtres latéral (desktop) / drawer (mobile) affiche les facettes disponibles avec compteurs. Les filtres actifs sont affichés en chips supprimables. L'URL est partageable (state dans query params, pas dans un store).",
+      "title": "Commander en 3 clics",
+      "story": "En tant que Client, je veux parcourir le catalogue d'un commerce, remplir mon panier, choisir mon mode (livraison / à emporter / sur place) et valider ma commande en 3 clics afin de gagner du temps.",
+      "acceptance": "Le parcours est : catalogue → panier → confirmation (3 étapes max). Le panier affiche les options (taille, suppléments), la quantité, et le total. En livraison, l'adresse est obligatoire ; le créneau ou l'ETA est affiché. Après validation, le statut est received et le client suit sa commande en temps réel. Le paiement est mock en MVP. Le client voit son historique de commandes par commerce et peut recommander une commande passée en 1 clic.",
       "estimate": "8",
-      "epicId": "e1000004-0004-4004-8004-000000000004"
+      "epicId": "e1000010-0010-4010-8010-000000000010"
     },
     {
-      "id": "us4100003-0003-4003-8003-000000000033",
-      "createdAt": "2026-10-17T14:00:00.000Z",
-      "updatedAt": "2026-10-17T17:30:00.000Z",
-      "order": 20,
-      "title": "Lire un article (page publique)",
-      "story": "En tant que Lecteur anonyme, je veux consulter un article publié à l'URL /blog/[slug] afin de lire le contenu complet avec ses médias.",
-      "acceptance": "La page /blog/[slug] affiche titre, couverture, résumé, corps rendu par reconstruction de l'arbre content[] (buildTree + rendu récursif par type de bloc), temps de lecture, date, auteur, tags, compteur de likes (likedBy.length). Une table des matières (TOC) est générée à partir des blocs section (id, title, profondeur) et affichée dans une sidebar. Chaque bloc section porte id={block.id} pour le deep-linking (#id). Les URLs des médias sont résolues via resolveMediaUrl. Chaque visite incrémente viewCount (une seule fois par session, cookie technique — toléré en démo, non fiable par nature), sous mutateBlog pour éviter la race avec les likes. Un article draft renvoie 404 pour un visiteur anonyme, visible pour son auteur. Un article archived renvoie 404 sauf si visibilité=unlisted. Le rendu utilise Cache Components (page sync + Suspense + composant async).",
-      "estimate": "5",
-      "epicId": "e1000004-0004-4004-8004-000000000004"
+      "id": "us2000007-0007-4007-8007-000000000007",
+      "createdAt": "2026-11-03T17:00:00.000Z",
+      "updatedAt": "2026-11-03T17:00:00.000Z",
+      "order": 6,
+      "title": "Cumuler des points fidélité",
+      "story": "En tant que Client, je veux cumuler des points à chaque commande et voir mon solde par commerce afin d'être récompensé pour ma fidélité.",
+      "acceptance": "Chaque commande attribue des points selon la règle configurable du commerce (ex. 1 € = 1 point), dans la même transaction que la commande. Mon solde est visible par commerce (pas de fusion inter-enseignes). Un catalogue de récompenses (réduction, produit offert, palier) permet de consommer les points. Mon historique affiche les points gagnés et les récompenses utilisées. Le commerçant me voit dans un segment CRM (nouveau / régulier / VIP / dormant) calculé à partir de mes commandes.",
+      "estimate": "8",
+      "epicId": "e1000011-0011-4011-8011-000000000011"
     },
     {
-      "id": "us4100004-0004-4004-8004-000000000034",
-      "createdAt": "2026-10-17T14:00:00.000Z",
-      "updatedAt": "2026-10-17T14:00:00.000Z",
-      "order": 21,
-      "title": "Naviguer par taxonomie",
-      "story": "En tant que Lecteur anonyme, je veux parcourir /blog/theme/[slug], /blog/theme/[slug]/[category]/[sub] et /blog/tag/[slug] afin d'explorer le contenu par thème.",
-      "acceptance": "Chaque page taxonomique liste les articles published+public correspondants, triés par publishedAt DESC, paginés (20 par page). Le breadcrumb affiche la hiérarchie complète (Thème > Catégorie > Sous-catégorie) reconstruite depuis l'arbre imbriqué. Un slug inconnu renvoie 404. La page affiche le nom + description + icône/couleur du thème en header. Les articles à la une (featured) sont mis en avant en haut.",
-      "estimate": "5",
-      "epicId": "e1000004-0004-4004-8004-000000000004"
-    },
-    {
-      "id": "us5100001-0001-4001-8001-000000000041",
-      "createdAt": "2026-10-17T15:00:00.000Z",
-      "updatedAt": "2026-10-17T15:00:00.000Z",
-      "order": 22,
-      "title": "Recevoir une notification de réponse",
-      "story": "En tant que Lecteur connecté, je veux recevoir une notification quand quelqu'un répond à mon commentaire ou à ma réponse afin de poursuivre la discussion sans surveiller la page.",
-      "acceptance": "Quand un utilisateur répond à mon commentaire (article ou post de groupe), une entrée {type:reply, actorId, targetType, targetId, excerpt, readAt:null, createdAt} est poussée dans userContent[monUserId].notifications[] dans la même mutation que la création de la réponse (transaction unique sous mutex, pas deux écritures). Aucune notification n'est créée si l'auteur de la réponse est moi-même (anti-auto-notification). Le destinataire est déduit côté serveur depuis le commentaire parent (parentId résolu vers l'auteur du commentaire visé), jamais d'un paramètre client. Un badge affiche le nombre d'entrées readAt=null. La cloche ouvre /blog/notifications trié par createdAt DESC.",
-      "estimate": "5",
-      "epicId": "e1000005-0005-4005-8005-000000000005"
-    },
-    {
-      "id": "us5100002-0002-4002-8002-000000000042",
-      "createdAt": "2026-10-17T15:00:00.000Z",
-      "updatedAt": "2026-10-17T15:00:00.000Z",
-      "order": 23,
-      "title": "Notifications de groupe",
-      "story": "En tant que Propriétaire de groupe ou Membre, je veux être notifié des invitations, approbations et nouvelles discussions afin de suivre la vie du groupe.",
-      "acceptance": "Une invitation (type=group_invite), une approbation de demande d'adhésion (type=group_join_approved, destinataire = demandeur) et l'ouverture d'une discussion (type=group_new_discussion, destinataires = tous les membres actifs sauf l'auteur) créent une notification dans userContent[destinataire].notifications[]. Pour group_new_discussion, l'envoi est plafonné à 200 destinataires par discussion (garde-fou démo) et dédupliqué (une seule notif par membre et par discussion). Les membres status=banned ou pending ne reçoivent pas de notification de discussion.",
-      "estimate": "5",
-      "epicId": "e1000005-0005-4005-8005-000000000005"
-    },
-    {
-      "id": "us5100003-0003-4003-8003-000000000043",
-      "createdAt": "2026-10-17T15:00:00.000Z",
-      "updatedAt": "2026-10-17T15:00:00.000Z",
-      "order": 24,
-      "title": "Gérer ses notifications",
-      "story": "En tant que Lecteur connecté, je veux marquer mes notifications comme lues, les supprimer et purger les anciennes afin de garder une liste utile et un fichier JSON maîtrisé.",
-      "acceptance": "Je peux marquer une notification lue (readAt=ISO) ou tout marquer lu en une action. Je peux supprimer une notification (retrait du tableau). Toute notification dont createdAt > 90 jours est purgée au prochain chargement du service. Le tableau est plafonné à 200 entrées (les plus anciennes lues sont retirées en premier). Ces opérations ne touchent que userContent[moi] — vérification serveur que userId cible = getSession().user.id.",
-      "estimate": "3",
-      "epicId": "e1000005-0005-4005-8005-000000000005"
-    },
-    {
-      "id": "us1100010-0010-4010-8010-000000000010",
-      "createdAt": "2026-10-17T16:00:00.000Z",
-      "updatedAt": "2026-10-17T17:30:00.000Z",
-      "order": 25,
-      "title": "Schéma Zod canonique du document",
-      "story": "En tant que Développeur / Intégrateur, je veux un schéma Zod canonique validant le document data/blog.json entier (pas seulement chaque article) afin que toute écriture, tout seed et tout export reposent sur un contrat unique et typé.",
-      "acceptance": "Le fichier src/lib/blog/schema.ts exporte blogDocumentSchema (Zod strict, pas de .passthrough()). Les types TypeScript BlogDocument, Article, ContentBlock, Comment, Group, Notification, UserContent sont dérivés par z.infer (source unique de vérité). contentBlockSchema utilise z.discriminatedUnion sur le type (section, paragraph, image, video, audio, code, embed, document). articleSchema.superRefine vérifie : ids de blocs uniques, parentId résolvable (article.id ou bloc existant), absence de cycle, profondeur ≤ 6, order unique parmi les frères. Le même contrôle d'arbre est appliqué à article.comments[] (racine = article.id, profondeur ≤ 5) et à group.discussions[].posts[] (racine = discussion.id, profondeur ≤ 5). Le schéma vérifie meta.schemaVersion === 2 et rejette toute version inconnue avec une erreur explicite. Un test unitaire valide un document vide de bootstrap, un document complet issu des fixtures, et rejette un document avec cycle ou parentId orphelin. readBlog() appelle blogDocumentSchema.parse() au chargement et jette une erreur lisible (avec path Zod) si le fichier est corrompu — fail-fast.",
-      "estimate": "5",
-      "epicId": "e1000006-0006-4006-8006-000000000006"
-    },
-    {
-      "id": "us1100011-0011-4011-8011-000000000011",
-      "createdAt": "2026-10-17T16:00:00.000Z",
-      "updatedAt": "2026-10-17T17:30:00.000Z",
-      "order": 26,
-      "title": "Service storage atomique + mutex",
-      "story": "En tant que Développeur / Intégrateur, je veux un service readBlog/mutateBlog centralisé qui garantit l'atomicité (temp + rename) et la sérialisation des mutations (mutex global) afin qu'aucune Server Action ne puisse corrompre ou écraser le fichier data/blog.json.",
-      "acceptance": "src/lib/blog/storage.ts exporte readBlog() (lecture + parse Zod) et mutateBlog(fn) (lecture + fn + validation Zod + écriture temp + rename). src/lib/blog/content.ts exporte les helpers de tree partagés : buildTree(blocks, rootId), insertBlock(blocks, parentId, block), removeBlock(blocks, blockId) récursif, moveBlock(blocks, blockId, newParentId, newOrder) avec anti-cycle, flattenBlocks(blocks, rootId) pour l'export. Un mutex global (queue à un seul slot) sérialise toutes les mutations dans le même process. Le fichier temporaire est créé dans le même répertoire que data/blog.json (rename atomique cross-device impossible sinon). Si le fichier est absent, un document vide valide est créé au boot. Un test simule 100 mutations concurrentes (likes sur le même article) et vérifie que le compteur final est exact (100 likes). Un test vérifie que removeBlock d'une section supprime bien ses descendants et qu'aucun orphelin ne reste (validation Zod passe). Toute Server Action qui écrit passe exclusivement par mutateBlog.",
-      "estimate": "5",
-      "epicId": "e1000006-0006-4006-8006-000000000006"
-    },
-    {
-      "id": "us1100012-0012-4012-8012-000000000012",
-      "createdAt": "2026-10-17T16:00:00.000Z",
-      "updatedAt": "2026-10-17T16:00:00.000Z",
-      "order": 27,
-      "title": "Bootstrap admin",
-      "story": "En tant que Développeur / Intégrateur, je veux un mécanisme de bootstrap qui promeut automatiquement le premier utilisateur (ou l'utilisateur dont l'email correspond à ADMIN_EMAIL) au rôle administrateur afin que le CRUD de démarrage soit utilisable dès la première connexion.",
-      "acceptance": "Au démarrage, si aucun utilisateur n'a le rôle admin, le premier utilisateur authentifié reçoit le rôle admin. Alternative : variable d'env ADMIN_EMAIL liste les emails à promouvoir à la connexion (getSession + check email). L'opération est idempotente (un admin déjà promu ne l'est pas deux fois). Un écran /blog/admin/setup affiche les rôles actuels et permet à un admin existant de promouvoir un autre utilisateur. Aucun utilisateur ne peut se promouvoir lui-même s'il n'est pas déjà admin.",
-      "estimate": "2",
-      "epicId": "e1000006-0006-4006-8006-000000000006"
-    },
-    {
-      "id": "us1100013-0013-4013-8013-000000000013",
-      "createdAt": "2026-10-17T16:00:00.000Z",
-      "updatedAt": "2026-10-17T16:00:00.000Z",
-      "order": 28,
-      "title": "Utilitaire de résolution de médias locaux",
-      "story": "En tant que Développeur / Intégrateur, je veux un utilitaire resolveMediaUrl et getMediaManifest afin que les images stockées en dur dans /public/blog/ soient résolues en URLs publiques et proposées en autocomplétion dans le formulaire d'article, tout en préparant le remplacement par un stockage distant en prod.",
-      "acceptance": "src/lib/blog/media.ts exporte resolveMediaUrl(relativePath) qui renvoie '/blog/' + relativePath (driver local, MVP) ou une URL distante selon process.env.STORAGE_DRIVER (prod). getMediaManifest() lit le contenu de /public/blog/ (fs.readdir, filtre extensions image/vidéo/audio/document) et renvoie la liste triée pour l'UI. validateMediaPath(relativePath) rejette les chemins avec '..' ou '/' absolu (path traversal) et vérifie fs.existsSync côté serveur avant écriture. Le formulaire d'article utilise getMediaManifest() pour proposer les fichiers existants et resolveMediaUrl() pour l'aperçu. Un test unitaire couvre les chemins valides, les chemins invalides et les chemins inexistants.",
-      "estimate": "2",
-      "epicId": "e1000006-0006-4006-8006-000000000006"
-    },
-    {
-      "id": "us1100014-0014-4014-8014-000000000014",
-      "createdAt": "2026-10-17T16:00:00.000Z",
-      "updatedAt": "2026-10-17T17:30:00.000Z",
-      "order": 29,
-      "title": "Fixtures versionnées",
-      "story": "En tant que Développeur / Intégrateur, je veux un fichier data/fixtures/blog.seed.json au même schéma que data/blog.json, contenant un jeu de démo réaliste afin de seeder la base et de servir de référence pour tester le schéma.",
-      "acceptance": "data/fixtures/blog.seed.json est validé par blogDocumentSchema (schemaVersion === 2) et contient au minimum : 3 thèmes, 6 catégories, 12 sous-catégories, 20 tags, 10 articles published+public complets avec un content[] en blocs hiérarchiques (au moins une section imbriquée avec paragraphes et un bloc image, plus un bloc code sur un article), des commentaires stockés en flat parentId, des likes et des tags, 2 groupes (1 public, 1 private) avec discussions et posts[] en flat parentId, 3 utilisateurs fictifs (dont un admin, un auteur, un lecteur) dont les notifications sont pré-remplies. Les blocs image référencés dans content[] existent physiquement dans /public/blog/ (au moins les couvertures et quelques médias de démo). Un test charge les fixtures, les parse par blogDocumentSchema et vérifie les comptes (10 articles, profondeur des blocs ≤ 6, pas de cycle, pas de parentId orphelin). Le fichier est versionné dans git (pas ignoré).",
-      "estimate": "3",
-      "epicId": "e1000006-0006-4006-8006-000000000006"
-    },
-    {
-      "id": "us1100015-0015-4015-8015-000000000015",
-      "createdAt": "2026-10-17T16:00:00.000Z",
-      "updatedAt": "2026-10-17T17:30:00.000Z",
-      "order": 30,
-      "title": "Script de seed idempotent",
-      "story": "En tant que Développeur / Intégrateur, je veux un script pnpm seed qui copie les fixtures dans data/blog.json en mode upsert-par-slug, avec un flag --reset pour repartir de zéro, afin de pouvoir peupler la démo et itérer sans doublon.",
-      "acceptance": "scripts/seed.ts lit data/fixtures/blog.seed.json, le valide par blogDocumentSchema, puis fusionne dans data/blog.json : les thèmes/catégories/sous-catégories/tags sont upsertés par slug (mise à jour si existe, création sinon) ; les articles sont upsertés par slug (les likedBy et comments existants sont préservés si l'article existe déjà ; le content[] est remplacé par celui des fixtures pour rester idempotent) ; les groupes par slug (les members[] existants sont préservés, les discussions et posts des fixtures remplacent ceux du groupe). Le flag --reset vide data/blog.json et repart des fixtures. Le script refuse de tourner sans --reset si data/blog.json n'est pas dans un état valide. À la fin, un récap s'affiche (X thèmes, Y articles, Z groupes créés/mis à jour). Un test lance le seed sur un fichier vide et vérifie les comptes, puis le relance et vérifie l'idempotence (mêmes comptes, pas de doublon, pas de duplication de blocs dans content[]).",
-      "estimate": "3",
-      "epicId": "e1000006-0006-4006-8006-000000000006"
-    },
-    {
-      "id": "us1100016-0016-4016-8016-000000000016",
-      "createdAt": "2026-10-17T16:00:00.000Z",
-      "updatedAt": "2026-10-17T17:30:00.000Z",
-      "order": 31,
-      "title": "Export JSON → Prisma",
-      "story": "En tant que Développeur / Intégrateur, je veux un script pnpm export:prisma qui lit data/blog.json et produit un prisma/seed.ts (ou SQL) mappant fidèlement chaque entité vers un schéma Prisma cible, afin que la migration en prod ne soit pas une réécriture manuelle.",
-      "acceptance": "scripts/export-prisma.ts lit data/blog.json, valide par blogDocumentSchema, et produit prisma/seed.ts qui crée dans l'ordre : Theme, Category, SubCategory, Tag, User (depuis les ids rencontrés), Article, ContentBlock (aplati depuis content[] : parentId === article.id → null + articleId sur chaque bloc), Comment (aplati depuis comments[] : parentId === article.id → null + articleId), Like (extrait des likedBy[]), FavoriteFolder, Favorite, Group, GroupMember, Discussion, Post (aplati depuis posts[] : parentId === discussion.id → null + discussionId), Notification. Le mapping est documenté en commentaire d'en-tête (JSON → Prisma : likedBy[] → Like(targetType, targetId, userId) ; content[] flat + parentId racine article → ContentBlock(parentId: null, articleId) ; comments[] flat + parentId racine article → Comment(parentId: null, articleId) ; posts[] flat + parentId racine discussion → Post(parentId: null, discussionId)). Un test d'intégration : génère le seed, l'applique sur une base SQLite de test, compare les comptes par table avec les comptes JSON (y compris le nombre de ContentBlock et leur parentId). Sans cette US, la mise en prod est bloquée.",
-      "estimate": "5",
-      "epicId": "e1000006-0006-4006-8006-000000000006"
-    },
-    {
-      "id": "us1100017-0017-4017-8017-000000000017",
-      "createdAt": "2026-10-17T16:00:00.000Z",
-      "updatedAt": "2026-10-17T16:00:00.000Z",
-      "order": 32,
-      "title": "Backup / restauration",
-      "story": "En tant que Développeur / Intégrateur, je veux un script pnpm backup qui horodate et copie data/blog.json avant tout seed, export ou reset, afin de ne jamais perdre la démo en cas de manipulation.",
-      "acceptance": "scripts/backup.ts copie data/blog.json vers data/backups/blog.[YYYYMMDD-HHmmss].json (création du dossier si absent). Le script est appelé automatiquement en préfixe de seed --reset et export:prisma. Un flag --prune garde les 10 derniers backups et supprime les plus anciens. Un script pnpm restore --file=<timestamp> restaure un backup après confirmation interactive (ou --yes). Les backups sont ignorés par git (.gitignore) pour ne pas polluer le repo.",
-      "estimate": "1",
-      "epicId": "e1000006-0006-4006-8006-000000000006"
+      "id": "us2000008-0008-4008-8008-000000000008",
+      "createdAt": "2026-11-03T17:00:00.000Z",
+      "updatedAt": "2026-11-03T17:00:00.000Z",
+      "order": 7,
+      "title": "Suivre une commande en temps réel",
+      "story": "En tant que Client ou Livreur, je veux suivre l'état de la commande en temps réel (received → preparing → ready → picked_up → delivering → delivered) afin de savoir où en est la livraison sans recharger la page.",
+      "acceptance": "Le suivi repose sur SSE ou polling court (pas de WebSocket en MVP). Le client voit le statut courant et l'ETA. Le livreur voit ses commandes assignées et marque les statuts picked_up / delivering / delivered. Le commerçant voit un tableau de bord des commandes en cours avec compteurs par statut. Chaque transition est tracée (horodatage + acteur). Une notification in-app (type order_status_changed) est créée pour le client à chaque changement de statut.",
+      "estimate": "8",
+      "epicId": "e1000012-0012-4012-8012-000000000012"
     }
   ],
   "sprint": [
     {
-      "id": "sp000000-0000-4000-8000-000000000000",
-      "createdAt": "2026-10-17T16:00:00.000Z",
-      "updatedAt": "2026-10-17T17:30:00.000Z",
+      "id": "sp000010-0010-4010-8010-000000000010",
+      "createdAt": "2026-11-03T17:00:00.000Z",
+      "updatedAt": "2026-11-03T17:00:00.000Z",
       "order": 0,
-      "name": "Sprint 0 — Fondations techniques",
-      "goal": "Poser le socle avant toute feature : schéma Zod canonique (incluant ContentBlock récursif et le même contrôle d'arbre pour comments/posts), helpers de tree partagés (buildTree/insertBlock/removeBlock/moveBlock/flattenBlocks), service storage atomique + mutex, bootstrap admin, utilitaire de résolution de médias locaux. À la fin du sprint, le fichier data/blog.json est fiable et typé de bout en bout, les arbres content[]/comments[]/posts[] sont validés (cycle, profondeur, order) et manipulables via un jeu unique de helpers, le premier admin peut se connecter, et les images de /public/blog/ sont référençables par chemin relatif résolu via resolveMediaUrl.",
+      "name": "Sprint 1 — MVP commande bout en bout",
+      "goal": "Livrer le parcours complet d'une commande sur un commerce pilote : un commerçant crée son commerce, tient son catalogue, prend une commande au POS avec déduction de stock et attribution de points, un client commande en 3 clics, suit sa commande en temps réel et cumule des points. À la fin du sprint, 3 à 5 commerces pilotes peuvent encaisser un service réel en mock payment.",
       "storyIds": [
-        "us1100010-0010-4010-8010-000000000010",
-        "us1100011-0011-4011-8011-000000000011",
-        "us1100012-0012-4012-8012-000000000012",
-        "us1100013-0013-4013-8013-000000000013"
-      ],
-      "startDate": "2026-10-20",
-      "endDate": "2026-10-24"
-    },
-    {
-      "id": "sp000001-0001-4001-8001-000000000001",
-      "createdAt": "2026-10-17T14:00:00.000Z",
-      "updatedAt": "2026-10-17T17:30:00.000Z",
-      "order": 1,
-      "name": "Sprint 1 — MVP éditorial seedable",
-      "goal": "Livrer le MVP : un auteur peut créer thèmes/catégories/sous-catégories/tags, écrire un article complet avec un corps en blocs hiérarchiques (sections imbriquées, paragraphes, images) et une couverture, le publier, et l'ensemble est persisté dans data/blog.json qui sert directement de seed. Un script pnpm seed rejoue des fixtures versionnées. À la fin du sprint, data/blog.json contient des articles correctement formés (arbres valides), prêts à être exportés vers Prisma en prod (Sprint 6).",
-      "storyIds": [
-        "us1100001-0001-4001-8001-000000000001",
-        "us1100002-0002-4002-8002-000000000002",
-        "us1100003-0003-4003-8003-000000000003",
-        "us1100004-0004-4004-8004-000000000004",
-        "us1100005-0005-4005-8005-000000000005",
-        "us1100006-0006-4006-8006-000000000006",
-        "us1100007-0007-4007-8007-000000000007",
-        "us1100014-0014-4014-8014-000000000014",
-        "us1100015-0015-4015-8015-000000000015"
-      ],
-      "startDate": "2026-10-27",
-      "endDate": "2026-11-07"
-    },
-    {
-      "id": "sp000002-0002-4002-8002-000000000002",
-      "createdAt": "2026-10-17T14:00:00.000Z",
-      "updatedAt": "2026-10-17T17:30:00.000Z",
-      "order": 2,
-      "name": "Sprint 2 — Découverte",
-      "goal": "Rendre le contenu découvrable : page listing par taxonomie (thème/tag), recherche plein texte (incluant le texte des blocs), filtres combinables, page article publique streamée avec reconstruction de l'arbre content[], TOC auto, ancres de deep-linking et incrément de vues. À la fin du sprint, un lecteur anonyme peut parcourir le blog par thème ou par recherche, et lire un article avec sa table des matières.",
-      "storyIds": [
-        "us4100001-0001-4001-8001-000000000031",
-        "us4100002-0002-4002-8002-000000000032",
-        "us4100003-0003-4003-8003-000000000033",
-        "us4100004-0004-4004-8004-000000000034"
+        "us2000001-0001-4001-8001-000000000001",
+        "us2000002-0002-4002-8002-000000000002",
+        "us2000003-0003-4003-8003-000000000003",
+        "us2000004-0004-4004-8004-000000000004",
+        "us2000005-0005-4005-8005-000000000005",
+        "us2000006-0006-4006-8006-000000000006",
+        "us2000007-0007-4007-8007-000000000007",
+        "us2000008-0008-4008-8008-000000000008"
       ],
       "startDate": "2026-11-10",
       "endDate": "2026-11-21"
-    },
-    {
-      "id": "sp000003-0003-4003-8003-000000000003",
-      "createdAt": "2026-10-17T14:00:00.000Z",
-      "updatedAt": "2026-10-17T17:30:00.000Z",
-      "order": 3,
-      "name": "Sprint 3 — Interactions lecteur",
-      "goal": "Donner au lecteur connecté les moyens d'interagir avec le contenu : commentaires imbriqués stockés en flat parentId avec soft delete, likes par tableau (article + commentaire), favoris avec dossiers. À la fin du sprint, un lecteur peut commenter, répondre, liker et sauvegarder un article pour plus tard, en réutilisant les helpers de tree du sprint 0.",
-      "storyIds": [
-        "us2100001-0001-4001-8001-000000000011",
-        "us2100002-0002-4002-8002-000000000012",
-        "us2100003-0003-4003-8003-000000000013",
-        "us2100004-0004-4004-8004-000000000014",
-        "us2100005-0005-4005-8005-000000000015",
-        "us2100006-0006-4006-8006-000000000016"
-      ],
-      "startDate": "2026-11-24",
-      "endDate": "2026-12-05"
-    },
-    {
-      "id": "sp000004-0004-4004-8004-000000000004",
-      "createdAt": "2026-10-17T14:00:00.000Z",
-      "updatedAt": "2026-10-17T17:30:00.000Z",
-      "order": 4,
-      "name": "Sprint 4 — Communauté",
-      "goal": "Ouvrir la dimension communautaire : groupes (public/private/unlisted), adhésion + demandes, discussions avec réponses imbriquées stockées en flat parentId (même pattern que content[] et comments[]), modération par owner/modérateur. À la fin du sprint, un propriétaire peut créer un groupe, inviter des membres et animer des discussions modérées.",
-      "storyIds": [
-        "us3100001-0001-4001-8001-000000000021",
-        "us3100002-0002-4002-8002-000000000022",
-        "us3100003-0003-4003-8003-000000000023",
-        "us3100004-0004-4004-8004-000000000024",
-        "us3100005-0005-4005-8005-000000000025"
-      ],
-      "startDate": "2026-12-08",
-      "endDate": "2026-12-19"
-    },
-    {
-      "id": "sp000005-0005-4005-8005-000000000005",
-      "createdAt": "2026-10-17T16:00:00.000Z",
-      "updatedAt": "2026-10-17T16:00:00.000Z",
-      "order": 5,
-      "name": "Sprint 5 — Notifications",
-      "goal": "Refermer la boucle communautaire : notifications in-app pour les réponses, invitations de groupe, approbations d'adhésion et nouvelles discussions, avec badge non-lu, page dédiée, marquage lu et purge. À la fin du sprint, un lecteur sait qu'on lui a répondu sans revenir sur la page, et un owner est alerté des demandes d'adhésion.",
-      "storyIds": [
-        "us5100001-0001-4001-8001-000000000041",
-        "us5100002-0002-4002-8002-000000000042",
-        "us5100003-0003-4003-8003-000000000043"
-      ],
-      "startDate": "2026-12-22",
-      "endDate": "2027-01-02"
-    },
-    {
-      "id": "sp000006-0006-4006-8006-000000000006",
-      "createdAt": "2026-10-17T16:00:00.000Z",
-      "updatedAt": "2026-10-17T17:30:00.000Z",
-      "order": 6,
-      "name": "Sprint 6 — Portabilité",
-      "goal": "Ouvrir la porte de sortie vers la prod : backup horodaté, export JSON → Prisma testé sur SQLite de test, avec aplatissement des arbres content[]/comments[]/posts[] vers ContentBlock/Comment/Post (parentId résolu, racine → null + FK parente). À la fin du sprint, la démo JSON est migrable vers une vraie base sans réécriture manuelle.",
-      "storyIds": [
-        "us1100016-0016-4016-8016-000000000016",
-        "us1100017-0017-4017-8017-000000000017"
-      ],
-      "startDate": "2027-01-05",
-      "endDate": "2027-01-09"
     }
   ],
-  "task": [],
+  "task": [
+    {
+      "id": "tk000001-0001-4001-8001-000000000001",
+      "createdAt": "2026-11-03T17:00:00.000Z",
+      "updatedAt": "2026-11-03T17:00:00.000Z",
+      "order": 0,
+      "title": "Créer le schéma Zod Commande",
+      "description": "Définir commandeInputSchema (lignes[], type, adresse, créneau, paiement) + commandeStatusEnum. Dériver le type Commande par z.infer.",
+      "status": "done",
+      "storyId": "us2000004-0004-4004-8004-000000000004",
+      "assignee": "Développeur / Intégrateur",
+      "estimate": "2h"
+    },
+    {
+      "id": "tk000002-0002-4002-8002-000000000002",
+      "createdAt": "2026-11-03T17:00:00.000Z",
+      "updatedAt": "2026-11-03T17:00:00.000Z",
+      "order": 1,
+      "title": "Service createOrder transactionnel",
+      "description": "Implémenter createOrder(flow, input) dans lib/services/order.ts : transaction Prisma qui crée la Commande, déduit le stock via les recettes, attribue les points fidélité, et retourne la commande. Rollback complet si une étape échoue.",
+      "status": "in_progress",
+      "storyId": "us2000004-0004-4004-8004-000000000004",
+      "assignee": "Développeur / Intégrateur",
+      "estimate": "4h"
+    },
+    {
+      "id": "tk000003-0003-4003-8003-000000000003",
+      "createdAt": "2026-11-03T17:00:00.000Z",
+      "updatedAt": "2026-11-03T17:00:00.000Z",
+      "order": 2,
+      "title": "Composant PosCart (panier + options)",
+      "description": "Composant client PosCart : affichage lignes, quantité, options (taille/suppléments), sous-total + frais + total. Mobile-first, sticky footer pour le bouton Encaisser. États UX : vide, pending, erreur.",
+      "status": "in_progress",
+      "storyId": "us2000004-0004-4004-8004-000000000004",
+      "assignee": "Merchant (staff)",
+      "estimate": "3h"
+    },
+    {
+      "id": "tk000004-0004-4004-8004-000000000004",
+      "createdAt": "2026-11-03T17:00:00.000Z",
+      "updatedAt": "2026-11-03T17:00:00.000Z",
+      "order": 3,
+      "title": "Service decrementStockFromRecipes",
+      "description": "Implémenter decrementStockFromRecipes(tx, commerceId, lignes[]) qui résout les recettes des produits, déduit les ingrédients, et crée un MouvementStock type=vente. Utilisé par createOrder dans la même transaction.",
+      "status": "todo",
+      "storyId": "us2000005-0005-4005-8005-000000000005",
+      "assignee": "Développeur / Intégrateur",
+      "estimate": "3h"
+    },
+    {
+      "id": "tk000005-0005-4005-8005-000000000005",
+      "createdAt": "2026-11-03T17:00:00.000Z",
+      "updatedAt": "2026-11-03T17:00:00.000Z",
+      "order": 4,
+      "title": "Alerte rupture dans le POS",
+      "description": "Composant StockAlertBadge affiché dans le POS quand stock ≤ seuil. Récupère les ingrédients en alerte via listLowStockIngredients(flow). Badge rouge + tooltip nom ingrédient + quantité restante.",
+      "status": "todo",
+      "storyId": "us2000005-0005-4005-8005-000000000005",
+      "assignee": "Merchant (staff)",
+      "estimate": "2h"
+    },
+    {
+      "id": "tk000006-0006-4006-8006-000000000006",
+      "createdAt": "2026-11-03T17:00:00.000Z",
+      "updatedAt": "2026-11-03T17:00:00.000Z",
+      "order": 5,
+      "title": "Restauration de stock à l'annulation",
+      "description": "Implémenter restoreStockOnCancel(tx, commandeId) : si la commande avait déduit du stock, recrée un MouvementStock type=ajustement inverse. Branché dans updateOrderStatus quand status passe à cancelled.",
+      "status": "todo",
+      "storyId": "us2000005-0005-4005-8005-000000000005",
+      "assignee": "Développeur / Intégrateur",
+      "estimate": "2h"
+    }
+  ],
   "meta": {
     "schemaVersion": 1,
-    "updatedAt": "2026-10-17T16:22:15.861Z"
+    "updatedAt": "2026-11-03T18:46:13.545Z"
   }
 }

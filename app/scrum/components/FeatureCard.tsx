@@ -13,39 +13,39 @@ flow:            Reçoit une Feature + callbacks (onEdit, onDelete) → rend une
                  animée avec icône, contenu et actions.
 
 ecosystem:       ScrumUI = [
-                   "@/app/core/components/scrum/EpicCard.tsx",
-                   "@/app/core/components/scrum/EpicForm.tsx",
-                   "@/app/core/components/scrum/EpicList.tsx",
-                   "@/app/core/components/scrum/FeatureCard.tsx",
-                   "@/app/core/components/scrum/FeatureForm.tsx",
-                   "@/app/core/components/scrum/FeatureList.tsx",
-                   "@/app/core/components/scrum/FlowSelector.tsx",
-                   "@/app/core/components/scrum/GlobalJsonExport.tsx",
-                   "@/app/core/components/scrum/IdeeCard.tsx",
-                   "@/app/core/components/scrum/IdeeForm.tsx",
-                   "@/app/core/components/scrum/IdeeList.tsx",
-                   "@/app/core/components/scrum/PersonaCard.tsx",
-                   "@/app/core/components/scrum/PersonaForm.tsx",
-                   "@/app/core/components/scrum/PersonaList.tsx",
-                   "@/app/core/components/scrum/ScrumNav.tsx",
-                   "@/app/core/components/scrum/SprintCard.tsx",
-                   "@/app/core/components/scrum/SprintForm.tsx",
-                   "@/app/core/components/scrum/SprintList.tsx",
-                   "@/app/core/components/scrum/UserStoryCard.tsx",
-                   "@/app/core/components/scrum/UserStoryForm.tsx",
-                   "@/app/core/components/scrum/UserStoryList.tsx",
+                   "@/app/components/scrum/EpicCard.tsx",
+                   "@/app/components/scrum/EpicForm.tsx",
+                   "@/app/components/scrum/EpicList.tsx",
+                   "@/app/components/scrum/FeatureCard.tsx",
+                   "@/app/components/scrum/FeatureForm.tsx",
+                   "@/app/components/scrum/FeatureList.tsx",
+                   "@/app/components/scrum/FlowSelector.tsx",
+                   "@/app/components/scrum/GlobalJsonExport.tsx",
+                   "@/app/components/scrum/IdeeCard.tsx",
+                   "@/app/components/scrum/IdeeForm.tsx",
+                   "@/app/components/scrum/IdeeList.tsx",
+                   "@/app/components/scrum/PersonaCard.tsx",
+                   "@/app/components/scrum/PersonaForm.tsx",
+                   "@/app/components/scrum/PersonaList.tsx",
+                   "@/app/components/scrum/ScrumNav.tsx",
+                   "@/app/components/scrum/SprintCard.tsx",
+                   "@/app/components/scrum/SprintForm.tsx",
+                   "@/app/components/scrum/SprintList.tsx",
+                   "@/app/components/scrum/UserStoryCard.tsx",
+                   "@/app/components/scrum/UserStoryForm.tsx",
+                   "@/app/components/scrum/UserStoryList.tsx",
                  ]
 
-relatedFiles:    ["@/app/core/lib/scrum/types.ts",
-                  "@/app/core/components/scrum/FeatureList.tsx"]
+relatedFiles:    ["@/app/scrum/lib/scrum/types.ts",
+                  "@/app/scrum/components/FeatureList.tsx"]
 
 imports:         ["lucide-react",
-                  "@/app/core/lib/scrum/types",
+                  "@/app/scrum/lib/scrum/types",
                   "@/components/ui/button"]
 
 exports:         ["FeatureCard", "FeatureCardProps"]
 
-useBy:           ["@/app/core/components/scrum/FeatureList.tsx"]
+useBy:           ["@/app/scrum/components/FeatureList.tsx"]
 
 userStories:     ["*en tant que développeur je veux afficher une feature sous forme de carte"]
 

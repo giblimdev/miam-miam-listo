@@ -190,7 +190,7 @@ export function SprintList({ flow, sprints, userStories }: SprintListProps) {
   }
 
   function handleEdit(sprint: Sprint) {
-    router.push(`/core/${flow}/sprint/${sprint.id}/edit`);
+    router.push(`/${flow}/sprint/${sprint.id}/edit`);
   }
 
   return (

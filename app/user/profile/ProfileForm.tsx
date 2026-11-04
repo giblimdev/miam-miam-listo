@@ -1,29 +1,24 @@
 /*
 path :           app/user/profile/ProfileForm.tsx
-tag :            ["user", "profile", "form", "client", "update", "avatar"]
+tag :            ["user", "profile", "form", "client", "update", "avatar", "platform-role"]
 projectId:       new-genesis
 type:            component
 generic:         false
 
 role:            Formulaire d'édition du profil utilisateur. Client
                  Component : useState pour les 4 champs éditables
-                 (name, bio, phone, image), useTransition pour la
-                 mutation, router.refresh après succès, toast pour le
-                 feedback. L'avatar utilise <AvatarPicker /> — composant
-                 MUTUALISÉ avec /core/auth/register (même UX : file
-                 picker, preview, overlay, initiales fallback, retrait).
-                 L'image est donc produite en data URL base64 via
-                 FileReader, exactement comme à l'inscription.
-
-                 Le bouton « Réinitialiser » apparaît uniquement quand
-                 dirty (au moins un champ diffère de la valeur initiale).
-                 Le bouton Enregistrer est désactivé si non-dirty, si
-                 name < 2 caractères, ou si isPending.
+                 (name, bio, phone, image), useActionResult pour
+                 updateProfileAction (toast + router.refresh interne),
+                 AvatarPicker mutualisé avec RegisterForm. Le bouton
+                 « Réinitialiser » apparaît uniquement quand dirty.
+                 Enregistrer désactivé si non-dirty, si name < 2 car.,
+                 ou si isPending. Utilise formatDateLong (utils/date)
+                 pour la date « Membre depuis ». Le rôle plateforme est
+                 affiché en lecture seule via PLATFORM_ROLE_LABELS.
 
 flow:            Props { initial } → useState ×4 → dirty = comparaison
-                 avec initial → submit → FormData (name, bio, phone,
-                 image) → updateProfileAction → succès : toast +
-                 router.refresh() → erreur : toast.
+                 avec initial → submit → FormData → useActionResult.run
+                 avec successMessage "Profil mis à jour.".
 
 ecosystem:       UserProfile = [
                    "@/app/user/profile/actions.ts",
@@ -35,9 +30,12 @@ ecosystem:       UserProfile = [
 relatedFiles:    ["@/app/user/profile/actions.ts",
                   "@/components/user/AvatarPicker.tsx",
                   "@/components/ui/avatar.tsx",
-                  "@/utils/initials.ts"]
+                  "@/utils/initials.ts",
+                  "@/utils/date.ts",
+                  "@/hooks/useActionResult.ts",
+                  "@/config/roles.ts"]
 
-imports:         ["react", "next/navigation", "lucide-react", "sonner",
+imports:         ["react", "lucide-react",
                   "@/app/user/profile/actions",
                   "@/components/user/AvatarPicker",
                   "@/components/ui/avatar",
@@ -45,7 +43,10 @@ imports:         ["react", "next/navigation", "lucide-react", "sonner",
                   "@/components/ui/field",
                   "@/components/ui/input",
                   "@/components/ui/textarea",
-                  "@/utils/initials"]
+                  "@/utils/initials",
+                  "@/utils/date",
+                  "@/hooks/useActionResult",
+                  "@/config/roles.ts"]
 
 exports:         ["ProfileForm", "ProfileFormProps"]
 
@@ -54,17 +55,16 @@ useBy:           ["@/app/user/profile/page.tsx"]
 userStories:     ["*en tant qu'utilisateur je veux modifier mon profil",
                   "*en tant qu'utilisateur je veux choisir et prévisualiser mon avatar"]
 
-status:          planned
-pathChecked:     ✘false
-metaDataChecked: ✘false
-scriptChecked:   ✘false
+status:          wip
+pathChecked:     ✔true
+metaDataChecked: ✔true
+scriptChecked:   ✔true
 */
 
 "use client";
-// "use client" justifié : useState, useTransition, router.refresh, toast.
+// "use client" justifié : useState + useActionResult + interactions.
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import {
   Calendar,
   Loader2,
@@ -72,7 +72,6 @@ import {
   Save,
   Shield,
 } from "lucide-react";
-import { toast } from "sonner";
 
 import { updateProfileAction } from "@/app/user/profile/actions";
 import { AvatarPicker } from "@/components/user/AvatarPicker";
@@ -82,6 +81,12 @@ import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { initialsOf } from "@/utils/initials";
+import { formatDateLong } from "@/utils/date";
+import { useActionResult } from "@/hooks/useActionResult";
+import {
+  PLATFORM_ROLE_LABELS,
+  type PlatformRole,
+} from "@/config/roles";
 
 /* ------------------------------------------------------------------ */
 /*  Props                                                              */
@@ -94,7 +99,8 @@ export interface ProfileFormProps {
     readonly image: string | null;
     readonly bio: string | null;
     readonly phone: string | null;
-    readonly role: string;
+    /** Rôle plateforme (user / admin / superAdmin). */
+    readonly platformRole: PlatformRole;
     readonly createdAt: string;
   };
 }
@@ -104,12 +110,11 @@ export interface ProfileFormProps {
 /* ------------------------------------------------------------------ */
 
 export function ProfileForm({ initial }: ProfileFormProps) {
-  const router = useRouter();
   const [name, setName] = useState(initial.name);
   const [bio, setBio] = useState(initial.bio ?? "");
   const [phone, setPhone] = useState(initial.phone ?? "");
   const [image, setImage] = useState(initial.image ?? "");
-  const [isPending, startTransition] = useTransition();
+  const { run, isPending } = useActionResult();
 
   const dirty =
     name !== initial.name ||
@@ -117,32 +122,23 @@ export function ProfileForm({ initial }: ProfileFormProps) {
     phone !== (initial.phone ?? "") ||
     image !== (initial.image ?? "");
 
-  const roleLabel =
-    initial.role === "admin" ? "Administrateur" : "Utilisateur";
-  const memberSince = new Date(initial.createdAt).toLocaleDateString("fr-FR", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
+  const roleLabel = PLATFORM_ROLE_LABELS[initial.platformRole];
+  const memberSince = formatDateLong(initial.createdAt, {
+    dayStyle: "numeric",
   });
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (!dirty) return;
 
-    startTransition(async () => {
-      const formData = new FormData();
-      formData.set("name", name.trim());
-      formData.set("bio", bio.trim());
-      formData.set("phone", phone.trim());
-      formData.set("image", image.trim());
+    const formData = new FormData();
+    formData.set("name", name.trim());
+    formData.set("bio", bio.trim());
+    formData.set("phone", phone.trim());
+    formData.set("image", image.trim());
 
-      const result = await updateProfileAction(formData);
-      if (!result.ok) {
-        toast.error(result.error);
-        return;
-      }
-      toast.success("Profil mis à jour.");
-      router.refresh();
+    run(() => updateProfileAction(formData), {
+      successMessage: "Profil mis à jour.",
     });
   }
 
@@ -201,7 +197,6 @@ export function ProfileForm({ initial }: ProfileFormProps) {
           </p>
         </header>
 
-        {/* Avatar — composant mutualisé avec RegisterForm */}
         <Field>
           <FieldLabel>Photo de profil</FieldLabel>
           <AvatarPicker

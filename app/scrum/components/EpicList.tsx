@@ -1,19 +1,27 @@
 /*
 path :           app/scrum/components/EpicList.tsx
-tag :            ["scrum", "epic", "list", "ui"]
-projectId:       new-genesis
-type :           component
+tag :            ["scrum", "epic", "list", "ui", "dnd"]
+projectId:       <à fournir>
+type:            component
 generic:         false
 
-role:            Liste des epics d'un flux Scrum. Gère l'état local (dialogs)
-                 et délègue les mutations aux Server Actions. Les DialogContent
-                 utilisent `flex h-[85vh] flex-col overflow-hidden` +
-                 `sm:max-w-2xl`.
+role:            Liste des epics d'un flux Scrum avec DnD. État optimiste
+                 (useState + useEffect resync) pour un réordonnancement
+                 immédiat côté client, rollback + toast en cas d'échec.
+                 Gère l'état local (dialogs création/édition/suppression)
+                 et délègue les mutations aux Server Actions. Les
+                 DialogContent utilisent `flex h-[85vh] flex-col
+                 overflow-hidden` + `sm:max-w-2xl`.
 
-flow:            Reçoit flow + epics (server) → useState → EpicForm dans
-                 Dialog → submit → Server Action → toast → router.refresh().
+flow:            flow + epics (server) → useState(optimistic) → useEffect
+                 resync sur [epics] → SortableList + SortableItem →
+                 handleReorder(orderedIds) → setOptimistic(reordered)
+                 → reorderEpicsAction(flow, orderedIds) → succès :
+                 router.refresh() ; échec : setOptimistic(previous) +
+                 toast.error. Création/édition/suppression : Dialog +
+                 EpicForm → Server Action → toast → router.refresh().
 
-ecosystem:       ScrumUI = [
+ecosystem:       Scrum = [
                    "@/app/scrum/components/EpicCard.tsx",
                    "@/app/scrum/components/EpicForm.tsx",
                    "@/app/scrum/components/EpicList.tsx",
@@ -23,50 +31,63 @@ ecosystem:       ScrumUI = [
                    "@/app/scrum/components/FlowSelector.tsx",
                    "@/app/scrum/components/GlobalJsonExport.tsx",
                    "@/app/scrum/components/IdeeCard.tsx",
+                   "@/app/scrum/components/IdeeDetailDialog.tsx",
                    "@/app/scrum/components/IdeeForm.tsx",
                    "@/app/scrum/components/IdeeList.tsx",
                    "@/app/scrum/components/PersonaCard.tsx",
                    "@/app/scrum/components/PersonaForm.tsx",
                    "@/app/scrum/components/PersonaList.tsx",
                    "@/app/scrum/components/ScrumNav.tsx",
+                   "@/app/scrum/components/SortableItem.tsx",
+                   "@/app/scrum/components/SortableList.tsx",
                    "@/app/scrum/components/SprintCard.tsx",
+                   "@/app/scrum/components/SprintEditor.tsx",
                    "@/app/scrum/components/SprintForm.tsx",
                    "@/app/scrum/components/SprintList.tsx",
+                   "@/app/scrum/components/SprintStoriesBoard.tsx",
+                   "@/app/scrum/components/TaskCard.tsx",
+                   "@/app/scrum/components/TaskForm.tsx",
+                   "@/app/scrum/components/TaskList.tsx",
                    "@/app/scrum/components/UserStoryCard.tsx",
                    "@/app/scrum/components/UserStoryForm.tsx",
                    "@/app/scrum/components/UserStoryList.tsx",
+                   "@/app/scrum/components/UserStoryMiniCard.tsx",
                  ]
 
 relatedFiles:    ["@/app/scrum/components/EpicCard.tsx",
                   "@/app/scrum/components/EpicForm.tsx",
-                  "@/app/core/lib/scrum/types.ts",
-                  "@/app/core/lib/scrum/actions/epic.ts"]
+                  "@/app/scrum/components/SortableItem.tsx",
+                  "@/app/scrum/components/SortableList.tsx",
+                  "@/app/scrum/lib/types.ts",
+                  "@/app/scrum/lib/actions/epic.ts"]
 
 imports:         ["react", "next/navigation", "lucide-react", "sonner",
-                  "@/app/core/lib/scrum/types",
-                  "@/app/core/lib/scrum/actions/epic",
-                  "@/app/core/components/scrum/EpicCard",
-                  "@/app/core/components/scrum/EpicForm",
+                  "@/app/scrum/lib/types",
+                  "@/app/scrum/lib/actions/epic",
+                  "@/app/scrum/components/EpicCard",
+                  "@/app/scrum/components/EpicForm",
+                  "@/app/scrum/components/SortableItem",
+                  "@/app/scrum/components/SortableList",
                   "@/components/ui/button",
                   "@/components/ui/dialog",
                   "@/components/ui/alert-dialog"]
 
 exports:         ["EpicList", "EpicListProps"]
 
-useBy:           ["@/app/core/[flow]/epic/page.tsx"]
+useBy:           ["@/app/scrum/[flow]/epic/page.tsx"]
 
-userStories:     ["*en tant qu'utilisateur je veux lister et gérer les epics Scrum"]
+userStories:     ["*en tant qu'utilisateur je veux lister et réorganiser les epics Scrum"]
 
-status:          planned
-pathChecked:     ✘false
-metaDataChecked: ✘false
-scriptChecked:   ✘false
+status:          wip
+pathChecked:     ✔true
+metaDataChecked: ✔true
+scriptChecked:   ✔true
 */
 
 "use client";
-// "use client" justifié : useState (dialogs), router.refresh, toast.
+// "use client" justifié : useState (dialogs + optimiste), useEffect, DnD, toast.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Layers, Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -75,10 +96,13 @@ import type { Epic, ScrumFlow } from "@/app/scrum/lib/types";
 import {
   createEpicAction,
   deleteEpicAction,
+  reorderEpicsAction,
   updateEpicAction,
 } from "@/app/scrum/lib/actions/epic";
 import { EpicCard } from "@/app/scrum/components/EpicCard";
 import { EpicForm } from "@/app/scrum/components/EpicForm";
+import { SortableItem } from "@/app/scrum/components/SortableItem";
+import { SortableList } from "@/app/scrum/components/SortableList";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -98,18 +122,32 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+/* ------------------------------------------------------------------ */
+/*  Props                                                              */
+/* ------------------------------------------------------------------ */
+
 export interface EpicListProps {
   readonly flow: ScrumFlow;
   readonly epics: readonly Epic[];
 }
 
+/* ------------------------------------------------------------------ */
+/*  Composant                                                          */
+/* ------------------------------------------------------------------ */
+
 export function EpicList({ flow, epics }: EpicListProps) {
   const router = useRouter();
+  const [optimistic, setOptimistic] = useState<readonly Epic[]>(epics);
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<Epic | null>(null);
   const [deleting, setDeleting] = useState<Epic | null>(null);
   const [pending, setPending] = useState(false);
 
+  useEffect(() => {
+    setOptimistic(epics);
+  }, [epics]);
+
+  /* --- Création --- */
   async function handleCreate(formData: FormData) {
     setPending(true);
     const result = await createEpicAction(flow, formData);
@@ -123,6 +161,7 @@ export function EpicList({ flow, epics }: EpicListProps) {
     }
   }
 
+  /* --- Édition --- */
   async function handleUpdate(formData: FormData) {
     if (!editing) return;
     setPending(true);
@@ -137,6 +176,7 @@ export function EpicList({ flow, epics }: EpicListProps) {
     }
   }
 
+  /* --- Suppression --- */
   async function handleDelete() {
     if (!deleting) return;
     setPending(true);
@@ -151,6 +191,26 @@ export function EpicList({ flow, epics }: EpicListProps) {
     }
   }
 
+  /* --- Réordonnancement (DnD) --- */
+  async function handleReorder(orderedIds: string[]) {
+    const previous = optimistic;
+    const reordered = orderedIds
+      .map((id) => previous.find((item) => item.id === id))
+      .filter((item): item is Epic => item !== undefined);
+
+    setOptimistic(reordered);
+    setPending(true);
+    const result = await reorderEpicsAction(flow, orderedIds);
+    setPending(false);
+
+    if (result.ok) {
+      router.refresh();
+    } else {
+      setOptimistic(previous);
+      toast.error(result.error);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
@@ -159,7 +219,9 @@ export function EpicList({ flow, epics }: EpicListProps) {
             Epics
           </h2>
           <p className="text-sm text-muted-foreground">
-            {epics.length} epic{epics.length > 1 ? "s" : ""}
+            {optimistic.length} epic{optimistic.length > 1 ? "s" : ""}
+            {optimistic.length > 1 &&
+              " — glissez la poignée pour réordonner"}
           </p>
         </div>
         <Button type="button" onClick={() => setCreateOpen(true)}>
@@ -168,7 +230,8 @@ export function EpicList({ flow, epics }: EpicListProps) {
         </Button>
       </div>
 
-      {epics.length === 0 && (
+      {/* État vide */}
+      {optimistic.length === 0 && (
         <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border/60 bg-muted/20 p-12 text-center">
           <div className="grid size-12 place-items-center rounded-full bg-chart-4/10 text-chart-4">
             <Layers className="size-6" aria-hidden />
@@ -191,32 +254,42 @@ export function EpicList({ flow, epics }: EpicListProps) {
         </div>
       )}
 
-      {epics.length > 0 && (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          {epics.map((epic) => (
-            <EpicCard
-              key={epic.id}
-              epic={epic}
-              onEdit={setEditing}
-              onDelete={setDeleting}
-            />
-          ))}
-        </div>
+      {/* Grille DnD */}
+      {optimistic.length > 0 && (
+        <SortableList
+          items={optimistic}
+          onReorder={handleReorder}
+          disabled={pending}
+        >
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {optimistic.map((epic) => (
+              <SortableItem key={epic.id} id={epic.id} disabled={pending}>
+                <EpicCard
+                  epic={epic}
+                  onEdit={setEditing}
+                  onDelete={setDeleting}
+                />
+              </SortableItem>
+            ))}
+          </div>
+        </SortableList>
       )}
 
+      {/* Création */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="flex h-[85vh] flex-col gap-4 overflow-hidden sm:max-w-2xl">
           <DialogHeader className="shrink-0">
             <DialogTitle>Nouvel epic</DialogTitle>
             <DialogDescription>
-              Décrivez l&apos;epic, son objectif, son périmètre et les personas
-              concernés.
+              Décrivez l&apos;epic, son objectif, son périmètre et les
+              personas concernés.
             </DialogDescription>
           </DialogHeader>
           <EpicForm onSubmit={handleCreate} pending={pending} />
         </DialogContent>
       </Dialog>
 
+      {/* Édition */}
       <Dialog
         open={editing !== null}
         onOpenChange={(open) => !open && setEditing(null)}
@@ -238,6 +311,7 @@ export function EpicList({ flow, epics }: EpicListProps) {
         </DialogContent>
       </Dialog>
 
+      {/* Suppression */}
       <AlertDialog
         open={deleting !== null}
         onOpenChange={(open) => !open && setDeleting(null)}
@@ -246,8 +320,8 @@ export function EpicList({ flow, epics }: EpicListProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Supprimer cet epic ?</AlertDialogTitle>
             <AlertDialogDescription>
-              Cette action est définitive. L&apos;epic « {deleting?.name} » sera
-              retiré du flux {flow}.
+              Cette action est définitive. L&apos;epic « {deleting?.name} »
+              sera retiré du flux {flow}.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

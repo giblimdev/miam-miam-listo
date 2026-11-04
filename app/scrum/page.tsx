@@ -1,22 +1,22 @@
 /*
 path :           app/scrum/page.tsx
-tag :            ["help", "scrum", "hub", "crud", "entry", "navigation"]
-projectId:       new-genesis
-type :           page d'entrée
+tag :            ["scrum", "hub", "crud", "entry", "navigation"]
+projectId:       <à fournir>
+type:            page d'entrée
 generic:         false
 
-role:            Page d'entrée du module /Scrum. Présente les 7 étapes du flux
-                 Scrum (Idée, Feature, Persona, Epic, User story, Sprint, Task)
-                 + l'export Global JSON (8 sections), et permet de basculer entre
-                 les trois flux disponibles : scrum-business (activité métier),
-                 scrum-app (app métier) et scrum-genesis (l'outil lui-même).
+role:            Page d'entrée du module /scrum. Présente les 8 étapes du flux
+                 Scrum (Idée, Feature, Persona, Epic, User story, Sprint, Task,
+                 Global JSON) et permet de basculer entre les trois flux
+                 disponibles : scrum-business (activité métier), scrum-app
+                 (app métier) et scrum-genesis (l'outil lui-même).
                  Chaque section renvoie vers sa page CRUD dédiée
-                 (/core/[flow]/<section>).
+                 (/scrum/[flow]/<section>).
 
-flow:            Client Component → useState(flow) pour la sélection du flux → motion
-                 stagger sur les cartes → clic sur une carte = <Link> vers
-                 /core/{flow}/{sectionId}. Le flux courant est passé en prop aux
-                 cartes pour construire l'URL.
+flow:            Client Component → useState(flow) pour la sélection du flux →
+                 motion stagger sur les cartes → clic sur une carte = <Link>
+                 vers /scrum/{flow}/{sectionId}. Le flux courant est passé en
+                 prop aux cartes pour construire l'URL.
 
 ecosystem:       Scrum = [
                    "@/app/scrum/[flow]/epic/page.tsx",
@@ -29,10 +29,10 @@ ecosystem:       Scrum = [
                    "@/app/scrum/[flow]/sprint/page.tsx",
                    "@/app/scrum/[flow]/task/page.tsx",
                    "@/app/scrum/[flow]/user-story/page.tsx",
-                   "@/app/scrum/layout.tsx",
-                   "@/app/scrum/page.tsx",
                    "@/app/scrum/components/FlowSelector.tsx",
                    "@/app/scrum/components/ScrumNav.tsx",
+                   "@/app/scrum/layout.tsx",
+                   "@/app/scrum/page.tsx",
                  ]
 
 relatedFiles:    ["@/app/scrum/layout.tsx",
@@ -41,17 +41,17 @@ relatedFiles:    ["@/app/scrum/layout.tsx",
 
 imports:         ["react", "next/link", "motion/react", "lucide-react"]
 
-exports:         ["default HelpPage"]
+exports:         ["default ScrumHubPage"]
 
-useBy:           ["@/app/layout.tsx"]
+useBy:           []
 
 userStories:     ["*en tant que développeur je veux une page d'entrée vers le CRUD Scrum",
                   "*en tant qu'utilisateur je veux choisir entre ScrumBusiness, ScrumApp et Scrum-Genesis"]
 
 status:          wip
-pathChecked:     ✘false
-metaDataChecked: ✘false
-scriptChecked:   ✘false
+pathChecked:     ✔true
+metaDataChecked: ✔true
+scriptChecked:   ✔true
 */
 
 "use client";
@@ -67,7 +67,7 @@ import {
   Layers,
   ListChecks,
   Rocket,
-  ListTodo,                                     // ← AJOUT
+  ListTodo,
   FileJson,
   Target,
   ArrowDown,
@@ -180,7 +180,8 @@ const SECTIONS: readonly ScrumSection[] = [
     accent: "chart-3",
     objective: "Transformer les hypothèses en personas validés.",
     inputs: "Hypothèses de personas, features candidates.",
-    activities: "Tri des features, identification des besoins, validation.",
+    activities:
+      "Tri des features, identification des besoins, validation.",
     output: "Personas validés et carte des parties prenantes.",
     criteria:
       "Chaque persona est relié à au moins un besoin réel, pas à une feature inventée.",
@@ -207,7 +208,8 @@ const SECTIONS: readonly ScrumSection[] = [
     subtitle: "Découper les epics",
     icon: ListChecks,
     accent: "chart-5",
-    objective: "Découper les epics en incréments développables et testables.",
+    objective:
+      "Découper les epics en incréments développables et testables.",
     inputs: "Epics.",
     activities:
       "Rédaction « En tant que… je veux… afin de… », critères, estimation.",
@@ -228,7 +230,6 @@ const SECTIONS: readonly ScrumSection[] = [
     criteria: "Le prochain incrément est clair et justifié.",
   },
   {
-    // ← AJOUT (bloc entier)
     id: "task",
     num: 7,
     title: "Task",
@@ -246,18 +247,18 @@ const SECTIONS: readonly ScrumSection[] = [
   },
   {
     id: "global-json",
-    num: 8,                                        // ← MODIFIÉ (7 → 8)
+    num: 8,
     title: "Global JSON",
     subtitle: "Exporter le flux",
     icon: FileJson,
     accent: "chart-2",
     objective:
       "Visualiser, copier ou télécharger l'intégralité du flux au format JSON.",
-    inputs: "Les 7 sections du flux.",             // ← MODIFIÉ
+    inputs: "Les 7 sections du flux.",
     activities: "Agrégation, sérialisation, export.",
     output: "Fichier JSON complet, prêt à versionner.",
     criteria:
-      "L'export contient les 7 sections et peut être réimporté sans perte.",   // ← MODIFIÉ
+      "L'export contient les 7 sections et peut être réimporté sans perte.",
   },
 ];
 
@@ -378,6 +379,9 @@ function SectionCard({
   const accent = section.accent;
   const isGlobalJson = section.id === "global-json";
 
+  /* ✅ Préfixe /scrum/ — route physique réelle */
+  const href = `/scrum/${flow}/${section.id}`;
+
   return (
     <motion.article
       variants={itemVariants}
@@ -455,7 +459,7 @@ function SectionCard({
       </footer>
 
       <Link
-        href={`/core/${flow}/${section.id}`}
+        href={href}
         className="relative mt-5 inline-flex items-center gap-1.5 text-sm font-semibold transition-colors"
         style={{ color: `var(--${accent})` }}
       >
@@ -463,8 +467,8 @@ function SectionCard({
         {flow === "scrum-business"
           ? "ScrumBusiness"
           : flow === "scrum-app"
-          ? "ScrumApp"
-          : "Scrum-Genesis"}
+            ? "ScrumApp"
+            : "Scrum-Genesis"}
         <ArrowRight
           className="size-4 transition-transform group-hover:translate-x-0.5"
           aria-hidden
@@ -499,7 +503,7 @@ function DetailRow({
 /*  Page                                                               */
 /* ------------------------------------------------------------------ */
 
-export default function HelpPage() {
+export default function ScrumHubPage() {
   const [flow, setFlow] = useState<ScrumFlow>("scrum-business");
 
   return (
@@ -523,7 +527,7 @@ export default function HelpPage() {
         >
           <span className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/60 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur">
             <Sparkles className="size-3.5 text-chart-2" aria-hidden />
-            Flux Scrum · 8 sections                    {/* ← MODIFIÉ */}
+            Flux Scrum · 8 sections
           </span>
 
           <h1 className="mt-5 bg-gradient-to-r from-chart-1 via-chart-2 to-chart-3 bg-clip-text text-4xl font-bold tracking-tight text-transparent sm:text-5xl">
@@ -583,7 +587,7 @@ export default function HelpPage() {
         <div className="mx-auto max-w-6xl">
           <header className="mb-6 flex flex-col items-center gap-2 text-center">
             <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-              Les 8 sections                             {/* ← MODIFIÉ */}
+              Les 8 sections
             </h2>
             <p className="text-sm text-muted-foreground">
               Chaque section est cliquable et ouvre la page CRUD du flux

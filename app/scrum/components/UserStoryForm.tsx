@@ -1,64 +1,82 @@
 /*
-path :           app/core/components/UserStoryForm.tsx
-tag :            ["scrum", "user-story", "form", "ui"]
-projectId:       new-genesis
+path :           app/scrum/components/UserStoryForm.tsx
+tag :            ["scrum", "user-story", "form", "ui", "backlog"]
+projectId:       <à fournir>
 type:            component
 generic:         false
 
 role:            Formulaire de création / édition d'une user story Scrum.
                  Structure 3 zones : corps scrollable + footer sticky. Les
                  textareas story (max-h-48) et acceptance (max-h-56) sont
-                 capées. Les champs estimate/epicId restent en grille.
+                 capées. Le champ epicId est un NativeSelect avec option
+                 vide « Aucun epic (backlog) » pour permettre le backlog
+                 implicite : une US peut exister sans être rattachée à un
+                 epic. Le champ estimate et le champ epicId sont en grille
+                 sm:grid-cols-2.
 
 flow:            useForm → handleSubmit → FormData → onSubmit(formData).
+                 epicId vide → chaîne vide "" (transformée en undefined par
+                 userStoryInputSchema.epicId via optionalText).
 
-ecosystem:       ScrumUI = [
-                   "@/app/core/components/scrum/EpicCard.tsx",
-                   "@/app/core/components/scrum/EpicForm.tsx",
-                   "@/app/core/components/scrum/EpicList.tsx",
-                   "@/app/core/components/scrum/FeatureCard.tsx",
-                   "@/app/core/components/scrum/FeatureForm.tsx",
-                   "@/app/core/components/scrum/FeatureList.tsx",
-                   "@/app/core/components/scrum/FlowSelector.tsx",
-                   "@/app/core/components/scrum/GlobalJsonExport.tsx",
-                   "@/app/core/components/scrum/IdeeCard.tsx",
-                   "@/app/core/components/scrum/IdeeForm.tsx",
-                   "@/app/core/components/scrum/IdeeList.tsx",
-                   "@/app/core/components/scrum/PersonaCard.tsx",
-                   "@/app/core/components/scrum/PersonaForm.tsx",
-                   "@/app/core/components/scrum/PersonaList.tsx",
-                   "@/app/core/components/scrum/ScrumNav.tsx",
-                   "@/app/core/components/scrum/SprintCard.tsx",
-                   "@/app/core/components/scrum/SprintForm.tsx",
-                   "@/app/core/components/scrum/SprintList.tsx",
-                   "@/app/core/components/scrum/UserStoryCard.tsx",
-                   "@/app/core/components/scrum/UserStoryForm.tsx",
-                   "@/app/core/components/scrum/UserStoryList.tsx",
+ecosystem:       Scrum = [
+                   "@/app/scrum/components/EpicCard.tsx",
+                   "@/app/scrum/components/EpicForm.tsx",
+                   "@/app/scrum/components/EpicList.tsx",
+                   "@/app/scrum/components/FeatureCard.tsx",
+                   "@/app/scrum/components/FeatureForm.tsx",
+                   "@/app/scrum/components/FeatureList.tsx",
+                   "@/app/scrum/components/FlowSelector.tsx",
+                   "@/app/scrum/components/GlobalJsonExport.tsx",
+                   "@/app/scrum/components/IdeeCard.tsx",
+                   "@/app/scrum/components/IdeeDetailDialog.tsx",
+                   "@/app/scrum/components/IdeeForm.tsx",
+                   "@/app/scrum/components/IdeeList.tsx",
+                   "@/app/scrum/components/PersonaCard.tsx",
+                   "@/app/scrum/components/PersonaForm.tsx",
+                   "@/app/scrum/components/PersonaList.tsx",
+                   "@/app/scrum/components/ScrumNav.tsx",
+                   "@/app/scrum/components/SortableItem.tsx",
+                   "@/app/scrum/components/SortableList.tsx",
+                   "@/app/scrum/components/SprintCard.tsx",
+                   "@/app/scrum/components/SprintEditor.tsx",
+                   "@/app/scrum/components/SprintForm.tsx",
+                   "@/app/scrum/components/SprintList.tsx",
+                   "@/app/scrum/components/SprintStoriesBoard.tsx",
+                   "@/app/scrum/components/TaskBoard.tsx",
+                   "@/app/scrum/components/TaskCard.tsx",
+                   "@/app/scrum/components/TaskForm.tsx",
+                   "@/app/scrum/components/TaskList.tsx",
+                   "@/app/scrum/components/UserStoryBoard.tsx",
+                   "@/app/scrum/components/UserStoryCard.tsx",
+                   "@/app/scrum/components/UserStoryForm.tsx",
+                   "@/app/scrum/components/UserStoryList.tsx",
+                   "@/app/scrum/components/UserStoryMiniCard.tsx",
                  ]
 
-relatedFiles:    ["@/app/core/lib/scrum/types.ts",
-                  "@/app/core/lib/scrum/validations.ts",
-                  "@/app/core/components/scrum/UserStoryList.tsx"]
+relatedFiles:    ["@/app/scrum/lib/types.ts",
+                  "@/app/scrum/lib/validations.ts",
+                  "@/app/scrum/components/UserStoryList.tsx"]
 
 imports:         ["react-hook-form", "@hookform/resolvers/zod",
                   "lucide-react",
-                  "@/app/core/lib/scrum/types",
-                  "@/app/core/lib/scrum/validations",
+                  "@/app/scrum/lib/types",
+                  "@/app/scrum/lib/validations",
                   "@/components/ui/button",
                   "@/components/ui/field",
                   "@/components/ui/input",
+                  "@/components/ui/native-select",
                   "@/components/ui/textarea"]
 
 exports:         ["UserStoryForm", "UserStoryFormProps"]
 
-useBy:           ["@/app/core/components/scrum/UserStoryList.tsx"]
+useBy:           ["@/app/scrum/components/UserStoryList.tsx"]
 
 userStories:     ["*en tant qu'utilisateur je veux créer ou éditer une user story Scrum"]
 
-status:          planned
-pathChecked:     ✘false
-metaDataChecked: ✘false
-scriptChecked:   ✘false
+status:          wip
+pathChecked:     ✔true
+metaDataChecked: ✔true
+scriptChecked:   ✔true
 */
 
 "use client";
@@ -68,7 +86,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 
-import type { UserStory } from "@/app/scrum/lib/types";
+import type { Epic, UserStory } from "@/app/scrum/lib/types";
 import {
   userStoryInputSchema,
   type UserStoryInput,
@@ -76,15 +94,30 @@ import {
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import {
+  NativeSelect,
+  NativeSelectOption,
+} from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 
+/* ------------------------------------------------------------------ */
+/*  Props                                                              */
+/* ------------------------------------------------------------------ */
+
 export interface UserStoryFormProps {
+  /** Epics disponibles pour le rattachement (optionnel). */
+  readonly epics: readonly Epic[];
   readonly defaultValues?: UserStory;
   readonly onSubmit: (formData: FormData) => void | Promise<void>;
   readonly pending?: boolean;
 }
 
+/* ------------------------------------------------------------------ */
+/*  Composant                                                          */
+/* ------------------------------------------------------------------ */
+
 export function UserStoryForm({
+  epics,
   defaultValues,
   onSubmit,
   pending = false,
@@ -215,13 +248,21 @@ export function UserStoryForm({
               control={control}
               name="epicId"
               render={({ field }) => (
-                <Input
+                <NativeSelect
                   {...field}
                   value={field.value ?? ""}
                   id="us-epic"
-                  placeholder="Id de l'epic"
                   aria-invalid={errors.epicId ? true : undefined}
-                />
+                >
+                  <NativeSelectOption value="">
+                    Aucun epic (backlog)
+                  </NativeSelectOption>
+                  {epics.map((epic) => (
+                    <NativeSelectOption key={epic.id} value={epic.id}>
+                      {epic.name}
+                    </NativeSelectOption>
+                  ))}
+                </NativeSelect>
               )}
             />
             {errors.epicId?.message && (

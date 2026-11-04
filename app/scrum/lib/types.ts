@@ -1,7 +1,7 @@
 /*
-path :           app/core/lib/types.ts
+path :           app/scrum/lib/types.ts
 tag :            ["scrum", "types", "config"]
-projectId:       new-genesis
+projectId:       <à fournir>
 type:            config
 generic:         true
 
@@ -11,8 +11,10 @@ role:            Types partagés pour le module Scrum. Définit ScrumFlow (les
                  persistance), ScrumEntityBase (base commune avec order pour
                  le drag-and-drop) et les 7 entités : Idee, Feature, Persona,
                  Epic, UserStory, Sprint, Task. Task est la couche d'exécution
-                 du sprint : chaque task référence une UserStory (storyId) et
-                 porte un statut (todo / in_progress / done). Aucune
+                 du sprint : chaque task référence OPTIONNELLEMENT une
+                 UserStory (storyId?: string — backlog implicite) et porte un
+                 statut (todo / in_progress / done). UserStory.epicId est
+                 également optionnel (backlog implicite côté epic). Aucune
                  dépendance runtime, aucun effet.
 
 flow:            Module TypeScript pur → export des types + factory
@@ -20,29 +22,64 @@ flow:            Module TypeScript pur → export des types + factory
                  client.
 
 ecosystem:       Scrum = [
-                   "@/app/core/lib/scrum/actions/epic.ts",
-                   "@/app/core/lib/scrum/actions/feature.ts",
-                   "@/app/core/lib/scrum/actions/global-json.ts",
-                   "@/app/core/lib/scrum/actions/idee.ts",
-                   "@/app/core/lib/scrum/actions/persona.ts",
-                   "@/app/core/lib/scrum/actions/sprint.ts",
-                   "@/app/core/lib/scrum/actions/task.ts",
-                   "@/app/core/lib/scrum/actions/user-story.ts",
-                   "@/app/core/lib/scrum/services/epic.ts",
-                   "@/app/core/lib/scrum/services/feature.ts",
-                   "@/app/core/lib/scrum/services/global-json.ts",
-                   "@/app/core/lib/scrum/services/idee.ts",
-                   "@/app/core/lib/scrum/services/persona.ts",
-                   "@/app/core/lib/scrum/services/sprint.ts",
-                   "@/app/core/lib/scrum/services/task.ts",
-                   "@/app/core/lib/scrum/services/user-story.ts",
-                   "@/app/core/lib/scrum/storage.ts",
-                   "@/app/core/lib/scrum/types.ts",
-                   "@/app/core/lib/scrum/validations.ts",
+                   "@/app/scrum/components/BoardColumn.tsx",
+                   "@/app/scrum/components/EpicCard.tsx",
+                   "@/app/scrum/components/EpicForm.tsx",
+                   "@/app/scrum/components/EpicList.tsx",
+                   "@/app/scrum/components/FeatureCard.tsx",
+                   "@/app/scrum/components/FeatureForm.tsx",
+                   "@/app/scrum/components/FeatureList.tsx",
+                   "@/app/scrum/components/FlowSelector.tsx",
+                   "@/app/scrum/components/GlobalJsonExport.tsx",
+                   "@/app/scrum/components/IdeeCard.tsx",
+                   "@/app/scrum/components/IdeeDetailDialog.tsx",
+                   "@/app/scrum/components/IdeeForm.tsx",
+                   "@/app/scrum/components/IdeeList.tsx",
+                   "@/app/scrum/components/PersonaCard.tsx",
+                   "@/app/scrum/components/PersonaForm.tsx",
+                   "@/app/scrum/components/PersonaList.tsx",
+                   "@/app/scrum/components/ScrumNav.tsx",
+                   "@/app/scrum/components/SortableItem.tsx",
+                   "@/app/scrum/components/SortableList.tsx",
+                   "@/app/scrum/components/SprintCard.tsx",
+                   "@/app/scrum/components/SprintEditor.tsx",
+                   "@/app/scrum/components/SprintForm.tsx",
+                   "@/app/scrum/components/SprintList.tsx",
+                   "@/app/scrum/components/SprintStoriesBoard.tsx",
+                   "@/app/scrum/components/TaskBoard.tsx",
+                   "@/app/scrum/components/TaskCard.tsx",
+                   "@/app/scrum/components/TaskForm.tsx",
+                   "@/app/scrum/components/TaskList.tsx",
+                   "@/app/scrum/components/UserStoryBoard.tsx",
+                   "@/app/scrum/components/UserStoryCard.tsx",
+                   "@/app/scrum/components/UserStoryForm.tsx",
+                   "@/app/scrum/components/UserStoryList.tsx",
+                   "@/app/scrum/components/UserStoryMiniCard.tsx",
+                   "@/app/scrum/lib/actions/_helpers.ts",
+                   "@/app/scrum/lib/actions/epic.ts",
+                   "@/app/scrum/lib/actions/feature.ts",
+                   "@/app/scrum/lib/actions/global-json.ts",
+                   "@/app/scrum/lib/actions/idee.ts",
+                   "@/app/scrum/lib/actions/persona.ts",
+                   "@/app/scrum/lib/actions/sprint.ts",
+                   "@/app/scrum/lib/actions/task.ts",
+                   "@/app/scrum/lib/actions/user-story.ts",
+                   "@/app/scrum/lib/services/_crud.ts",
+                   "@/app/scrum/lib/services/epic.ts",
+                   "@/app/scrum/lib/services/feature.ts",
+                   "@/app/scrum/lib/services/global-json.ts",
+                   "@/app/scrum/lib/services/idee.ts",
+                   "@/app/scrum/lib/services/persona.ts",
+                   "@/app/scrum/lib/services/sprint.ts",
+                   "@/app/scrum/lib/services/task.ts",
+                   "@/app/scrum/lib/services/user-story.ts",
+                   "@/app/scrum/lib/storage.ts",
+                   "@/app/scrum/lib/types.ts",
+                   "@/app/scrum/lib/validations.ts",
                  ]
 
-relatedFiles:    ["@/app/core/lib/scrum/validations.ts",
-                  "@/app/core/lib/scrum/storage.ts"]
+relatedFiles:    ["@/app/scrum/lib/validations.ts",
+                  "@/app/scrum/lib/storage.ts"]
 
 imports:         []
 
@@ -52,30 +89,30 @@ exports:         ["ScrumFlow", "ScrumSection", "ScrumDocument", "ScrumMeta",
                   "SCRUM_SECTIONS", "SCRUM_SCHEMA_VERSION", "TASK_STATUSES",
                   "createEmptyScrumDocument"]
 
-useBy:           ["@/app/core/lib/scrum/validations.ts",
-                  "@/app/core/lib/scrum/storage.ts",
-                  "@/app/core/lib/scrum/services/idee.ts",
-                  "@/app/core/lib/scrum/services/feature.ts",
-                  "@/app/core/lib/scrum/services/persona.ts",
-                  "@/app/core/lib/scrum/services/epic.ts",
-                  "@/app/core/lib/scrum/services/user-story.ts",
-                  "@/app/core/lib/scrum/services/sprint.ts",
-                  "@/app/core/lib/scrum/services/task.ts",
-                  "@/app/core/lib/scrum/services/global-json.ts",
-                  "@/app/core/lib/scrum/actions/idee.ts",
-                  "@/app/core/lib/scrum/actions/feature.ts",
-                  "@/app/core/lib/scrum/actions/persona.ts",
-                  "@/app/core/lib/scrum/actions/epic.ts",
-                  "@/app/core/lib/scrum/actions/user-story.ts",
-                  "@/app/core/lib/scrum/actions/sprint.ts",
-                  "@/app/core/lib/scrum/actions/task.ts"]
+useBy:           ["@/app/scrum/lib/validations.ts",
+                  "@/app/scrum/lib/storage.ts",
+                  "@/app/scrum/lib/services/idee.ts",
+                  "@/app/scrum/lib/services/feature.ts",
+                  "@/app/scrum/lib/services/persona.ts",
+                  "@/app/scrum/lib/services/epic.ts",
+                  "@/app/scrum/lib/services/user-story.ts",
+                  "@/app/scrum/lib/services/sprint.ts",
+                  "@/app/scrum/lib/services/task.ts",
+                  "@/app/scrum/lib/services/global-json.ts",
+                  "@/app/scrum/lib/actions/idee.ts",
+                  "@/app/scrum/lib/actions/feature.ts",
+                  "@/app/scrum/lib/actions/persona.ts",
+                  "@/app/scrum/lib/actions/epic.ts",
+                  "@/app/scrum/lib/actions/user-story.ts",
+                  "@/app/scrum/lib/actions/sprint.ts",
+                  "@/app/scrum/lib/actions/task.ts"]
 
 userStories:     ["*en tant que développeur je veux des types partagés pour le CRUD Scrum"]
 
-status:          planned
-pathChecked:     ✘false
-metaDataChecked: ✘false
-scriptChecked:   ✘false
+status:          wip
+pathChecked:     ✔true
+metaDataChecked: ✔true
+scriptChecked:   ✔true
 */
 
 /* ------------------------------------------------------------------ */
@@ -95,13 +132,7 @@ export const SCRUM_FLOWS: readonly ScrumFlow[] = [
 /* ------------------------------------------------------------------ */
 
 export type ScrumSection =
-  | "idee"
-  | "feature"
-  | "persona"
-  | "epic"
-  | "userStory"
-  | "sprint"
-  | "task";                                    // ← AJOUT
+  "idee" | "feature" | "persona" | "epic" | "userStory" | "sprint" | "task";
 
 export const SCRUM_SECTIONS: readonly ScrumSection[] = [
   "idee",
@@ -110,16 +141,16 @@ export const SCRUM_SECTIONS: readonly ScrumSection[] = [
   "epic",
   "userStory",
   "sprint",
-  "task",                                       // ← AJOUT
+  "task",
 ] as const;
 
 /* ------------------------------------------------------------------ */
 /*  Task — statuts                                                     */
-/* ------------------------------------------------------------------ */                                          // ← AJOUT (bloc entier)
+/* ------------------------------------------------------------------ */
 
-export type TaskStatus = "todo" | "in_progress" | "done";   // ← AJOUT
+export type TaskStatus = "todo" | "in_progress" | "done";
 
-export const TASK_STATUSES: readonly TaskStatus[] = [       // ← AJOUT
+export const TASK_STATUSES: readonly TaskStatus[] = [
   "todo",
   "in_progress",
   "done",
@@ -180,6 +211,10 @@ export interface UserStory extends ScrumEntityBase {
   readonly story: string;
   readonly acceptance: string;
   readonly estimate?: string;
+  /**
+   * Epic de rattachement. OPTIONNEL : une US peut exister sans epic
+   * (backlog implicite, colonne "Backlog" du board UserStoryBoard).
+   */
   readonly epicId?: string;
 }
 
@@ -191,11 +226,15 @@ export interface Sprint extends ScrumEntityBase {
   readonly endDate?: string;
 }
 
-export interface Task extends ScrumEntityBase {                // ← AJOUT (bloc entier)
+export interface Task extends ScrumEntityBase {
   readonly title: string;
   readonly description?: string;
   readonly status: TaskStatus;
-  readonly storyId: string;
+  /**
+   * UserStory parente. OPTIONNEL : une task peut exister sans US
+   * (backlog implicite, colonne "Non rattachées" du board TaskBoard).
+   */
+  readonly storyId?: string;
   readonly assignee?: string;
   readonly estimate?: string;
 }
@@ -216,7 +255,7 @@ export interface ScrumDocument {
   readonly epic: readonly Epic[];
   readonly userStory: readonly UserStory[];
   readonly sprint: readonly Sprint[];
-  readonly task: readonly Task[];                               // ← AJOUT
+  readonly task: readonly Task[];
   readonly meta: ScrumMeta;
 }
 
@@ -234,7 +273,7 @@ export function createEmptyScrumDocument(): ScrumDocument {
     epic: [],
     userStory: [],
     sprint: [],
-    task: [],                                                   // ← AJOUT
+    task: [],
     meta: {
       schemaVersion: SCRUM_SCHEMA_VERSION,
       updatedAt: new Date().toISOString(),

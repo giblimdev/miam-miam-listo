@@ -1,5 +1,5 @@
 /*
-path :           app/core/components/ScrumNav.tsx
+path :           app/scrum/components/ScrumNav.tsx
 tag :            ["scrum", "nav", "ui"]
 projectId:       new-genesis
 type:            component
@@ -8,56 +8,72 @@ generic:         false
 role:            Navigation entre les 8 sections d'un flux Scrum. Affiche des
                  onglets (Idée, Feature, Persona, Epic, User story, Sprint,
                  Task, Global JSON) et met en évidence la section active selon
-                 le pathname.
+                 le pathname. Le préfixe d'URL est `/scrum/${flow}` — aligné
+                 sur le layout et la page vue d'ensemble du flow.
 
 flow:            Client Component → usePathname → détecte la section active →
                  rend une liste de liens (Next/Link) avec styles conditionnels.
 
-ecosystem:       ScrumUI = [
-                   "@/app/core/components/scrum/EpicCard.tsx",
-                   "@/app/core/components/scrum/EpicForm.tsx",
-                   "@/app/core/components/scrum/EpicList.tsx",
-                   "@/app/core/components/scrum/FeatureCard.tsx",
-                   "@/app/core/components/scrum/FeatureForm.tsx",
-                   "@/app/core/components/scrum/FeatureList.tsx",
-                   "@/app/core/components/scrum/FlowSelector.tsx",
-                   "@/app/core/components/scrum/GlobalJsonExport.tsx",
-                   "@/app/core/components/scrum/IdeeCard.tsx",
-                   "@/app/core/components/scrum/IdeeForm.tsx",
-                   "@/app/core/components/scrum/IdeeList.tsx",
-                   "@/app/core/components/scrum/PersonaCard.tsx",
-                   "@/app/core/components/scrum/PersonaForm.tsx",
-                   "@/app/core/components/scrum/PersonaList.tsx",
-                   "@/app/core/components/scrum/ScrumNav.tsx",
-                   "@/app/core/components/scrum/SortableItem.tsx",
-                   "@/app/core/components/scrum/SortableList.tsx",
-                   "@/app/core/components/scrum/SprintCard.tsx",
-                   "@/app/core/components/scrum/SprintForm.tsx",
-                   "@/app/core/components/scrum/SprintList.tsx",
-                   "@/app/core/components/scrum/TaskCard.tsx",
-                   "@/app/core/components/scrum/TaskForm.tsx",
-                   "@/app/core/components/scrum/TaskList.tsx",
-                   "@/app/core/components/scrum/UserStoryCard.tsx",
-                   "@/app/core/components/scrum/UserStoryForm.tsx",
-                   "@/app/core/components/scrum/UserStoryList.tsx",
+ecosystem:       Scrum = [
+                   "@/app/scrum/[flow]/epic/page.tsx",
+                   "@/app/scrum/[flow]/feature/page.tsx",
+                   "@/app/scrum/[flow]/global-json/page.tsx",
+                   "@/app/scrum/[flow]/idee/page.tsx",
+                   "@/app/scrum/[flow]/layout.tsx",
+                   "@/app/scrum/[flow]/page.tsx",
+                   "@/app/scrum/[flow]/persona/page.tsx",
+                   "@/app/scrum/[flow]/sprint/page.tsx",
+                   "@/app/scrum/[flow]/task/page.tsx",
+                   "@/app/scrum/[flow]/user-story/page.tsx",
+                   "@/app/scrum/components/EpicCard.tsx",
+                   "@/app/scrum/components/EpicForm.tsx",
+                   "@/app/scrum/components/EpicList.tsx",
+                   "@/app/scrum/components/FeatureCard.tsx",
+                   "@/app/scrum/components/FeatureForm.tsx",
+                   "@/app/scrum/components/FeatureList.tsx",
+                   "@/app/scrum/components/FlowSelector.tsx",
+                   "@/app/scrum/components/GlobalJsonExport.tsx",
+                   "@/app/scrum/components/IdeeCard.tsx",
+                   "@/app/scrum/components/IdeeDetailDialog.tsx",
+                   "@/app/scrum/components/IdeeForm.tsx",
+                   "@/app/scrum/components/IdeeList.tsx",
+                   "@/app/scrum/components/PersonaCard.tsx",
+                   "@/app/scrum/components/PersonaForm.tsx",
+                   "@/app/scrum/components/PersonaList.tsx",
+                   "@/app/scrum/components/ScrumNav.tsx",
+                   "@/app/scrum/components/SortableItem.tsx",
+                   "@/app/scrum/components/SortableList.tsx",
+                   "@/app/scrum/components/SprintCard.tsx",
+                   "@/app/scrum/components/SprintEditor.tsx",
+                   "@/app/scrum/components/SprintForm.tsx",
+                   "@/app/scrum/components/SprintList.tsx",
+                   "@/app/scrum/components/SprintStoriesBoard.tsx",
+                   "@/app/scrum/components/TaskCard.tsx",
+                   "@/app/scrum/components/TaskForm.tsx",
+                   "@/app/scrum/components/TaskList.tsx",
+                   "@/app/scrum/components/UserStoryCard.tsx",
+                   "@/app/scrum/components/UserStoryForm.tsx",
+                   "@/app/scrum/components/UserStoryList.tsx",
+                   "@/app/scrum/components/UserStoryMiniCard.tsx",
+                   "@/app/scrum/layout.tsx",
+                   "@/app/scrum/page.tsx",
                  ]
 
-relatedFiles:    ["@/app/core/lib/scrum/types.ts",
-                  "@/app/core/[flow]/layout.tsx"]
+relatedFiles:    ["@/app/scrum/lib/types.ts",
+                  "@/app/scrum/[flow]/layout.tsx"]
 
 imports:         ["next/link", "next/navigation",
-                  "@/app/core/lib/scrum/types"]
+                  "@/app/scrum/lib/types"]
 
 exports:         ["ScrumNav", "ScrumNavProps"]
 
-useBy:           ["@/app/core/[flow]/layout.tsx"]
+useBy:           ["@/app/scrum/[flow]/layout.tsx"]
 
 userStories:     ["*en tant qu'utilisateur je veux naviguer entre les sections Scrum"]
-
-status:          planned
-pathChecked:     ✘false
-metaDataChecked: ✘false
-scriptChecked:   ✘false
+status:          wip
+pathChecked:     ✔true
+metaDataChecked: ✔true
+scriptChecked:   ✔true
 */
 
 "use client";
@@ -84,7 +100,7 @@ const SECTIONS: readonly NavEntry[] = [
   { slug: "epic", label: "Epic" },
   { slug: "user-story", label: "User story" },
   { slug: "sprint", label: "Sprint" },
-  { slug: "task", label: "Task" }, // ← AJOUT
+  { slug: "task", label: "Task" },
   { slug: "global-json", label: "Global JSON" },
 ];
 
@@ -102,7 +118,8 @@ export interface ScrumNavProps {
 
 export function ScrumNav({ flow }: ScrumNavProps) {
   const pathname = usePathname();
-  const base = `/core/${flow}`;
+  /* ✅ Préfixe aligné sur le layout et la page vue d'ensemble : /scrum/${flow} */
+  const base = `/scrum/${flow}`;
 
   return (
     <nav

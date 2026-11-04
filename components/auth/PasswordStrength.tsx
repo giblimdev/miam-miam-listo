@@ -12,10 +12,10 @@ flow:            Client Component → reçoit value en prop → getPasswordStren
                  PASSWORD_RULES avec icône Check (ok) ou Circle (non ok). aria-live="polite"
                  sur le conteneur pour annoncer les changements aux lecteurs d'écran.
 ecosystem:       Auth = [
-                   "@/app/core/auth/login/LoginForm.tsx",
-                   "@/app/core/auth/login/page.tsx",
-                   "@/app/core/auth/register/RegisterForm.tsx",
-                   "@/app/core/auth/register/page.tsx",
+                   "@/app/auth/login/LoginForm.tsx",
+                   "@/app/auth/login/page.tsx",
+                   "@/app/auth/register/RegisterForm.tsx",
+                   "@/app/auth/register/page.tsx",
                    "@/components/auth/PasswordInput.tsx",
                    "@/components/auth/PasswordStrength.tsx",
                    "@/lib/auth/auth-client.ts",
@@ -23,12 +23,12 @@ ecosystem:       Auth = [
                    "@/lib/validations/auth.ts",
                  ]
 relatedFiles:    ["@/lib/validations/auth.ts",
-                  "@/app/core/auth/register/RegisterForm.tsx"]
+                  "@/app/auth/register/RegisterForm.tsx"]
 imports:         ["react", "lucide-react",
                   "@/lib/validations/auth",
                   "props reçues : { value: string; className?: string }"]
 exports:         ["default PasswordStrength", "PasswordStrengthProps"]
-useBy:           ["@/app/core/auth/register/RegisterForm.tsx"]
+useBy:           ["@/app/auth/register/RegisterForm.tsx"]
 
 userStories:     ["*en tant qu'utilisateur je veux voir la force de mon mot de passe en direct"]
 status:          planned

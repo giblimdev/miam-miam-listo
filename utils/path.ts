@@ -1,6 +1,6 @@
 /*
 path :           lib/utils/path.ts
-projectId:       <à fournir>
+projectId:       new-genesis
 type:            helper
 generic:         true
 
@@ -23,7 +23,7 @@ ecosystem:       Utils = [
 relatedFiles:    ["@/components/layout/header/DesktopNav.tsx"] !!! n'existe pas ?
 imports:         []
 exports:         ["isHrefActive"]
-useBy:           ["@/components/layout/header/DesktopNav.tsx"]
+useBy:           []
 
 userStories:     ["*en tant que développeur je veux détecter le lien actif d'une nav"]
 status:          planned

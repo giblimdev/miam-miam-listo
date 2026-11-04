@@ -1,7 +1,7 @@
 /*
 path :           lib/validations/auth.ts
 tag :            ["auth", "validation", "zod", "password", "generic"]
-projectId:       new-genesis
+projectId :      <à fournir>
 type:            config
 generic:         true
 
@@ -10,16 +10,17 @@ role:            Schémas Zod pour l'authentification : inscription, connexion,
                  passe. Source unique de vérité pour la validation des entrées.
                  Exporte aussi PASSWORD_RULES, PasswordStrength et
                  getPasswordStrength utilisés par le composant
-                 <PasswordStrength /> côté UI.
+                 <PasswordStrength /> côté UI. Importe PlatformRole et
+                 platformRoleSchema depuis @/config/roles (source unique des
+                 rôles plateforme).
 
 flow:            Module TypeScript pur → export des schémas Zod (register,
-                 login, forgotPassword, resetPassword, changePassword), de
-                 PASSWORD_RULES, de getPasswordStrength et des types inférés.
-                 Aucun état, aucun effet.
+                 login, forgotPassword, resetPassword, changePassword),
+                 de PASSWORD_RULES, de getPasswordStrength et des types
+                 inférés. Aucun état, aucun effet.
 
 ecosystem:       Auth = [
                    "@/app/api/auth/[...all]/route.ts",
-                   "@/app/auth/layout.tsx",
                    "@/app/auth/login/LoginForm.tsx",
                    "@/app/auth/login/page.tsx",
                    "@/app/auth/register/RegisterForm.tsx",
@@ -31,13 +32,16 @@ ecosystem:       Auth = [
                    "@/lib/auth/auth.ts",
                    "@/lib/auth/session.ts",
                    "@/lib/validations/auth.ts",
+                   "@/config/roles.ts",
                  ]
 
-relatedFiles:    ["@/app/auth/login/LoginForm.tsx",
+relatedFiles:    ["@/config/roles.ts",
+                  "@/app/auth/login/LoginForm.tsx",
                   "@/app/auth/register/RegisterForm.tsx",
                   "@/components/auth/PasswordStrength.tsx"]
 
-imports:         ["zod"]
+imports:         ["zod",
+                  "@/config/roles.ts"]
 
 exports:         ["registerSchema", "RegisterInput",
                   "loginSchema", "LoginInput",
@@ -45,7 +49,8 @@ exports:         ["registerSchema", "RegisterInput",
                   "resetPasswordSchema", "ResetPasswordInput",
                   "changePasswordSchema", "ChangePasswordInput",
                   "PASSWORD_RULES", "PasswordRule",
-                  "PasswordStrength", "getPasswordStrength"]
+                  "PasswordStrength", "getPasswordStrength",
+                  "PlatformRole"]
 
 useBy:           ["@/app/auth/login/LoginForm.tsx",
                   "@/app/auth/register/RegisterForm.tsx",
@@ -53,13 +58,27 @@ useBy:           ["@/app/auth/login/LoginForm.tsx",
 
 userStories:     ["*en tant qu'utilisateur je veux une validation d'authentification cohérente"]
 
-status:          done
+status:          wip
 pathChecked:     ✔true
 metaDataChecked: ✔true
 scriptChecked:   ✔true
 */
 
 import { z } from "zod";
+
+import {
+  PLATFORM_ROLES,
+  type PlatformRole,
+} from "@/config/roles";
+
+/* Re-export du type PlatformRole pour les consommateurs d'auth. */
+export type { PlatformRole };
+
+/* ------------------------------------------------------------------ */
+/*  Rôle plateforme (réutilise la source unique)                       */
+/* ------------------------------------------------------------------ */
+
+export const platformRoleSchema = z.enum(PLATFORM_ROLES);
 
 /* ------------------------------------------------------------------ */
 /*  Règles de mot de passe                                             */

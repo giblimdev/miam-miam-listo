@@ -1,7 +1,7 @@
 /*
-path :           app/core/components/UserStoryList.tsx
+path :           app/scrum/components/UserStoryList.tsx
 tag :            ["scrum", "user-story", "list", "ui", "dnd"]
-projectId:       new-genesis
+projectId:       <à fournir>
 type:            component
 generic:         false
 
@@ -9,66 +9,101 @@ role:            Liste des user stories d'un flux Scrum avec DnD. Résout
                  epicId → epic.name via Map, transmet à UserStoryCard.
                  État optimiste. DialogContent :
                  `flex h-[85vh] flex-col overflow-hidden` + `sm:max-w-2xl`.
+                 Passe epics aux 2 <UserStoryForm> (création + édition)
+                 pour que le champ epicId soit un NativeSelect avec option
+                 vide « Aucun epic (backlog) ».
 
 flow:            flow + stories + epics → Map<epicId, epicName> →
                  useState(optimistic) → useEffect resync → SortableList +
                  SortableItem → handleReorder → Server Action → refresh ou
-                 rollback.
+                 rollback. Form création/édition : <UserStoryForm
+                 epics={epics} ... />.
 
-ecosystem:       ScrumUI = [
-                   "@/app/core/components/scrum/EpicCard.tsx",
-                   "@/app/core/components/scrum/EpicForm.tsx",
-                   "@/app/core/components/scrum/EpicList.tsx",
-                   "@/app/core/components/scrum/FeatureCard.tsx",
-                   "@/app/core/components/scrum/FeatureForm.tsx",
-                   "@/app/core/components/scrum/FeatureList.tsx",
-                   "@/app/core/components/scrum/FlowSelector.tsx",
-                   "@/app/core/components/scrum/GlobalJsonExport.tsx",
-                   "@/app/core/components/scrum/IdeeCard.tsx",
-                   "@/app/core/components/scrum/IdeeForm.tsx",
-                   "@/app/core/components/scrum/IdeeList.tsx",
-                   "@/app/core/components/scrum/PersonaCard.tsx",
-                   "@/app/core/components/scrum/PersonaForm.tsx",
-                   "@/app/core/components/scrum/PersonaList.tsx",
-                   "@/app/core/components/scrum/ScrumNav.tsx",
-                   "@/app/core/components/scrum/SortableItem.tsx",
-                   "@/app/core/components/scrum/SortableList.tsx",
-                   "@/app/core/components/scrum/SprintCard.tsx",
-                   "@/app/core/components/scrum/SprintForm.tsx",
-                   "@/app/core/components/scrum/SprintList.tsx",
-                   "@/app/core/components/scrum/UserStoryCard.tsx",
-                   "@/app/core/components/scrum/UserStoryForm.tsx",
-                   "@/app/core/components/scrum/UserStoryList.tsx",
+ecosystem:       Scrum = [
+                   "@/app/scrum/components/BoardColumn.tsx",
+                   "@/app/scrum/components/EpicCard.tsx",
+                   "@/app/scrum/components/EpicForm.tsx",
+                   "@/app/scrum/components/EpicList.tsx",
+                   "@/app/scrum/components/FeatureCard.tsx",
+                   "@/app/scrum/components/FeatureForm.tsx",
+                   "@/app/scrum/components/FeatureList.tsx",
+                   "@/app/scrum/components/FlowSelector.tsx",
+                   "@/app/scrum/components/GlobalJsonExport.tsx",
+                   "@/app/scrum/components/IdeeCard.tsx",
+                   "@/app/scrum/components/IdeeDetailDialog.tsx",
+                   "@/app/scrum/components/IdeeForm.tsx",
+                   "@/app/scrum/components/IdeeList.tsx",
+                   "@/app/scrum/components/PersonaCard.tsx",
+                   "@/app/scrum/components/PersonaForm.tsx",
+                   "@/app/scrum/components/PersonaList.tsx",
+                   "@/app/scrum/components/ScrumNav.tsx",
+                   "@/app/scrum/components/SortableItem.tsx",
+                   "@/app/scrum/components/SortableList.tsx",
+                   "@/app/scrum/components/SprintCard.tsx",
+                   "@/app/scrum/components/SprintEditor.tsx",
+                   "@/app/scrum/components/SprintForm.tsx",
+                   "@/app/scrum/components/SprintList.tsx",
+                   "@/app/scrum/components/SprintStoriesBoard.tsx",
+                   "@/app/scrum/components/TaskBoard.tsx",
+                   "@/app/scrum/components/TaskCard.tsx",
+                   "@/app/scrum/components/TaskForm.tsx",
+                   "@/app/scrum/components/TaskList.tsx",
+                   "@/app/scrum/components/UserStoryBoard.tsx",
+                   "@/app/scrum/components/UserStoryCard.tsx",
+                   "@/app/scrum/components/UserStoryForm.tsx",
+                   "@/app/scrum/components/UserStoryList.tsx",
+                   "@/app/scrum/components/UserStoryMiniCard.tsx",
+                   "@/app/scrum/lib/actions/_helpers.ts",
+                   "@/app/scrum/lib/actions/epic.ts",
+                   "@/app/scrum/lib/actions/feature.ts",
+                   "@/app/scrum/lib/actions/global-json.ts",
+                   "@/app/scrum/lib/actions/idee.ts",
+                   "@/app/scrum/lib/actions/persona.ts",
+                   "@/app/scrum/lib/actions/sprint.ts",
+                   "@/app/scrum/lib/actions/task.ts",
+                   "@/app/scrum/lib/actions/user-story.ts",
+                   "@/app/scrum/lib/services/_crud.ts",
+                   "@/app/scrum/lib/services/epic.ts",
+                   "@/app/scrum/lib/services/feature.ts",
+                   "@/app/scrum/lib/services/global-json.ts",
+                   "@/app/scrum/lib/services/idee.ts",
+                   "@/app/scrum/lib/services/persona.ts",
+                   "@/app/scrum/lib/services/sprint.ts",
+                   "@/app/scrum/lib/services/task.ts",
+                   "@/app/scrum/lib/services/user-story.ts",
+                   "@/app/scrum/lib/storage.ts",
+                   "@/app/scrum/lib/types.ts",
+                   "@/app/scrum/lib/validations.ts",
                  ]
 
-relatedFiles:    ["@/app/core/components/scrum/UserStoryCard.tsx",
-                  "@/app/core/components/scrum/UserStoryForm.tsx",
-                  "@/app/core/components/scrum/SortableItem.tsx",
-                  "@/app/core/components/scrum/SortableList.tsx",
-                  "@/app/core/lib/scrum/types.ts",
-                  "@/app/core/lib/scrum/actions/user-story.ts"]
+relatedFiles:    ["@/app/scrum/components/UserStoryCard.tsx",
+                  "@/app/scrum/components/UserStoryForm.tsx",
+                  "@/app/scrum/components/SortableItem.tsx",
+                  "@/app/scrum/components/SortableList.tsx",
+                  "@/app/scrum/lib/types.ts",
+                  "@/app/scrum/lib/actions/user-story.ts"]
 
 imports:         ["react", "next/navigation", "lucide-react", "sonner",
-                  "@/app/core/lib/scrum/types",
-                  "@/app/core/lib/scrum/actions/user-story",
-                  "@/app/core/components/scrum/UserStoryCard",
-                  "@/app/core/components/scrum/UserStoryForm",
-                  "@/app/core/components/scrum/SortableItem",
-                  "@/app/core/components/scrum/SortableList",
+                  "@/app/scrum/lib/types",
+                  "@/app/scrum/lib/actions/user-story",
+                  "@/app/scrum/components/UserStoryCard",
+                  "@/app/scrum/components/UserStoryForm",
+                  "@/app/scrum/components/SortableItem",
+                  "@/app/scrum/components/SortableList",
                   "@/components/ui/button",
                   "@/components/ui/dialog",
                   "@/components/ui/alert-dialog"]
 
 exports:         ["UserStoryList", "UserStoryListProps"]
 
-useBy:           ["@/app/core/[flow]/user-story/page.tsx"]
+useBy:           ["@/app/scrum/[flow]/user-story/page.tsx"]
 
 userStories:     ["*en tant qu'utilisateur je veux lister et réorganiser les user stories Scrum"]
 
-status:          planned
-pathChecked:     ✘false
-metaDataChecked: ✘false
-scriptChecked:   ✘false
+status:          wip
+pathChecked:     ✔true
+metaDataChecked: ✔true
+scriptChecked:   ✔true
 */
 
 "use client";
@@ -109,11 +144,19 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+/* ------------------------------------------------------------------ */
+/*  Props                                                              */
+/* ------------------------------------------------------------------ */
+
 export interface UserStoryListProps {
   readonly flow: ScrumFlow;
   readonly stories: readonly UserStory[];
   readonly epics: readonly Epic[];
 }
+
+/* ------------------------------------------------------------------ */
+/*  Composant                                                          */
+/* ------------------------------------------------------------------ */
 
 export function UserStoryList({ flow, stories, epics }: UserStoryListProps) {
   const router = useRouter();
@@ -131,6 +174,7 @@ export function UserStoryList({ flow, stories, epics }: UserStoryListProps) {
     setOptimistic(stories);
   }, [stories]);
 
+  /* --- Création --- */
   async function handleCreate(formData: FormData) {
     setPending(true);
     const result = await createUserStoryAction(flow, formData);
@@ -144,6 +188,7 @@ export function UserStoryList({ flow, stories, epics }: UserStoryListProps) {
     }
   }
 
+  /* --- Édition --- */
   async function handleUpdate(formData: FormData) {
     if (!editing) return;
     setPending(true);
@@ -158,6 +203,7 @@ export function UserStoryList({ flow, stories, epics }: UserStoryListProps) {
     }
   }
 
+  /* --- Suppression --- */
   async function handleDelete() {
     if (!deleting) return;
     setPending(true);
@@ -172,6 +218,7 @@ export function UserStoryList({ flow, stories, epics }: UserStoryListProps) {
     }
   }
 
+  /* --- Réordonnancement --- */
   async function handleReorder(orderedIds: string[]) {
     const previous = optimistic;
     const reordered = orderedIds
@@ -199,7 +246,8 @@ export function UserStoryList({ flow, stories, epics }: UserStoryListProps) {
             User stories
           </h2>
           <p className="text-sm text-muted-foreground">
-            {optimistic.length} user stor{optimistic.length > 1 ? "ies" : "y"}
+            {optimistic.length} user stor
+            {optimistic.length > 1 ? "ies" : "y"}
             {optimistic.length > 1 && " — glissez la poignée pour réordonner"}
           </p>
         </div>
@@ -254,6 +302,7 @@ export function UserStoryList({ flow, stories, epics }: UserStoryListProps) {
         </SortableList>
       )}
 
+      {/* Création — epics passé à UserStoryForm pour le NativeSelect */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="flex h-[85vh] flex-col gap-4 overflow-hidden sm:max-w-2xl">
           <DialogHeader className="shrink-0">
@@ -263,10 +312,15 @@ export function UserStoryList({ flow, stories, epics }: UserStoryListProps) {
               l&apos;estimation.
             </DialogDescription>
           </DialogHeader>
-          <UserStoryForm onSubmit={handleCreate} pending={pending} />
+          <UserStoryForm
+            epics={epics}
+            onSubmit={handleCreate}
+            pending={pending}
+          />
         </DialogContent>
       </Dialog>
 
+      {/* Édition — epics passé à UserStoryForm pour le NativeSelect */}
       <Dialog
         open={editing !== null}
         onOpenChange={(open) => !open && setEditing(null)}
@@ -280,6 +334,7 @@ export function UserStoryList({ flow, stories, epics }: UserStoryListProps) {
           </DialogHeader>
           {editing && (
             <UserStoryForm
+              epics={epics}
               defaultValues={editing}
               onSubmit={handleUpdate}
               pending={pending}
@@ -288,6 +343,7 @@ export function UserStoryList({ flow, stories, epics }: UserStoryListProps) {
         </DialogContent>
       </Dialog>
 
+      {/* Suppression */}
       <AlertDialog
         open={deleting !== null}
         onOpenChange={(open) => !open && setDeleting(null)}

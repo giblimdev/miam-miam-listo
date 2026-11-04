@@ -36,7 +36,7 @@ ecosystem:       ScrumUI = [
                    "@/app/scrum/components/UserStoryList.tsx",
                  ]
 
-relatedFiles:    ["@/app/core/lib/scrum/types.ts",
+relatedFiles:    ["@/app/lib/scrum/types.ts",
                   "@/app/scrum/components/EpicList.tsx"]
 
 imports:         ["lucide-react",

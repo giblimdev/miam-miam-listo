@@ -4,20 +4,24 @@ projectId:       new-genesis
 type:            config
 generic:         true
 
-role:            Configuration Better Auth côté serveur : adapter Prisma, email +
-                 mot de passe, OAuth GitHub et Google (optionnels selon env). Expose
-                 la constante `auth` et le type `Session` dérivé.
+role:            Configuration Better Auth côté serveur : adapter Prisma,
+                 email + mot de passe, OAuth GitHub et Google (optionnels
+                 selon env). Expose la constante `auth` et le type
+                 `Session` dérivé.
 
-flow:            Importé par app/api/auth/[...all]/route.ts et lib/auth/session.ts.
-                 Ne jamais importer côté client (protégé par "server-only").
-                 Le plugin nextCookies() doit rester en DERNIER dans la liste.
+flow:            Importé par app/api/auth/[...all]/route.ts et
+                 lib/auth/session.ts. Ne jamais importer côté client
+                 (protégé par "server-only"). Le plugin nextCookies()
+                 doit rester en DERNIER dans la liste.
 
 ecosystem:       Auth = [
-                   "@/app/core/api/auth/[...all]/route.ts",
-                   "@/app/core/auth/login/LoginForm.tsx",
-                   "@/app/core/auth/login/page.tsx",
-                   "@/app/core/auth/register/RegisterForm.tsx",
-                   "@/app/core/auth/register/page.tsx",
+                   "@/app/api/auth/[...all]/route.ts",
+                   "@/app/auth/layout.tsx",
+                   "@/app/auth/login/LoginForm.tsx",
+                   "@/app/auth/login/page.tsx",
+                   "@/app/auth/register/RegisterForm.tsx",
+                   "@/app/auth/register/page.tsx",
+                   "@/app/auth/welcome/page.tsx",
                    "@/components/auth/PasswordInput.tsx",
                    "@/components/auth/PasswordStrength.tsx",
                    "@/lib/auth/auth-client.ts",
@@ -25,7 +29,7 @@ ecosystem:       Auth = [
                    "@/lib/auth/session.ts",
                    "@/lib/validations/auth.ts",
                  ]
-relatedFiles:    ["@/app/core/api/auth/[...all]/route.ts",
+relatedFiles:    ["@/app/api/auth/[...all]/route.ts",
                   "@/lib/auth/session.ts",
                   "@/lib/prisma.ts",
                   "@/lib/env.ts"]
@@ -41,9 +45,9 @@ useBy:           ["@/app/api/auth/[...all]/route.ts",
 
 userStories:     ["*en tant qu'utilisateur je veux que l'authentification soit configurée côté serveur"]
 status:          planned
-pathChecked:     ✘false
-metaDataChecked: ✘false
-scriptChecked:   ✘false
+pathChecked:     ✔true
+metaDataChecked: ✔true
+scriptChecked:   ✔true
 */
 
 import "server-only";

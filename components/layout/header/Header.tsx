@@ -1,6 +1,6 @@
 /*
 path :           components/layout/header/Header.tsx
-tag :            ["layout", "header", "navigation", "slot", "ui"]
+tag :            ["layout", "header", "navigation", "slot", "ui", "platform-role"]
 projectId:       new-genesis
 type :           component
 generic:         false
@@ -9,21 +9,26 @@ role:            En-tête global. Composant CLIENT (useState pour le
                  menu mobile). Reçoit en props :
                  - `notificationSlot` : Server Component async (la
                    cloche) monté sous Suspense par app/layout.tsx.
-                 - `userRole` : rôle de l'utilisateur courant (null =
-                   anonyme), calculé côté serveur par app/layout.tsx
-                   via getSession() + prisma.user.role. Passé à MainNav
-                   pour filtrer les items selon `roles`.
+                 - `platformRole` : rôle plateforme de l'utilisateur
+                   courant (null = anonyme), calculé côté serveur par
+                   app/layout.tsx via getSession() + prisma.user.platformRole.
+                   Passé à MainNav pour filtrer les items selon
+                   `minPlatformRole` (hiérarchie superAdmin > admin > user).
                  Le Header ne lit PAS la session (interdit côté client) :
                  tout vient du layout serveur.
 
 flow:            Client Component → useState(mobileOpen) → rend
                  <header> sticky → zone gauche (Logo + MainNav avec
-                 items + userRole) + zone droite (notificationSlot +
+                 items + platformRole) + zone droite (notificationSlot +
                  UserMenu + burger mobile) → panneau mobile conditionnel.
+                 Filtrage : canSee(item, platformRole) utilise
+                 hasPlatformRank pour la hiérarchie. Anonyme (null) :
+                 seuls les items minPlatformRole: "user" sont visibles.
 
 ecosystem:       Layout = [
                    "@/app/globals.css",
                    "@/app/layout.tsx",
+                   "@/app/blog/components/NotificationBell.tsx",
                    "@/components/layout/footer/Footer.tsx",
                    "@/components/layout/header/Header.tsx",
                    "@/components/layout/header/Logo.tsx",
@@ -34,7 +39,8 @@ ecosystem:       Layout = [
                    "@/components/layout/header/navTypes.ts",
                    "@/components/ui/sonner.tsx",
                    "@/components/ui/tooltip.tsx",
-                   "@/app/blog/components/NotificationBell.tsx",
+                   "@/config/navigation.ts",
+                   "@/config/roles.ts",
                  ]
 
 relatedFiles:    ["@/components/layout/header/Logo.tsx",
@@ -43,7 +49,8 @@ relatedFiles:    ["@/components/layout/header/Logo.tsx",
                   "@/components/layout/header/nav/frontWorkSpace.ts",
                   "@/components/layout/header/navTypes.ts",
                   "@/app/blog/components/NotificationBell.tsx",
-                  "@/app/layout.tsx"]
+                  "@/app/layout.tsx",
+                  "@/config/roles.ts"]
 
 imports:         ["react", "next/link", "lucide-react",
                   "@/components/ui/button",
@@ -51,7 +58,8 @@ imports:         ["react", "next/link", "lucide-react",
                   "@/components/layout/header/MainNav",
                   "@/components/layout/header/UserMenu",
                   "@/components/layout/header/nav/frontWorkSpace",
-                  "@/components/layout/header/navTypes"]
+                  "@/components/layout/header/navTypes",
+                  "@/config/roles"]
 
 exports:         ["default Header", "HeaderProps"]
 
@@ -59,7 +67,7 @@ useBy:           ["@/app/layout.tsx"]
 
 userStories:     ["*en tant que développeur je veux un header avec menu desktop et mobile",
                   "us5100001"]
-status:          done
+status:          wip
 pathChecked:     ✔true
 metaDataChecked: ✔true
 scriptChecked:   ✔true
@@ -78,6 +86,7 @@ import MainNav from "@/components/layout/header/MainNav";
 import UserMenu from "@/components/layout/header/UserMenu";
 import { mainNavData } from "@/components/layout/header/nav/frontWorkSpace";
 import type { NavItem } from "@/components/layout/header/navTypes";
+import { hasPlatformRank, type PlatformRole } from "@/config/roles";
 
 /* ------------------------------------------------------------------ */
 /*  Props                                                              */
@@ -91,22 +100,29 @@ export interface HeaderProps {
    */
   readonly notificationSlot?: React.ReactNode;
   /**
-   * Rôle de l'utilisateur courant ("user", "admin", null = anonyme).
+   * Rôle plateforme de l'utilisateur courant (null = anonyme).
    * Calculé côté serveur par app/layout.tsx. Sert à filtrer les items
-   * de navigation qui portent une restriction `roles`.
+   * de navigation selon `minPlatformRole` (hiérarchie stricte :
+   * superAdmin > admin > user).
    */
-  readonly userRole: string | null;
+  readonly platformRole: PlatformRole | null;
 }
 
 /* ------------------------------------------------------------------ */
-/*  Filtrage par rôle (helper local pour le panneau mobile)            */
+/*  Filtrage par rôle plateforme                                       */
 /* ------------------------------------------------------------------ */
 
-function canSee(item: NavItem, userRole: string | null): boolean {
+function canSee(item: NavItem, platformRole: PlatformRole | null): boolean {
+  /* 1. Filtre `visible` */
   if (item.visible === false) return false;
-  if (!item.roles) return true;
-  if (!userRole) return false;
-  return item.roles.includes(userRole as never);
+
+  /* 2. Anonyme : seuls les items `user` sont visibles. */
+  if (!platformRole) {
+    return item.minPlatformRole === "user";
+  }
+
+  /* 3. Hiérarchie : superAdmin > admin > user. */
+  return hasPlatformRank(platformRole, item.minPlatformRole);
 }
 
 /* ------------------------------------------------------------------ */
@@ -115,13 +131,17 @@ function canSee(item: NavItem, userRole: string | null): boolean {
 
 interface MobileGroupProps {
   readonly item: NavItem;
+  readonly platformRole: PlatformRole | null;
   readonly onNavigate: () => void;
 }
 
-function MobileGroup({ item, onNavigate }: MobileGroupProps) {
+function MobileGroup({ item, platformRole, onNavigate }: MobileGroupProps) {
   const children = (item.children ?? [])
-    .filter((child) => child.visible !== false)
+    .filter((child) => canSee(child, platformRole))
     .sort((a, b) => a.displayOrder - b.displayOrder);
+
+  /* Si aucun enfant visible, ne rien rendre (évite les en-têtes vides). */
+  if (children.length === 0) return null;
 
   return (
     <div className="flex flex-col">
@@ -164,14 +184,17 @@ function MobileGroup({ item, onNavigate }: MobileGroupProps) {
 /*  Header                                                             */
 /* ------------------------------------------------------------------ */
 
-export default function Header({ notificationSlot, userRole }: HeaderProps) {
+export default function Header({
+  notificationSlot,
+  platformRole,
+}: HeaderProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const toggleMobile = () => setMobileOpen((v) => !v);
   const closeMobile = () => setMobileOpen(false);
 
   const sortedItems = [...mainNavData]
-    .filter((item) => canSee(item, userRole))
+    .filter((item) => canSee(item, platformRole))
     .sort((a, b) => a.displayOrder - b.displayOrder);
 
   return (
@@ -179,7 +202,7 @@ export default function Header({ notificationSlot, userRole }: HeaderProps) {
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
         <div className="flex items-center gap-6">
           <Logo />
-          <MainNav items={sortedItems} userRole={userRole} />
+          <MainNav items={sortedItems} platformRole={platformRole} />
         </div>
 
         <div className="flex items-center gap-1.5 sm:gap-2">
@@ -225,7 +248,11 @@ export default function Header({ notificationSlot, userRole }: HeaderProps) {
                       {item.label}
                     </Link>
                   ) : (
-                    <MobileGroup item={item} onNavigate={closeMobile} />
+                    <MobileGroup
+                      item={item}
+                      platformRole={platformRole}
+                      onNavigate={closeMobile}
+                    />
                   )}
                 </li>
               ))}

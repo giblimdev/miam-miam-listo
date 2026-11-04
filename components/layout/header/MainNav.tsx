@@ -1,26 +1,31 @@
 /*
 path :           components/layout/header/MainNav.tsx
+tag :            ["layout", "header", "nav", "platform-role", "rbac"]
 projectId:       new-genesis
 type :           component
 generic:         true
 
 role:            Navigation principale desktop. Reçoit les items + le
-                 rôle de l'utilisateur courant par props. Filtre les
-                 items selon `visible` ET `roles` (un item avec
-                 roles: ["admin"] n'est rendu que si userRole vaut
-                 "admin"). La lecture de usePathname() est isolée dans
-                 NavActiveLink (sous Suspense) — obligatoire avec
-                 Cache Components sur les routes dynamiques, sinon le
-                 prérendu bloque.
+                 rôle plateforme (PlatformRole) de l'utilisateur courant
+                 par props. Filtre les items selon `visible` ET
+                 `minPlatformRole` (un item avec minPlatformRole:
+                 "admin" n'est rendu que si le rôle plateforme de
+                 l'utilisateur a un rang ≥ "admin"). La lecture de
+                 usePathname() est isolée dans NavActiveLink (sous
+                 Suspense) — obligatoire avec Cache Components sur les
+                 routes dynamiques, sinon le prérendu bloque.
 
 flow:            Client Component → useMemo(filtre + tri des items
-                 selon userRole) → NavItemRow (statique) → chaque lien
-                 sous <Suspense><NavActiveLink /></Suspense> pour
-                 l'état actif ; sous-menu si children.
+                 selon platformRole via hasPlatformRank) → NavItemRow
+                 (statique) → chaque lien sous <Suspense><NavActiveLink
+                 /></Suspense> pour l'état actif ; sous-menu si
+                 children. Anonyme (platformRole null) : seuls les items
+                 minPlatformRole: "user" sont visibles.
 
 ecosystem:       Layout = [
                    "@/app/globals.css",
                    "@/app/layout.tsx",
+                   "@/app/blog/components/NotificationBell.tsx",
                    "@/components/layout/footer/Footer.tsx",
                    "@/components/layout/header/Header.tsx",
                    "@/components/layout/header/Logo.tsx",
@@ -31,24 +36,28 @@ ecosystem:       Layout = [
                    "@/components/layout/header/navTypes.ts",
                    "@/components/ui/sonner.tsx",
                    "@/components/ui/tooltip.tsx",
-                   "@/app/blog/components/NotificationBell.tsx",
+                   "@/config/navigation.ts",
+                   "@/config/roles.ts",
                  ]
 
 relatedFiles:    ["@/components/layout/header/navTypes.ts",
                   "@/components/layout/header/NavActiveLink.tsx",
-                  "@/utils/path.ts",
-                  "@/components/layout/header/Header.tsx"]
+                  "@/components/layout/header/Header.tsx",
+                  "@/config/navigation.ts",
+                  "@/config/roles.ts"]
 
 imports:         ["react", "next/link", "lucide-react",
                   "@/components/layout/header/navTypes",
-                  "@/components/layout/header/NavActiveLink"]
+                  "@/components/layout/header/NavActiveLink",
+                  "@/config/roles"]
 
 exports:         ["default MainNav", "MainNavProps"]
 
 useBy:           ["@/components/layout/header/Header.tsx"]
 
-userStories:     ["*en tant que développeur je veux une nav desktop paramétrable"]
-status:          done
+userStories:     ["*en tant que développeur je veux une nav desktop paramétrable par rôle plateforme"]
+
+status:          wip
 pathChecked:     ✔true
 metaDataChecked: ✔true
 scriptChecked:   ✔true
@@ -61,8 +70,9 @@ import { Suspense, useMemo } from "react";
 import Link from "next/link";
 import { ChevronDown, ExternalLink } from "lucide-react";
 
-import type { NavItem } from "./navTypes";
-import { NavActiveLink } from "./NavActiveLink";
+import type { NavItem } from "@/components/layout/header/navTypes";
+import { NavActiveLink } from "@/components/layout/header/NavActiveLink";
+import { hasPlatformRank, type PlatformRole } from "@/config/roles";
 
 /* ------------------------------------------------------------------ */
 /*  Helpers de style                                                   */
@@ -83,18 +93,23 @@ const SUB_LINK_INACTIVE = `${SUB_LINK_BASE} text-foreground hover:bg-muted`;
 const SUB_LINK_ACTIVE = `${SUB_LINK_BASE} bg-primary/10 text-primary`;
 
 /* ------------------------------------------------------------------ */
-/*  Filtrage par rôle                                                  */
+/*  Filtrage par rôle plateforme                                       */
 /* ------------------------------------------------------------------ */
 
-function canSee(item: NavItem, userRole: string | null | undefined): boolean {
+function canSee(
+  item: NavItem,
+  platformRole: PlatformRole | null | undefined,
+): boolean {
   /* 1. Filtre `visible` */
   if (item.visible === false) return false;
-  /* 2. Aucune restriction de rôle → visible pour tous */
-  if (!item.roles) return true;
-  /* 3. Restriction de rôle → utilisateur connecté requis */
-  if (!userRole) return false;
-  /* 4. Vérifier que le rôle de l'utilisateur est autorisé */
-  return item.roles.includes(userRole as never);
+
+  /* 2. Anonyme : seuls les items `user` sont visibles. */
+  if (!platformRole) {
+    return item.minPlatformRole === "user";
+  }
+
+  /* 3. Hiérarchie : superAdmin > admin > user. */
+  return hasPlatformRank(platformRole, item.minPlatformRole);
 }
 
 /* ------------------------------------------------------------------ */
@@ -141,7 +156,10 @@ function NeutralSubLink({ child }: { readonly child: NavItem }) {
         )}
       </span>
       {child.external && (
-        <ExternalLink className="mt-0.5 h-3 w-3 shrink-0 opacity-60" aria-hidden />
+        <ExternalLink
+          className="mt-0.5 h-3 w-3 shrink-0 opacity-60"
+          aria-hidden
+        />
       )}
     </Link>
   );
@@ -268,17 +286,20 @@ function NavItemRow({ item }: NavItemRowProps) {
 export type MainNavProps = {
   /** Items à afficher. Obligatoire : la source est décidée par l'appelant. */
   readonly items: readonly NavItem[];
-  /** Rôle de l'utilisateur courant (null = anonyme). Filtrage `roles`. */
-  readonly userRole?: string | null;
+  /**
+   * Rôle plateforme de l'utilisateur courant (null = anonyme).
+   * Filtrage via hasPlatformRank (hiérarchie superAdmin > admin > user).
+   */
+  readonly platformRole?: PlatformRole | null;
 };
 
-export default function MainNav({ items, userRole }: MainNavProps) {
+export default function MainNav({ items, platformRole }: MainNavProps) {
   const sortedItems = useMemo(
     () =>
       [...items]
-        .filter((item) => canSee(item, userRole))
+        .filter((item) => canSee(item, platformRole ?? null))
         .sort((a, b) => a.displayOrder - b.displayOrder),
-    [items, userRole],
+    [items, platformRole],
   );
 
   return (

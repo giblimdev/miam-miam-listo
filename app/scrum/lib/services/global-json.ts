@@ -1,5 +1,5 @@
 /*
-path :           app/core/lib/services/global-json.ts
+path :           app/scrum/lib/services/global-json.ts
 tag :            ["scrum", "service", "global-json", "export", "persist"]
 projectId:       new-genesis
 type:            helper
@@ -19,36 +19,36 @@ flow:            getGlobalJson(flow) → readScrumFile → ScrumDocument.
                  .safeParse → writeScrumFile (atomique tmp + rename) → ScrumDocument validé.
 
 ecosystem:       Scrum = [
-                   "@/app/core/lib/actions/epic.ts",
-                   "@/app/core/lib/actions/feature.ts",
-                   "@/app/core/lib/actions/global-json.ts",
-                   "@/app/core/lib/actions/idee.ts",
-                   "@/app/core/lib/actions/persona.ts",
-                   "@/app/core/lib/actions/sprint.ts",
-                   "@/app/core/lib/actions/user-story.ts",
-                   "@/app/core/lib/services/epic.ts",
-                   "@/app/core/lib/services/feature.ts",
-                   "@/app/core/lib/services/global-json.ts",
-                   "@/app/core/lib/services/idee.ts",
-                   "@/app/core/lib/services/persona.ts",
-                   "@/app/core/lib/services/sprint.ts",
-                   "@/app/core/lib/services/user-story.ts",
-                   "@/app/core/lib/services/storage.ts",
-                   "@/app/core/lib/services/types.ts",
-                   "@/app/core/lib/services/validations.ts",
+                   "@/app/scrum/lib/actions/epic.ts",
+                   "@/app/scrum/lib/actions/feature.ts",
+                   "@/app/scrum/lib/actions/global-json.ts",
+                   "@/app/scrum/lib/actions/idee.ts",
+                   "@/app/scrum/lib/actions/persona.ts",
+                   "@/app/scrum/lib/actions/sprint.ts",
+                   "@/app/scrum/lib/actions/user-story.ts",
+                   "@/app/scrum/lib/services/epic.ts",
+                   "@/app/scrum/lib/services/feature.ts",
+                   "@/app/scrum/lib/services/global-json.ts",
+                   "@/app/scrum/lib/services/idee.ts",
+                   "@/app/scrum/lib/services/persona.ts",
+                   "@/app/scrum/lib/services/sprint.ts",
+                   "@/app/scrum/lib/services/user-story.ts",
+                   "@/app/scrum/lib/services/storage.ts",
+                   "@/app/scrum/lib/services/types.ts",
+                   "@/app/scrum/lib/validations.ts",
                  ]
 
-relatedFiles:    ["@/app/core/lib/scrum/storage.ts",
-                  "@/app/core/lib/scrum/validations.ts",
-                  "@/app/core/lib/scrum/types.ts"]
+relatedFiles:    ["@/app/scrum/lib/services/storage.ts",
+                  "@/app/scrum/lib/validations.ts",
+                  "@/app/scrum/lib/types.ts"]
 
-imports:         ["@/app/core/lib/scrum/storage",
-                  "@/app/core/lib/scrum/validations",
-                  "@/app/core/lib/scrum/types"]
+imports:         ["@/app/scrum/lib/services/storage",
+                  "@/app/scrum/lib/validations",
+                  "@/app/scrum/lib/types"]
 
 exports:         ["getGlobalJson", "serializeGlobalJson", "saveGlobalJson"]
 
-useBy:           ["@/app/core/lib/scrum/actions/global-json.ts"]
+useBy:           ["@/app/scrum/lib/actions/global-json.ts"]
 
 userStories:     ["*en tant que développeur je veux exporter et persister le document Scrum complet"]
 

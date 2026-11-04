@@ -20,6 +20,9 @@ role:            Page d'accueil de Genesis — présentation EXCLUSIVE du Blog.
                  Core et Genesis restent accessibles via la nav header et
                  directement par leurs URLs /core et /genesis.
 
+                 Le CTA « Créer un compte » pointe vers /auth/register
+                 (route physique réelle).
+
 flow:            Server Component → Hero (badge, titre dégradé, tagline,
                  3 CTAs inline) → grille de 9 <FeatureCard /> → CTA final
                  « Prêt à commencer ? » avec 2 boutons. Aucun état, aucun
@@ -50,9 +53,9 @@ userStories:     ["*en tant qu'utilisateur je veux découvrir le blog et ses fon
                   "*en tant que lecteur je veux accéder directement aux articles et à la recherche"]
 
 status:          wip
-pathChecked:     ✘false
-metaDataChecked: ✘false
-scriptChecked:   ✘false
+pathChecked:     ✔true
+metaDataChecked: ✔true
+scriptChecked:   ✔true
 */
 
 import type { Metadata } from "next";
@@ -325,7 +328,7 @@ export default function HomePage() {
               <ArrowRight className="size-4" aria-hidden />
             </Link>
             <Link
-              href="/core/auth/register"
+              href="/auth/register"
               className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
             >
               Créer un compte

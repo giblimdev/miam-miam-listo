@@ -13,13 +13,13 @@ flow:            createAuthClient() (better-auth/react) → authClient → ré-e
                  des helpers signIn / signUp / signOut / useSession.
 
 ecosystem:       Auth = [
-                   "@/app/core/api/auth/[...all]/route.ts",
-                   "@/app/core/auth/layout.tsx",
-                   "@/app/core/auth/login/LoginForm.tsx",
-                   "@/app/core/auth/login/page.tsx",
-                   "@/app/core/auth/register/RegisterForm.tsx",
-                   "@/app/core/auth/register/page.tsx",
-                   "@/app/core/auth/welcome/page.tsx",
+                   "@/app/api/auth/[...all]/route.ts",
+                   "@/app/auth/layout.tsx",
+                   "@/app/auth/login/LoginForm.tsx",
+                   "@/app/auth/login/page.tsx",
+                   "@/app/auth/register/RegisterForm.tsx",
+                   "@/app/auth/register/page.tsx",
+                   "@/app/auth/welcome/page.tsx",
                    "@/components/auth/PasswordInput.tsx",
                    "@/components/auth/PasswordStrength.tsx",
                    "@/lib/auth/auth-client.ts",
@@ -35,8 +35,8 @@ imports:         ["better-auth/react"]
 
 exports:         ["authClient", "signIn", "signUp", "signOut", "useSession"]
 
-useBy:           ["@/app/core/auth/login/LoginForm.tsx",
-                  "@/app/core/auth/register/RegisterForm.tsx",
+useBy:           ["@/app/auth/login/LoginForm.tsx",
+                  "@/app/auth/register/RegisterForm.tsx",
                   "@/components/layout/header/UserMenu.tsx"]
 
 userStories:     ["*en tant qu'utilisateur je veux me connecter, m'inscrire et me déconnecter côté client"]

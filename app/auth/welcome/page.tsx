@@ -1,5 +1,5 @@
 /*
-path :           app/core/auth/welcome/page.tsx
+path :           app/auth/welcome/page.tsx
 projectId : new-genesis
 type:            page
 generic:         false
@@ -19,11 +19,11 @@ flow:            Client Component → useReducedMotion (accessibilité) →
                  chemin accéléré.
 
 ecosystem:       Auth = [
-                   "@/app/core/auth/login/page.tsx",
-                   "@/app/core/auth/register/page.tsx",
-                   "@/app/core/auth/welcome/page.tsx",
+                   "@/app/auth/login/page.tsx",
+                   "@/app/auth/register/page.tsx",
+                   "@/app/auth/welcome/page.tsx",
                  ]
-relatedFiles:    ["@/app/core/auth/login/page.tsx",
+relatedFiles:    ["@/app/auth/login/page.tsx",
                   "@/components/ui/button.tsx"]
 imports:         ["react", "next/link", "next/navigation",
                   "motion/react", "lucide-react",

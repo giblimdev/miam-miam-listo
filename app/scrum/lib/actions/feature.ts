@@ -1,5 +1,5 @@
 /*
-path :           app/core/lib/scrum/actions/feature.ts
+path :           app/scrum/lib/actions/feature.ts
 tag :            ["scrum", "action", "feature", "server-action", "crud", "reorder"]
 projectId:       new-genesis
 type:            action
@@ -12,41 +12,41 @@ flow:            FormData → parse → service → revalidate → ActionResult.
                  reorderFeaturesAction(flow, orderedIds) → service → revalidate → ActionResult.
 
 ecosystem:       Scrum = [
-                   "@/app/core/lib/scrum/actions/_helpers.ts",
-                   "@/app/core/lib/scrum/actions/epic.ts",
-                   "@/app/core/lib/scrum/actions/feature.ts",
-                   "@/app/core/lib/scrum/actions/global-json.ts",
-                   "@/app/core/lib/scrum/actions/idee.ts",
-                   "@/app/core/lib/scrum/actions/persona.ts",
-                   "@/app/core/lib/scrum/actions/sprint.ts",
-                   "@/app/core/lib/scrum/actions/task.ts",
-                   "@/app/core/lib/scrum/actions/user-story.ts",
-                   "@/app/core/lib/scrum/services/_crud.ts",
-                   "@/app/core/lib/scrum/services/epic.ts",
-                   "@/app/core/lib/scrum/services/feature.ts",
-                   "@/app/core/lib/scrum/services/global-json.ts",
-                   "@/app/core/lib/scrum/services/idee.ts",
-                   "@/app/core/lib/scrum/services/persona.ts",
-                   "@/app/core/lib/scrum/services/sprint.ts",
-                   "@/app/core/lib/scrum/services/task.ts",
-                   "@/app/core/lib/scrum/services/user-story.ts",
-                   "@/app/core/lib/scrum/storage.ts",
-                   "@/app/core/lib/scrum/types.ts",
-                   "@/app/core/lib/scrum/validations.ts",
+                   "@/app/scrum/lib/actions/_helpers.ts",
+                   "@/app/scrum/lib/actions/epic.ts",
+                   "@/app/scrum/lib/actions/feature.ts",
+                   "@/app/scrum/lib/actions/global-json.ts",
+                   "@/app/scrum/lib/actions/idee.ts",
+                   "@/app/scrum/lib/actions/persona.ts",
+                   "@/app/scrum/lib/actions/sprint.ts",
+                   "@/app/scrum/lib/actions/task.ts",
+                   "@/app/scrum/lib/actions/user-story.ts",
+                   "@/app/scrum/lib/services/_crud.ts",
+                   "@/app/scrum/lib/services/epic.ts",
+                   "@/app/scrum/lib/services/feature.ts",
+                   "@/app/scrum/lib/services/global-json.ts",
+                   "@/app/scrum/lib/services/idee.ts",
+                   "@/app/scrum/lib/services/persona.ts",
+                   "@/app/scrum/lib/services/sprint.ts",
+                   "@/app/scrum/lib/services/task.ts",
+                   "@/app/scrum/lib/services/user-story.ts",
+                   "@/app/scrum/lib/storage.ts",
+                   "@/app/scrum/lib/types.ts",
+                   "@/app/scrum/lib/validations.ts",
                  ]
 
-relatedFiles:    ["@/app/core/lib/scrum/services/feature.ts",
-                  "@/app/core/lib/scrum/validations.ts",
-                  "@/app/core/lib/scrum/types.ts"]
+relatedFiles:    ["@/app/scrum/lib/services/feature.ts",
+                  "@/app/scrum/lib/validations.ts",
+                  "@/app/scrum/lib/types.ts"]
 
-imports:         ["@/app/core/lib/scrum/actions/_helpers",
-                  "@/app/core/lib/scrum/types",
-                  "@/app/core/lib/scrum/services/feature"]
+imports:         ["@/app/scrum/lib/actions/_helpers",
+                  "@/app/scrum/lib/types",
+                  "@/app/scrum/lib/services/feature"]
 
 exports:         ["createFeatureAction", "updateFeatureAction",
                   "deleteFeatureAction", "reorderFeaturesAction"]
 
-useBy:           ["@/app/core/components/scrum/FeatureList.tsx"]
+useBy:           ["@/app/scrum/components/FeatureList.tsx"]
 
 userStories:     ["*en tant que développeur je veux muter et réorganiser les features via Server Actions"]
 

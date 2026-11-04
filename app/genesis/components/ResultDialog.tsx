@@ -8,7 +8,10 @@ generic:         false
 role:            Dialog plein écran qui affiche le résultat d'une sélection
                  (ReadFilesResult). Un segmented control simple (JSON | Markdown)
                  en haut de la zone de contenu permet de basculer la vue — pas
-                 de Select, pas de colonne latérale. Largeur 95vw, hauteur 90vh :
+                 de Select, pas de colonne latérale. Largeur fluide : 95vw
+                 sur mobile, puis 2xl/4xl/5xl/6xl aux breakpoints sm/md/lg/xl
+                 (corrige le sm:max-w-sm par défaut de DialogContent qui
+                 plafonnait la modale à 384 px sur desktop). Hauteur 90vh :
                  le bloc <pre> occupe toute la place restante avec scrollbar
                  interne. Copier/Sauvegarder actifs uniquement en mode JSON.
 
@@ -67,9 +70,9 @@ useBy:           ["@/app/genesis/components/ReadFilesPanel.tsx"]
 userStories:     ["*en tant qu'utilisateur je veux prévisualiser et exporter le JSON de ma sélection"]
 
 status:          planned
-pathChecked:     ✘false
-metaDataChecked: ✘false
-scriptChecked:   ✘false
+pathChecked:     ✔true
+metaDataChecked: ✔true
+scriptChecked:   ✔true
 */
 
 "use client";
@@ -195,7 +198,12 @@ export function ResultDialog({ open, onOpenChange, result }: ResultDialogProps) 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex h-[90vh] max-w-[95vw] flex-col gap-3 p-6">
+      {/*
+        Largeur fluide + paliers explicites qui écrasent le
+        sm:max-w-sm par défaut de DialogContent (sinon la modale
+        reste plafonnée à 384 px dès 640 px de viewport).
+      */}
+      <DialogContent className="flex h-[90vh] w-[95vw] flex-col gap-3 p-4 sm:max-w-2xl sm:p-6 md:max-w-4xl lg:max-w-5xl xl:max-w-6xl">
         <DialogHeader className="shrink-0">
           <DialogTitle>Sélection</DialogTitle>
           <DialogDescription>

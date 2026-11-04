@@ -36,14 +36,14 @@ ecosystem:       ScrumUI = [
                    "@/app/core/components/scrum/UserStoryList.tsx",
                  ]
 
-relatedFiles:    ["@/app/core/lib/scrum/types.ts",
-                  "@/app/core/lib/scrum/validations.ts",
-                  "@/app/core/components/scrum/EpicList.tsx"]
+relatedFiles:    ["@/app/lib/scrum/types.ts",
+                  "@/app/lib/scrum/validations.ts",
+                  "@/app/lib/scrum/EpicList.tsx"]
 
 imports:         ["react-hook-form", "@hookform/resolvers/zod",
                   "lucide-react",
-                  "@/app/core/lib/scrum/types",
-                  "@/app/core/lib/scrum/validations",
+                  "@/app/lib/scrum/types",
+                  "@/app/lib/scrum/validations",
                   "@/components/ui/button",
                   "@/components/ui/field",
                   "@/components/ui/input",

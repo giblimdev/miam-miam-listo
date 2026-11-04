@@ -59,7 +59,7 @@ export default function Logo() {
         <Sparkles className="h-4 w-4" aria-hidden />
       </span>
       <span className="text-lg font-bold tracking-tight text-foreground">
-        Genesis
+        MiamMiamListo
       </span>
     </Link>
   );

@@ -1,7 +1,7 @@
 /*
-path :           app/core/components/SprintEditor.tsx
+path :           app/scrum/components/SprintEditor.tsx
 tag :            ["scrum", "sprint", "editor", "dnd", "ui"]
-projectId:       new-genesis
+projectId:       <à fournir>
 type:            component
 generic:         false
 
@@ -22,50 +22,50 @@ flow:            Reçoit flow, sprint, backlog, allStories, allEpics,
                  depuis sprint.storyIds (copie mutable) →
                  useForm<SprintMetaInput> → handleSubmit → submit →
                  updateSprintMetaAction → si ok, updateSprintStoriesAction
-                 → toast + router.push(`/core/${flow}/sprint`) +
+                 → toast + router.push(`/scrum/${flow}/sprint`) +
                  router.refresh().
 
-ecosystem:       ScrumUI = [
-                   "@/app/core/components/scrum/EpicCard.tsx",
-                   "@/app/core/components/scrum/EpicForm.tsx",
-                   "@/app/core/components/scrum/EpicList.tsx",
-                   "@/app/core/components/scrum/FeatureCard.tsx",
-                   "@/app/core/components/scrum/FeatureForm.tsx",
-                   "@/app/core/components/scrum/FeatureList.tsx",
-                   "@/app/core/components/scrum/FlowSelector.tsx",
-                   "@/app/core/components/scrum/GlobalJsonExport.tsx",
-                   "@/app/core/components/scrum/IdeeCard.tsx",
-                   "@/app/core/components/scrum/IdeeDetailDialog.tsx",
-                   "@/app/core/components/scrum/IdeeForm.tsx",
-                   "@/app/core/components/scrum/IdeeList.tsx",
-                   "@/app/core/components/scrum/PersonaCard.tsx",
-                   "@/app/core/components/scrum/PersonaForm.tsx",
-                   "@/app/core/components/scrum/PersonaList.tsx",
-                   "@/app/core/components/scrum/ScrumNav.tsx",
-                   "@/app/core/components/scrum/SortableItem.tsx",
-                   "@/app/core/components/scrum/SortableList.tsx",
-                   "@/app/core/components/scrum/SprintCard.tsx",
-                   "@/app/core/components/scrum/SprintEditor.tsx",
-                   "@/app/core/components/scrum/SprintForm.tsx",
-                   "@/app/core/components/scrum/SprintList.tsx",
-                   "@/app/core/components/scrum/SprintStoriesBoard.tsx",
-                   "@/app/core/components/scrum/UserStoryCard.tsx",
-                   "@/app/core/components/scrum/UserStoryForm.tsx",
-                   "@/app/core/components/scrum/UserStoryList.tsx",
-                   "@/app/core/components/scrum/UserStoryMiniCard.tsx",
+ecosystem:       Scrum = [
+                   "@/app/scrum/components/EpicCard.tsx",
+                   "@/app/scrum/components/EpicForm.tsx",
+                   "@/app/scrum/components/EpicList.tsx",
+                   "@/app/scrum/components/FeatureCard.tsx",
+                   "@/app/scrum/components/FeatureForm.tsx",
+                   "@/app/scrum/components/FeatureList.tsx",
+                   "@/app/scrum/components/FlowSelector.tsx",
+                   "@/app/scrum/components/GlobalJsonExport.tsx",
+                   "@/app/scrum/components/IdeeCard.tsx",
+                   "@/app/scrum/components/IdeeDetailDialog.tsx",
+                   "@/app/scrum/components/IdeeForm.tsx",
+                   "@/app/scrum/components/IdeeList.tsx",
+                   "@/app/scrum/components/PersonaCard.tsx",
+                   "@/app/scrum/components/PersonaForm.tsx",
+                   "@/app/scrum/components/PersonaList.tsx",
+                   "@/app/scrum/components/ScrumNav.tsx",
+                   "@/app/scrum/components/SortableItem.tsx",
+                   "@/app/scrum/components/SortableList.tsx",
+                   "@/app/scrum/components/SprintCard.tsx",
+                   "@/app/scrum/components/SprintEditor.tsx",
+                   "@/app/scrum/components/SprintForm.tsx",
+                   "@/app/scrum/components/SprintList.tsx",
+                   "@/app/scrum/components/SprintStoriesBoard.tsx",
+                   "@/app/scrum/components/UserStoryCard.tsx",
+                   "@/app/scrum/components/UserStoryForm.tsx",
+                   "@/app/scrum/components/UserStoryList.tsx",
+                   "@/app/scrum/components/UserStoryMiniCard.tsx",
                  ]
 
-relatedFiles:    ["@/app/core/components/scrum/SprintStoriesBoard.tsx",
-                  "@/app/core/lib/scrum/types.ts",
-                  "@/app/core/lib/scrum/actions/sprint.ts",
-                  "@/app/core/[flow]/sprint/[sprintId]/edit/page.tsx"]
+relatedFiles:    ["@/app/scrum/components/SprintStoriesBoard.tsx",
+                  "@/app/scrum/lib/types.ts",
+                  "@/app/scrum/lib/actions/sprint.ts",
+                  "@/app/scrum/[flow]/sprint/[sprintId]/edit/page.tsx"]
 
 imports:         ["react", "next/navigation", "react-hook-form",
                   "@hookform/resolvers/zod", "lucide-react", "sonner",
-                  "@/app/core/lib/scrum/types",
-                  "@/app/core/lib/scrum/validations",
-                  "@/app/core/lib/scrum/actions/sprint",
-                  "@/app/core/components/scrum/SprintStoriesBoard",
+                  "@/app/scrum/lib/types",
+                  "@/app/scrum/lib/validations",
+                  "@/app/scrum/lib/actions/sprint",
+                  "@/app/scrum/components/SprintStoriesBoard",
                   "@/components/ui/button",
                   "@/components/ui/field",
                   "@/components/ui/input",
@@ -73,14 +73,14 @@ imports:         ["react", "next/navigation", "react-hook-form",
 
 exports:         ["SprintEditor", "SprintEditorProps"]
 
-useBy:           ["@/app/core/[flow]/sprint/[sprintId]/edit/page.tsx"]
+useBy:           ["@/app/scrum/[flow]/sprint/[sprintId]/edit/page.tsx"]
 
 userStories:     ["*en tant qu'utilisateur je veux éditer un sprint et organiser ses US par DnD"]
 
-status:          planned
-pathChecked:     ✘false
-metaDataChecked: ✘false
-scriptChecked:   ✘false
+status:          wip
+pathChecked:     ✔true
+metaDataChecked: ✔true
+scriptChecked:   ✔true
 */
 
 "use client";
@@ -93,7 +93,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeft, Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
 
-import type { Epic, ScrumFlow, Sprint, UserStory } from "@/app/scrum/lib/types";
+import type {
+  Epic,
+  ScrumFlow,
+  Sprint,
+  UserStory,
+} from "@/app/scrum/lib/types";
 import {
   sprintMetaInputSchema,
   type SprintMetaInput,
@@ -217,12 +222,14 @@ export function SprintEditor({
     }
 
     toast.success("Sprint enregistré.");
-    router.push(`/core/${flow}/sprint`);
+    /* ✅ Route physique réelle : /scrum/${flow}/sprint */
+    router.push(`/scrum/${flow}/sprint`);
     router.refresh();
   }
 
   function handleCancel() {
-    router.push(`/core/${flow}/sprint`);
+    /* ✅ Route physique réelle : /scrum/${flow}/sprint */
+    router.push(`/scrum/${flow}/sprint`);
   }
 
   return (
@@ -360,8 +367,10 @@ export function SprintEditor({
           {otherSprintsStoryCount > 0 && (
             <p className="text-xs text-muted-foreground">
               {otherSprintsStoryCount} US{" "}
-              {otherSprintsStoryCount > 1 ? "sont assignées" : "est assignée"} à
-              d&apos;autres sprints. Gérez-les depuis leur page respective.
+              {otherSprintsStoryCount > 1
+                ? "sont assignées"
+                : "est assignée"}{" "}
+              à d&apos;autres sprints. Gérez-les depuis leur page respective.
             </p>
           )}
         </header>

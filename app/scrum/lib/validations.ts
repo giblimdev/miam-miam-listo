@@ -1,50 +1,55 @@
 /*
-path :           app/core/lib/validations.ts
+path :           app/scrum/lib/validations.ts
 tag :            ["scrum", "validation", "zod", "strict", "config"]
-projectId:       new-genesis
+projectId:       <à fournir>
 type:            config
 generic:         true
 
 role:            Schémas Zod pour la validation runtime du module Scrum.
                  Un schéma d'input par entité (idee, feature, persona, epic,
                  userStory, sprint, task) + le schéma du document complet +
-                 le payload de réordonnancement. Depuis l'ajout de Task :
-                 taskInputSchema valide titre, description optionnelle,
-                 statut (todo/in_progress/done), storyId (US parente),
-                 assignee et estimate optionnels. scrumDocumentSchema
+                 le payload de réordonnancement. Depuis l'ajout du backlog
+                 implicite : taskInputSchema.storyId est OPTIONNEL (une task
+                 peut exister sans être rattachée à une UserStory) et
+                 userStoryInputSchema.epicId reste OPTIONNEL (une US peut
+                 exister sans être rattachée à un Epic). scrumDocumentSchema
                  accueille `task` avec `.default([])` pour migrer
                  silencieusement les documents antérieurs (aucune clé
-                 `task` → tableau vide). scrumDocumentSchema reste en mode
-                 strict (clés inconnues rejetées). reorderInputSchema impose
-                 l'unicité des ids (refine) en plus de la longueur minimale.
+                 `task` → tableau vide), et `task.storyId` est
+                 `.optional()` pour refléter le backlog implicite.
+                 scrumDocumentSchema reste en mode strict (clés inconnues
+                 rejetées). reorderInputSchema impose l'unicité des ids
+                 (refine) en plus de la longueur minimale.
 
 flow:            Module TypeScript pur → export des schémas Zod et des types
                  inférés. Aucun état, aucun effet, aucune dépendance runtime
                  autre que zod.
 
 ecosystem:       Scrum = [
-                   "@/app/core/lib/scrum/actions/epic.ts",
-                   "@/app/core/lib/scrum/actions/feature.ts",
-                   "@/app/core/lib/scrum/actions/global-json.ts",
-                   "@/app/core/lib/scrum/actions/idee.ts",
-                   "@/app/core/lib/scrum/actions/persona.ts",
-                   "@/app/core/lib/scrum/actions/sprint.ts",
-                   "@/app/core/lib/scrum/actions/task.ts",
-                   "@/app/core/lib/scrum/actions/user-story.ts",
-                   "@/app/core/lib/scrum/services/epic.ts",
-                   "@/app/core/lib/scrum/services/feature.ts",
-                   "@/app/core/lib/scrum/services/global-json.ts",
-                   "@/app/core/lib/scrum/services/idee.ts",
-                   "@/app/core/lib/scrum/services/persona.ts",
-                   "@/app/core/lib/scrum/services/sprint.ts",
-                   "@/app/core/lib/scrum/services/task.ts",
-                   "@/app/core/lib/scrum/services/user-story.ts",
-                   "@/app/core/lib/scrum/storage.ts",
-                   "@/app/core/lib/scrum/types.ts",
-                   "@/app/core/lib/scrum/validations.ts",
+                   "@/app/scrum/lib/actions/_helpers.ts",
+                   "@/app/scrum/lib/actions/epic.ts",
+                   "@/app/scrum/lib/actions/feature.ts",
+                   "@/app/scrum/lib/actions/global-json.ts",
+                   "@/app/scrum/lib/actions/idee.ts",
+                   "@/app/scrum/lib/actions/persona.ts",
+                   "@/app/scrum/lib/actions/sprint.ts",
+                   "@/app/scrum/lib/actions/task.ts",
+                   "@/app/scrum/lib/actions/user-story.ts",
+                   "@/app/scrum/lib/services/_crud.ts",
+                   "@/app/scrum/lib/services/epic.ts",
+                   "@/app/scrum/lib/services/feature.ts",
+                   "@/app/scrum/lib/services/global-json.ts",
+                   "@/app/scrum/lib/services/idee.ts",
+                   "@/app/scrum/lib/services/persona.ts",
+                   "@/app/scrum/lib/services/sprint.ts",
+                   "@/app/scrum/lib/services/task.ts",
+                   "@/app/scrum/lib/services/user-story.ts",
+                   "@/app/scrum/lib/storage.ts",
+                   "@/app/scrum/lib/types.ts",
+                   "@/app/scrum/lib/validations.ts",
                  ]
 
-relatedFiles:    ["@/app/core/lib/scrum/types.ts"]
+relatedFiles:    ["@/app/scrum/lib/types.ts"]
 
 imports:         ["zod"]
 
@@ -57,29 +62,29 @@ exports:         ["ideeInputSchema", "featureInputSchema", "personaInputSchema",
                   "SprintStoriesInput", "TaskInput", "ScrumDocumentInput",
                   "ReorderInput"]
 
-useBy:           ["@/app/core/lib/scrum/storage.ts",
-                  "@/app/core/lib/scrum/services/idee.ts",
-                  "@/app/core/lib/scrum/services/feature.ts",
-                  "@/app/core/lib/scrum/services/persona.ts",
-                  "@/app/core/lib/scrum/services/epic.ts",
-                  "@/app/core/lib/scrum/services/user-story.ts",
-                  "@/app/core/lib/scrum/services/sprint.ts",
-                  "@/app/core/lib/scrum/services/task.ts",
-                  "@/app/core/lib/scrum/services/global-json.ts",
-                  "@/app/core/lib/scrum/actions/idee.ts",
-                  "@/app/core/lib/scrum/actions/feature.ts",
-                  "@/app/core/lib/scrum/actions/persona.ts",
-                  "@/app/core/lib/scrum/actions/epic.ts",
-                  "@/app/core/lib/scrum/actions/user-story.ts",
-                  "@/app/core/lib/scrum/actions/sprint.ts",
-                  "@/app/core/lib/scrum/actions/task.ts"]
+useBy:           ["@/app/scrum/lib/storage.ts",
+                  "@/app/scrum/lib/services/idee.ts",
+                  "@/app/scrum/lib/services/feature.ts",
+                  "@/app/scrum/lib/services/persona.ts",
+                  "@/app/scrum/lib/services/epic.ts",
+                  "@/app/scrum/lib/services/user-story.ts",
+                  "@/app/scrum/lib/services/sprint.ts",
+                  "@/app/scrum/lib/services/task.ts",
+                  "@/app/scrum/lib/services/global-json.ts",
+                  "@/app/scrum/lib/actions/idee.ts",
+                  "@/app/scrum/lib/actions/feature.ts",
+                  "@/app/scrum/lib/actions/persona.ts",
+                  "@/app/scrum/lib/actions/epic.ts",
+                  "@/app/scrum/lib/actions/user-story.ts",
+                  "@/app/scrum/lib/actions/sprint.ts",
+                  "@/app/scrum/lib/actions/task.ts"]
 
 userStories:     ["*en tant que développeur je veux valider les entrées Scrum avec Zod"]
 
-status:          planned
-pathChecked:     ✘false
-metaDataChecked: ✘false
-scriptChecked:   ✘false
+status:          wip
+pathChecked:     ✔true
+metaDataChecked: ✔true
+scriptChecked:   ✔true
 */
 
 import { z } from "zod";
@@ -88,14 +93,14 @@ import { z } from "zod";
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
-const requiredText = (max = 5000) =>
+const requiredText = (max = 10000) =>
   z
     .string()
     .trim()
     .min(1, "Ce champ est requis.")
     .max(max, `Maximum ${max} caractères.`);
 
-const optionalText = (max = 5000) =>
+const optionalText = (max = 10000) =>
   z
     .string()
     .trim()
@@ -114,9 +119,9 @@ const stringArray = z
 
 export const ideeInputSchema = z.object({
   title: requiredText(200),
-  problem: requiredText(5000),
-  hypotheses: requiredText(5000),
-  context: optionalText(2000),
+  problem: requiredText(10000),
+  hypotheses: requiredText(10000),
+  context: optionalText(10000),
 });
 
 export type IdeeInput = z.input<typeof ideeInputSchema>;
@@ -161,7 +166,7 @@ export const epicInputSchema = z.object({
 export type EpicInput = z.input<typeof epicInputSchema>;
 
 /* ------------------------------------------------------------------ */
-/*  User Story                                                         */
+/*  User Story — epicId OPTIONNEL (backlog implicite)                  */
 /* ------------------------------------------------------------------ */
 
 export const userStoryInputSchema = z.object({
@@ -204,14 +209,14 @@ export const sprintStoriesInputSchema = z.object({
 export type SprintStoriesInput = z.input<typeof sprintStoriesInputSchema>;
 
 /* ------------------------------------------------------------------ */
-/*  Task                                                               */
-/* ------------------------------------------------------------------ */ // ← AJOUT (bloc entier)
+/*  Task — storyId OPTIONNEL (backlog implicite)                       */
+/* ------------------------------------------------------------------ */
 
 export const taskInputSchema = z.object({
   title: requiredText(200),
   description: optionalText(2000),
   status: z.enum(["todo", "in_progress", "done"]),
-  storyId: requiredText(100),
+  storyId: optionalText(100),
   assignee: optionalText(100),
   estimate: optionalText(100),
 });
@@ -295,14 +300,14 @@ export const scrumDocumentSchema = z
         })
         .strict(),
     ),
-    task: z // ← AJOUT (bloc entier)
+    task: z
       .array(
         entityBaseSchema
           .extend({
             title: z.string(),
             description: z.string().optional(),
             status: z.enum(["todo", "in_progress", "done"]),
-            storyId: z.string(),
+            storyId: z.string().optional(),
             assignee: z.string().optional(),
             estimate: z.string().optional(),
           })

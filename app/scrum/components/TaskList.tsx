@@ -1,79 +1,112 @@
 /*
-path :           app/core/components/TaskList.tsx
+path :           app/scrum/components/TaskList.tsx
 tag :            ["scrum", "task", "list", "ui", "dnd"]
-projectId:       new-genesis
+projectId:       <à fournir>
 type:            component
 generic:         false
 
 role:            Liste des tasks d'un flux Scrum avec DnD. Résout
                  storyId → storyTitle via Map pour l'affichage sur
-                 chaque TaskCard. État optimiste. Si aucune UserStory
-                 n'existe, le bouton "Nouvelle task" est désactivé et
-                 un bandeau d'aide est affiché. DialogContent :
+                 chaque TaskCard. État optimiste. Backlog implicite :
+                 une task sans storyId (undefined) n'a pas de titre
+                 résolu → TaskCard affiche "Non rattachée". Si aucune
+                 UserStory n'existe, le bouton "Nouvelle task" est
+                 désactivé et un bandeau d'aide est affiché (lien vers
+                 la page User story du flux). DialogContent :
                  `flex h-[85vh] flex-col overflow-hidden` + `sm:max-w-2xl`.
 
 flow:            flow + tasks + stories → Map<storyId, storyTitle> →
                  useState(optimistic) → useEffect resync → SortableList +
                  SortableItem → handleReorder → Server Action → refresh
-                 ou rollback.
+                 ou rollback. storyTitle résolu uniquement si
+                 task.storyId existe (court-circuit `task.storyId ?
+                 ... : undefined`), sinon TaskCard affiche "Non rattachée".
 
-ecosystem:       ScrumUI = [
-                   "@/app/core/components/scrum/EpicCard.tsx",
-                   "@/app/core/components/scrum/EpicForm.tsx",
-                   "@/app/core/components/scrum/EpicList.tsx",
-                   "@/app/core/components/scrum/FeatureCard.tsx",
-                   "@/app/core/components/scrum/FeatureForm.tsx",
-                   "@/app/core/components/scrum/FeatureList.tsx",
-                   "@/app/core/components/scrum/FlowSelector.tsx",
-                   "@/app/core/components/scrum/GlobalJsonExport.tsx",
-                   "@/app/core/components/scrum/IdeeCard.tsx",
-                   "@/app/core/components/scrum/IdeeForm.tsx",
-                   "@/app/core/components/scrum/IdeeList.tsx",
-                   "@/app/core/components/scrum/PersonaCard.tsx",
-                   "@/app/core/components/scrum/PersonaForm.tsx",
-                   "@/app/core/components/scrum/PersonaList.tsx",
-                   "@/app/core/components/scrum/ScrumNav.tsx",
-                   "@/app/core/components/scrum/SortableItem.tsx",
-                   "@/app/core/components/scrum/SortableList.tsx",
-                   "@/app/core/components/scrum/SprintCard.tsx",
-                   "@/app/core/components/scrum/SprintForm.tsx",
-                   "@/app/core/components/scrum/SprintList.tsx",
-                   "@/app/core/components/scrum/TaskCard.tsx",
-                   "@/app/core/components/scrum/TaskForm.tsx",
-                   "@/app/core/components/scrum/TaskList.tsx",
-                   "@/app/core/components/scrum/UserStoryCard.tsx",
-                   "@/app/core/components/scrum/UserStoryForm.tsx",
-                   "@/app/core/components/scrum/UserStoryList.tsx",
+ecosystem:       Scrum = [
+                   "@/app/scrum/components/BoardColumn.tsx",
+                   "@/app/scrum/components/EpicCard.tsx",
+                   "@/app/scrum/components/EpicForm.tsx",
+                   "@/app/scrum/components/EpicList.tsx",
+                   "@/app/scrum/components/FeatureCard.tsx",
+                   "@/app/scrum/components/FeatureForm.tsx",
+                   "@/app/scrum/components/FeatureList.tsx",
+                   "@/app/scrum/components/FlowSelector.tsx",
+                   "@/app/scrum/components/GlobalJsonExport.tsx",
+                   "@/app/scrum/components/IdeeCard.tsx",
+                   "@/app/scrum/components/IdeeDetailDialog.tsx",
+                   "@/app/scrum/components/IdeeForm.tsx",
+                   "@/app/scrum/components/IdeeList.tsx",
+                   "@/app/scrum/components/PersonaCard.tsx",
+                   "@/app/scrum/components/PersonaForm.tsx",
+                   "@/app/scrum/components/PersonaList.tsx",
+                   "@/app/scrum/components/ScrumNav.tsx",
+                   "@/app/scrum/components/SortableItem.tsx",
+                   "@/app/scrum/components/SortableList.tsx",
+                   "@/app/scrum/components/SprintCard.tsx",
+                   "@/app/scrum/components/SprintEditor.tsx",
+                   "@/app/scrum/components/SprintForm.tsx",
+                   "@/app/scrum/components/SprintList.tsx",
+                   "@/app/scrum/components/SprintStoriesBoard.tsx",
+                   "@/app/scrum/components/TaskBoard.tsx",
+                   "@/app/scrum/components/TaskCard.tsx",
+                   "@/app/scrum/components/TaskForm.tsx",
+                   "@/app/scrum/components/TaskList.tsx",
+                   "@/app/scrum/components/UserStoryBoard.tsx",
+                   "@/app/scrum/components/UserStoryCard.tsx",
+                   "@/app/scrum/components/UserStoryForm.tsx",
+                   "@/app/scrum/components/UserStoryList.tsx",
+                   "@/app/scrum/components/UserStoryMiniCard.tsx",
+                   "@/app/scrum/lib/actions/_helpers.ts",
+                   "@/app/scrum/lib/actions/epic.ts",
+                   "@/app/scrum/lib/actions/feature.ts",
+                   "@/app/scrum/lib/actions/global-json.ts",
+                   "@/app/scrum/lib/actions/idee.ts",
+                   "@/app/scrum/lib/actions/persona.ts",
+                   "@/app/scrum/lib/actions/sprint.ts",
+                   "@/app/scrum/lib/actions/task.ts",
+                   "@/app/scrum/lib/actions/user-story.ts",
+                   "@/app/scrum/lib/services/_crud.ts",
+                   "@/app/scrum/lib/services/epic.ts",
+                   "@/app/scrum/lib/services/feature.ts",
+                   "@/app/scrum/lib/services/global-json.ts",
+                   "@/app/scrum/lib/services/idee.ts",
+                   "@/app/scrum/lib/services/persona.ts",
+                   "@/app/scrum/lib/services/sprint.ts",
+                   "@/app/scrum/lib/services/task.ts",
+                   "@/app/scrum/lib/services/user-story.ts",
+                   "@/app/scrum/lib/storage.ts",
+                   "@/app/scrum/lib/types.ts",
+                   "@/app/scrum/lib/validations.ts",
                  ]
 
-relatedFiles:    ["@/app/core/components/scrum/TaskCard.tsx",
-                  "@/app/core/components/scrum/TaskForm.tsx",
-                  "@/app/core/components/scrum/SortableItem.tsx",
-                  "@/app/core/components/scrum/SortableList.tsx",
-                  "@/app/core/lib/scrum/types.ts",
-                  "@/app/core/lib/scrum/actions/task.ts"]
+relatedFiles:    ["@/app/scrum/components/TaskCard.tsx",
+                  "@/app/scrum/components/TaskForm.tsx",
+                  "@/app/scrum/components/SortableItem.tsx",
+                  "@/app/scrum/components/SortableList.tsx",
+                  "@/app/scrum/lib/types.ts",
+                  "@/app/scrum/lib/actions/task.ts"]
 
 imports:         ["react", "next/navigation", "lucide-react", "sonner",
-                  "@/app/core/lib/scrum/types",
-                  "@/app/core/lib/scrum/actions/task",
-                  "@/app/core/components/scrum/TaskCard",
-                  "@/app/core/components/scrum/TaskForm",
-                  "@/app/core/components/scrum/SortableItem",
-                  "@/app/core/components/scrum/SortableList",
+                  "@/app/scrum/lib/types",
+                  "@/app/scrum/lib/actions/task",
+                  "@/app/scrum/components/TaskCard",
+                  "@/app/scrum/components/TaskForm",
+                  "@/app/scrum/components/SortableItem",
+                  "@/app/scrum/components/SortableList",
                   "@/components/ui/button",
                   "@/components/ui/dialog",
                   "@/components/ui/alert-dialog"]
 
 exports:         ["TaskList", "TaskListProps"]
 
-useBy:           ["@/app/core/[flow]/task/page.tsx"]
+useBy:           ["@/app/scrum/[flow]/task/page.tsx"]
 
 userStories:     ["*en tant qu'utilisateur je veux lister et réorganiser les tasks Scrum"]
 
-status:          planned
-pathChecked:     ✘false
-metaDataChecked: ✘false
-scriptChecked:   ✘false
+status:          wip
+pathChecked:     ✔true
+metaDataChecked: ✔true
+scriptChecked:   ✔true
 */
 
 "use client";
@@ -226,7 +259,7 @@ export function TaskList({ flow, tasks, stories }: TaskListProps) {
             Aucune User Story pour l&apos;instant. Créez au moins une User Story
             dans la section{" "}
             <a
-              href={`/core/${flow}/user-story`}
+              href={`/scrum/${flow}/user-story`}
               className="font-semibold text-chart-3 underline underline-offset-3 hover:text-chart-3/80"
             >
               User story
@@ -243,13 +276,13 @@ export function TaskList({ flow, tasks, stories }: TaskListProps) {
           </h2>
           <p className="text-sm text-muted-foreground">
             {optimistic.length} task{optimistic.length > 1 ? "s" : ""}
-            {optimistic.length > 1 && " — glissez la poignée pour réordonner"}
+            {optimistic.length > 1 &&
+              " — glissez la poignée pour réordonner"}
           </p>
         </div>
         <Button
           type="button"
           onClick={() => setCreateOpen(true)}
-          disabled={noStories}
           title={
             noStories
               ? "Créez d'abord une User Story"
@@ -276,7 +309,6 @@ export function TaskList({ flow, tasks, stories }: TaskListProps) {
           <Button
             type="button"
             onClick={() => setCreateOpen(true)}
-            disabled={noStories}
             className="mt-2"
           >
             <Plus className="size-4" aria-hidden />
@@ -296,7 +328,9 @@ export function TaskList({ flow, tasks, stories }: TaskListProps) {
               <SortableItem key={task.id} id={task.id} disabled={pending}>
                 <TaskCard
                   task={task}
-                  storyTitle={storyTitleById.get(task.storyId)}
+                  storyTitle={
+                    task.storyId ? storyTitleById.get(task.storyId) : undefined
+                  }
                   onEdit={setEditing}
                   onDelete={setDeleting}
                 />

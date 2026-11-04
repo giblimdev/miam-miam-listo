@@ -1,6 +1,6 @@
 /*
 path :           app/layout.tsx
-tag :            ["layout", "root", "fonts", "theme", "providers", "notification-slot", "user-role", "suspense", "io"]
+tag :            ["layout", "root", "fonts", "theme", "providers", "notification-slot", "platform-role", "suspense", "io"]
 projectId:       new-genesis
 type :           layout
 generic:         false
@@ -8,7 +8,7 @@ generic:         false
 role:            Layout racine : html/body, polices, ThemeProvider,
                  TooltipProvider, Toaster, Header, Footer.
 
-                 La lecture de la session (getSession + prisma.user.role)
+                 La lecture de la session (getSession + prisma.user.platformRole)
                  est ISOLÉE dans un composant enfant `<HeaderWithRole>`
                  monté sous `<Suspense>`. `io()` est appelé AVANT
                  `getSession()` ET avant Prisma : Prisma 7 lit `new Date()`
@@ -24,11 +24,11 @@ flow:            RootLayout (sync) → html/body → ThemeProvider →
                  {children} + Footer + Toaster.
 
                  HeaderWithRole → await io() → getSession() → si null :
-                 userRole null → sinon : <Suspense fallback={<Header
-                 userRole={null} />}><UserRoleReader userId /></Suspense>.
+                 platformRole null → sinon : <Suspense fallback={<Header
+                 platformRole={null} />}><UserRoleReader userId /></Suspense>.
                  UserRoleReader → await io() → prisma.user.findUnique
-                 ({ role }) → userRole → <Header userRole={userRole}
-                 notificationSlot={...} />.
+                 ({ platformRole }) → platformRole → <Header
+                 platformRole={platformRole} notificationSlot={...} />.
 
 ecosystem:       Layout = [
                    "@/app/globals.css",
@@ -44,6 +44,8 @@ ecosystem:       Layout = [
                    "@/components/ui/sonner.tsx",
                    "@/components/ui/tooltip.tsx",
                    "@/app/blog/components/NotificationBell.tsx",
+                   "@/config/navigation.ts",
+                   "@/config/roles.ts",
                  ]
 
 relatedFiles:    ["@/app/globals.css",
@@ -51,7 +53,8 @@ relatedFiles:    ["@/app/globals.css",
                   "@/components/layout/header/Header.tsx",
                   "@/app/blog/components/NotificationBell.tsx",
                   "@/lib/auth/session.ts",
-                  "@/lib/prisma.ts"]
+                  "@/lib/prisma.ts",
+                  "@/config/roles.ts"]
 
 imports:         ["next", "next/font/google", "next-themes", "react",
                   "next/cache",
@@ -62,15 +65,16 @@ imports:         ["next", "next/font/google", "next-themes", "react",
                   "@/components/layout/footer/Footer",
                   "@/app/blog/components/NotificationBell",
                   "@/lib/auth/session",
-                  "@/lib/prisma"]
+                  "@/lib/prisma",
+                  "@/config/roles"]
 
 exports:         ["metadata", "default RootLayout"]
 
 useBy:           []
 
-userStories:     ["*en tant que développeur je veux un layout racine avec polices thémables",
+userStories:     ["*en tant que développeur je veux un layout racine avec polices thémables et rôle plateforme",
                   "us5100001"]
-status:          done
+status:          wip
 pathChecked:     ✔true
 metaDataChecked: ✔true
 scriptChecked:   ✔true
@@ -88,9 +92,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import Header from "@/components/layout/header/Header";
 import Footer from "@/components/layout/footer/Footer";
-import { NotificationBell } from "@/app/blog/components/NotificationBell";
 import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
+import { isPlatformRole, type PlatformRole } from "@/config/roles";
 
 /* ------------------------------------------------------------------ */
 /*  Polices                                                            */
@@ -137,11 +141,11 @@ function BellFallback() {
 }
 
 function HeaderFallback() {
-  return <Header userRole={null} />;
+  return <Header platformRole={null} />;
 }
 
 /* ------------------------------------------------------------------ */
-/*  Lecture du rôle Prisma (isolée)                                   */
+/*  Lecture du rôle plateforme Prisma (isolée)                         */
 /* ------------------------------------------------------------------ */
 
 async function UserRoleReader({ userId }: { readonly userId: string }) {
@@ -151,27 +155,28 @@ async function UserRoleReader({ userId }: { readonly userId: string }) {
      bloque le prérendu. */
   await io();
 
-  const role = (
+  const rawRole = (
     await prisma.user.findUnique({
       where: { id: userId },
-      select: { role: true },
+      select: { platformRole: true },
     })
-  )?.role ?? "user";
+  )?.platformRole;
+
+  /* Garde-fou : si la valeur en base est corrompue (ex. "superadmin",
+     "SuperAdmin"), on retombe sur "user". isPlatformRole valide
+     contre PLATFORM_ROLES (source unique). */
+  const platformRole: PlatformRole = isPlatformRole(rawRole) ? rawRole : "user";
 
   return (
     <Header
-      userRole={role}
-      notificationSlot={
-        <Suspense fallback={<BellFallback />}>
-          <NotificationBell />
-        </Suspense>
-      }
+      platformRole={platformRole}
+      notificationSlot={<Suspense fallback={<BellFallback />}></Suspense>}
     />
   );
 }
 
 /* ------------------------------------------------------------------ */
-/*  Header avec rôle (Server Component async, sous Suspense)          */
+/*  Header avec rôle plateforme (Server Component async, sous Suspense)*/
 /* ------------------------------------------------------------------ */
 
 async function HeaderWithRole() {
@@ -185,13 +190,13 @@ async function HeaderWithRole() {
 
   /* Anonyme : Header sans rôle, pas de cloche */
   if (!session?.user) {
-    return <Header userRole={null} />;
+    return <Header platformRole={null} />;
   }
 
-  /* Connecté : le rôle Prisma est lu dans un Suspense séparé,
+  /* Connecté : le rôle plateforme est lu dans un Suspense séparé,
      pour que Prisma ne bloque pas le prérendu de HeaderWithRole. */
   return (
-    <Suspense fallback={<Header userRole={null} />}>
+    <Suspense fallback={<Header platformRole={null} />}>
       <UserRoleReader userId={session.user.id} />
     </Suspense>
   );

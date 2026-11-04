@@ -13,25 +13,25 @@ flow:            Client Component → useState(visible, capsLock) → rend un <I
                  onBlur réinitialise capsLock. Le forwardRef permet à react-hook-form de
                  brancher son ref sur l'input.
 ecosystem:       Auth = [
-                   "@/app/core/auth/login/LoginForm.tsx",
-                   "@/app//core/auth/login/page.tsx",
-                   "@/app//core/auth/register/RegisterForm.tsx",
-                   "@/app//core/auth/register/page.tsx",
+                   "@/app/auth/login/LoginForm.tsx",
+                   "@/app/auth/login/page.tsx",
+                   "@/app/auth/register/RegisterForm.tsx",
+                   "@/app/auth/register/page.tsx",
                    "@/components/auth/PasswordInput.tsx",
                    "@/components/auth/PasswordStrength.tsx",
                    "@/lib/auth/auth-client.ts",
                    "@/lib/auth/session.ts",
                    "@/lib/validations/auth.ts",
                  ]
-relatedFiles:    ["@/app/core//auth/login/LoginForm.tsx",
-                  "@/app/core//auth/register/RegisterForm.tsx",
+relatedFiles:    ["@/app/auth/login/LoginForm.tsx",
+                  "@/app/auth/register/RegisterForm.tsx",
                   "@/components/ui/input.tsx"]
 imports:         ["react", "lucide-react",
                   "@/components/ui/input",
                   "props reçues : Omit<React.InputHTMLAttributes<HTMLInputElement>, \"type\">"]
 exports:         ["PasswordInput", "PasswordInputProps"]
-useBy:           ["@/app/core/auth/login/LoginForm.tsx",
-                  "@/app/core/auth/register/RegisterForm.tsx"]
+useBy:           ["@/app/auth/login/LoginForm.tsx",
+                  "@/app/auth/register/RegisterForm.tsx"]
 
 userStories:     ["*en tant qu'utilisateur je veux voir/masquer mon mot de passe saisi"]
 status:          planned

@@ -1,6 +1,6 @@
 /*
 path :           utils/slug.ts
-projectId:       <à fournir>
+projectId:       new-genesis
 type:            helper
 generic:         true
 

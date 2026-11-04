@@ -13,6 +13,8 @@ role:            Helpers PARTAGÉS par les 8 fichiers d'actions du module Scrum
                  ActionResult / handleActionError depuis @/lib/actions/result.
                  Importé exclusivement par des fichiers "use server" — ce qui
                  garantit son exécution en contexte serveur.
+                 Les paths revalidés sont alignés sur les routes physiques :
+                 /scrum/${flow} et /scrum/${flow}/${section}.
 
 flow:            revalidateScrumFlow(flow, section?) → revalidatePath ×2.
                  parseStringArray(formData, key) → tableau nettoyé (multi-valué
@@ -63,7 +65,6 @@ useBy:           ["@/app/scrum/lib/actions/epic.ts",
                   "@/app/scrum/lib/actions/user-story.ts"]
 
 userStories:     ["*en tant que développeur je veux des helpers d'actions Scrum partagés"]
-
 status:          wip
 pathChecked:     ✔true
 metaDataChecked: ✔true
@@ -91,26 +92,17 @@ export { handleActionError } from "@/lib/actions/result";
  * `section` est optionnel (utile pour les actions qui ne concernent
  * qu'une seule section, ex. "sprint").
  *
- * IMPORTANT : cette fonction doit être appelée depuis une Server Action
- * (le "use server" de l'appelant garantit le contexte serveur requis
- * par revalidatePath).
+ * ⚠️ Le préfixe est `/scrum/` (route physique réelle), pas `/core/`.
  */
 export function revalidateScrumFlow(flow: ScrumFlow, section?: string): void {
-  revalidatePath(`/core/${flow}`);
-  if (section) revalidatePath(`/core/${flow}/${section}`);
+  revalidatePath(`/scrum/${flow}`);
+  if (section) revalidatePath(`/scrum/${flow}/${section}`);
 }
 
 /* ------------------------------------------------------------------ */
 /*  Lecture FormData                                                   */
 /* ------------------------------------------------------------------ */
 
-/**
- * Lit un champ FormData qui peut être :
- * - multi-valué (formData.getAll → string[]) : ex. plusieurs
- *   <input name="personas">
- * - ou une seule chaîne CSV (formData.get + split(",")) : ex. "Marie,Karim"
- * Retourne un tableau nettoyé (trim + filter Boolean).
- */
 export function parseStringArray(formData: FormData, key: string): string[] {
   const values = formData.getAll(key);
   if (values.length > 0) {
