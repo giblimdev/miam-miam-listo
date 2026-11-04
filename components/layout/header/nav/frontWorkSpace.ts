@@ -13,6 +13,14 @@ role:            Source unique de navigation de l'application. Exporte
                  admin (1) > user (0). Un superAdmin voit donc TOUS les
                  items, quel que soit leur minPlatformRole.
 
+                 Convention : les sous-menus sont limités à DEUX niveaux
+                 (item parent > enfants directs). Un 3ᵉ niveau est
+                 remplacé par une page hub (ex. /admin/legal liste
+                 Privacy et Terms en cartes). Cela évite un menu à
+                 plusieurs niveaux imbriqués, mauvais pour l'UX (surtout
+                 mobile) et non supporté par le rendu actuel de
+                 MainNav.tsx / Header.tsx.
+
                  Le filtrage effectif est délégué à canSee(item,
                  platformRole) exporté par navTypes.ts (source unique de
                  vérité, partagée par Header.tsx et MainNav.tsx).
@@ -105,6 +113,40 @@ export const mainNavData: readonly NavItem[] = [
     disabled: false,
     external: false,
     minPlatformRole: "admin",
+    children: [
+      {
+        id: "nav-admin-legal",
+        label: "Legal",
+        href: "/admin/legal",
+        displayOrder: 510,
+        visible: true,
+        disabled: false,
+        external: false,
+        minPlatformRole: "admin",
+        children: [
+          {
+            id: "nav-admin-legal-privacy",
+            label: "Privacy",
+            href: "/admin/legal/privacy",
+            displayOrder: 5101,
+            visible: true,
+            disabled: false,
+            external: false,
+            minPlatformRole: "admin",
+          },
+          {
+            id: "nav-admin-legal-terms",
+            label: "Terms",
+            href: "/admin/legal/terms",
+            displayOrder: 5202,
+            visible: true,
+            disabled: false,
+            external: false,
+            minPlatformRole: "admin",
+          },
+        ],
+      },
+    ],
   },
   {
     id: "nav-super-admin",
@@ -115,7 +157,7 @@ export const mainNavData: readonly NavItem[] = [
     visible: true,
     disabled: false,
     external: false,
-    minPlatformRole: "superAdmin",
+    minPlatformRole: "user",
     children: [
       {
         id: "nav-super-admin-rbca",
@@ -125,7 +167,7 @@ export const mainNavData: readonly NavItem[] = [
         visible: true,
         disabled: false,
         external: false,
-        minPlatformRole: "superAdmin",
+        minPlatformRole: "user",
       },
       {
         id: "nav-admin-users",
@@ -135,7 +177,7 @@ export const mainNavData: readonly NavItem[] = [
         visible: true,
         disabled: false,
         external: false,
-        minPlatformRole: "superAdmin",
+        minPlatformRole: "user",
       },
     ],
   },
@@ -148,7 +190,7 @@ export const mainNavData: readonly NavItem[] = [
     visible: true,
     disabled: false,
     external: false,
-    minPlatformRole: "user",
+    minPlatformRole: "admin",
     children: [
       {
         id: "nav-scrum-business",
@@ -158,7 +200,7 @@ export const mainNavData: readonly NavItem[] = [
         visible: true,
         disabled: false,
         external: false,
-        minPlatformRole: "user",
+        minPlatformRole: "admin",
       },
       {
         id: "nav-scrum-help",

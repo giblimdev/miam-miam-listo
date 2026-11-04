@@ -13,7 +13,7 @@ flow:            createAuthClient() (better-auth/react) → authClient → ré-e
                  des helpers signIn / signUp / signOut / useSession.
 
 ecosystem:       Auth = [
-                   "@/app/api/auth/[...all]/route.ts",
+                   "@/app/api/auth/[...all]/route.ts", 
                    "@/app/auth/layout.tsx",
                    "@/app/auth/login/LoginForm.tsx",
                    "@/app/auth/login/page.tsx",

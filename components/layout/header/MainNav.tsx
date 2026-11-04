@@ -1,32 +1,48 @@
 /*
 path :           components/layout/header/MainNav.tsx
-tag :            ["layout", "header", "nav", "platform-role", "rbac"]
+tag :            ["layout", "header", "nav", "platform-role", "rbac", "recursive", "hover"]
 projectId:       new-genesis
 type :           component
 generic:         true
 
 role:            Navigation principale desktop. Reçoit les items + le
                  rôle plateforme (PlatformRole) de l'utilisateur courant
-                 par props. Filtre les items ET leurs enfants selon
-                 `visible` ET `minPlatformRole` (un item avec
-                 minPlatformRole: "dev" n'est rendu que si le rôle
-                 plateforme de l'utilisateur a un rang ≥ dev, donc dev
-                 ou superAdmin). La lecture de usePathname() est isolée
-                 dans NavActiveLink (sous Suspense) — obligatoire avec
-                 Cache Components sur les routes dynamiques, sinon le
-                 prérendu bloque.
+                 par props. Filtre les items ET leurs enfants (récursif)
+                 selon `visible` ET `minPlatformRole`.
+
+                 OUVERTURE AU SURVOL UNIQUEMENT : chaque item avec
+                 children gère son propre état `open` via useState
+                 (false par défaut). Le sous-menu n'est RENDU DANS LE
+                 DOM que si `open === true` — pas de opacity-0, pas de
+                 data-open, pas de classe conditionnelle fragile. Si
+                 `open` est false, le <ul> n'existe pas : il ne peut
+                 pas être visible.
+
+                 Ouverture : onMouseEnter sur le wrapper de l'item →
+                 setOpen(true). Fermeture : onMouseLeave → setOpen(false)
+                 après un délai de 120ms (laisse le temps à la souris de
+                 traverser le gap entre le bouton et le sous-menu).
+                 Clavier : onFocus ouvre, onBlur ferme (même délai).
+
+                 Rendu RÉCURSIF : un item avec children ouvre un
+                 sous-menu (ChildrenList), et chaque enfant qui a
+                 lui-même des children ouvre un sous-menu imbriqué.
+                 Supporte N niveaux. À partir du 2ᵉ niveau, le sous-menu
+                 s'ouvre à droite du parent (left-full top-0) avec un
+                 chevron ChevronRight.
 
                  canSee est importé depuis navTypes.ts (source unique de
-                 vérité, partagée avec Header.tsx) — plus de duplication
-                 locale qui causait des incohérences desktop/mobile.
+                 vérité, partagée avec Header.tsx).
 
 flow:            Client Component → useMemo(filtre + tri des items
-                 selon platformRole via canSee) → NavItemRow (statique)
-                 → chaque lien sous <Suspense><NavActiveLink /></Suspense>
-                 pour l'état actif ; sous-menu si children, enfants
-                 filtrés via canSee. Anonyme (platformRole null) : seuls
+                 selon platformRole via canSee) → NavItemRow (state
+                 local `open`) → wrapper <li onMouseEnter/onMouseLeave/
+                 onFocus/onBlur> → bouton/lien + sous-menu conditionnel
+                 ({open && <ChildrenList …/>}). ChildrenList rend
+                 ChildrenListItem qui gère son propre `open` pour les
+                 sous-sous-menus. Anonyme (platformRole null) : seuls
                  les items minPlatformRole: "user" sont visibles.
-                 superAdmin : tous les items.
+                 superAdmin : tous.
 
 ecosystem:       Layout = [
                    "@/app/globals.css",
@@ -71,11 +87,11 @@ scriptChecked:   ✔true
 */
 
 "use client";
-// "use client" justifié : useMemo + interactions au survol/clavier.
+// "use client" justifié : useState (open par item) + useMemo + interactions.
 
-import { Suspense, useMemo } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ChevronDown, ExternalLink } from "lucide-react";
+import { ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
 
 import {
   canSee,
@@ -156,59 +172,151 @@ function NeutralSubLink({ child }: { readonly child: NavItem }) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Sous-menu (statique — chaque lien actif sous Suspense)             */
+/*  Sous-menu récursif (N niveaux) — rendu conditionnel                */
 /* ------------------------------------------------------------------ */
 
 interface ChildrenListProps {
   readonly children: readonly NavItem[];
+  readonly platformRole: PlatformRole | null;
+  /** Profondeur (0 = premier sous-menu, 1 = sous-sous-menu, …). */
+  readonly depth: number;
 }
 
-function ChildrenList({ children }: ChildrenListProps) {
+function ChildrenList({ children, platformRole, depth }: ChildrenListProps) {
+  const sorted = useMemo(
+    () =>
+      [...children]
+        .filter((child) => canSee(child, platformRole))
+        .sort((a, b) => a.displayOrder - b.displayOrder),
+    [children, platformRole],
+  );
+
+  if (sorted.length === 0) return null;
+
+  /* Premier niveau : sous le parent (left-0 top-full).
+     Niveaux suivants : à droite du parent (left-full top-0). */
+  const positionClass =
+    depth === 0 ? "left-0 top-full mt-1" : "left-full top-0 ml-1";
+
   return (
     <ul
       role="menu"
-      className="invisible absolute left-0 top-full z-50 mt-1 min-w-[220px] translate-y-1 rounded-lg border border-border bg-popover p-1.5 opacity-0 shadow-lg transition-all duration-150 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100"
+      className={`absolute z-50 min-w-[220px] rounded-lg border border-border bg-popover p-1.5 shadow-lg ${positionClass}`}
     >
-      {children.map((child) => (
+      {sorted.map((child) => (
         <li key={child.id} role="none">
-          {child.href ? (
-            <Suspense fallback={<NeutralSubLink child={child} />}>
-              <NavActiveLink
-                href={child.href}
-                external={child.external}
-                classNameInactive={SUB_LINK_INACTIVE}
-                classNameActive={SUB_LINK_ACTIVE}
-                role="menuitem"
-              >
-                <span className="flex flex-1 flex-col gap-0.5">
-                  <span className="font-medium">{child.label}</span>
-                  {child.description && (
-                    <span className="text-xs text-muted-foreground">
-                      {child.description}
-                    </span>
-                  )}
-                </span>
-                {child.external && (
-                  <ExternalLink
-                    className="mt-0.5 h-3 w-3 shrink-0 opacity-60"
-                    aria-hidden
-                  />
-                )}
-              </NavActiveLink>
-            </Suspense>
-          ) : (
-            <span className="block rounded-md px-2.5 py-2 text-sm text-muted-foreground">
-              {child.label}
-            </span>
-          )}
+          <ChildrenListItem
+            child={child}
+            platformRole={platformRole}
+            depth={depth}
+          />
         </li>
       ))}
     </ul>
   );
 }
 
+interface ChildrenListItemProps {
+  readonly child: NavItem;
+  readonly platformRole: PlatformRole | null;
+  readonly depth: number;
+}
+
+function ChildrenListItem({
+  child,
+  platformRole,
+  depth,
+}: ChildrenListItemProps) {
+  const hasChildren = (child.children?.length ?? 0) > 0;
+  const [open, setOpen] = useState(false);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /* Nettoyage du timer au démontage. */
+  useEffect(
+    () => () => {
+      if (closeTimer.current) clearTimeout(closeTimer.current);
+    },
+    [],
+  );
+
+  function scheduleClose() {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    closeTimer.current = setTimeout(() => setOpen(false), 120);
+  }
+
+  function cancelClose() {
+    if (closeTimer.current) {
+      clearTimeout(closeTimer.current);
+      closeTimer.current = null;
+    }
+    setOpen(true);
+  }
+
+  const content = (
+    <>
+      <span className="flex flex-1 flex-col gap-0.5">
+        <span className="font-medium">{child.label}</span>
+        {child.description && (
+          <span className="text-xs text-muted-foreground">
+            {child.description}
+          </span>
+        )}
+      </span>
+      {child.external && (
+        <ExternalLink
+          className="mt-0.5 h-3 w-3 shrink-0 opacity-60"
+          aria-hidden
+        />
+      )}
+      {hasChildren && (
+        <ChevronRight
+          className="mt-0.5 h-3.5 w-3.5 shrink-0 opacity-60"
+          aria-hidden
+        />
+      )}
+    </>
+  );
+
+  return (
+    <div
+      className="relative"
+      onMouseEnter={hasChildren ? cancelClose : undefined}
+      onMouseLeave={hasChildren ? scheduleClose : undefined}
+      onFocus={hasChildren ? cancelClose : undefined}
+      onBlur={hasChildren ? scheduleClose : undefined}
+    >
+      {child.href ? (
+        <Suspense fallback={<NeutralSubLink child={child} />}>
+          <NavActiveLink
+            href={child.href}
+            external={child.external}
+            classNameInactive={SUB_LINK_INACTIVE}
+            classNameActive={SUB_LINK_ACTIVE}
+            role="menuitem"
+          >
+            {content}
+          </NavActiveLink>
+        </Suspense>
+      ) : (
+        <span className="flex items-start gap-2 rounded-md px-2.5 py-2 text-sm text-muted-foreground">
+          {content}
+        </span>
+      )}
+
+      {/* Sous-sous-menu : rendu UNIQUEMENT si open === true. */}
+      {hasChildren && open && child.children && (
+        <ChildrenList
+          children={child.children}
+          platformRole={platformRole}
+          depth={depth + 1}
+        />
+      )}
+    </div>
+  );
+}
+
 /* ------------------------------------------------------------------ */
-/*  Ligne d'item (statique + slot Suspense pour le point actif)        */
+/*  Ligne d'item (state open par item racine)                          */
 /* ------------------------------------------------------------------ */
 
 interface NavItemRowProps {
@@ -217,6 +325,9 @@ interface NavItemRowProps {
 }
 
 function NavItemRow({ item, platformRole }: NavItemRowProps) {
+  const [open, setOpen] = useState(false);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const sortedChildren = useMemo(() => {
     if (!item.children) return [];
     return [...item.children]
@@ -226,8 +337,34 @@ function NavItemRow({ item, platformRole }: NavItemRowProps) {
 
   const hasChildren = sortedChildren.length > 0;
 
+  useEffect(
+    () => () => {
+      if (closeTimer.current) clearTimeout(closeTimer.current);
+    },
+    [],
+  );
+
+  function scheduleClose() {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    closeTimer.current = setTimeout(() => setOpen(false), 120);
+  }
+
+  function cancelClose() {
+    if (closeTimer.current) {
+      clearTimeout(closeTimer.current);
+      closeTimer.current = null;
+    }
+    setOpen(true);
+  }
+
   return (
-    <li className={hasChildren ? "group relative" : "relative"}>
+    <li
+      className="relative"
+      onMouseEnter={hasChildren ? cancelClose : undefined}
+      onMouseLeave={hasChildren ? scheduleClose : undefined}
+      onFocus={hasChildren ? cancelClose : undefined}
+      onBlur={hasChildren ? scheduleClose : undefined}
+    >
       {item.href ? (
         <Suspense fallback={<NeutralLink item={item} />}>
           <NavActiveLink
@@ -242,7 +379,9 @@ function NavItemRow({ item, platformRole }: NavItemRowProps) {
             )}
             {hasChildren && (
               <ChevronDown
-                className="h-3.5 w-3.5 opacity-60 transition-transform group-hover:rotate-180"
+                className={`h-3.5 w-3.5 opacity-60 transition-transform ${
+                  open ? "rotate-180" : ""
+                }`}
                 aria-hidden
               />
             )}
@@ -254,18 +393,28 @@ function NavItemRow({ item, platformRole }: NavItemRowProps) {
           className={LINK_INACTIVE}
           disabled={item.disabled}
           aria-haspopup={hasChildren ? "menu" : undefined}
+          aria-expanded={hasChildren ? open : undefined}
         >
           {item.label}
           {hasChildren && (
             <ChevronDown
-              className="h-3.5 w-3.5 opacity-60 transition-transform group-hover:rotate-180"
+              className={`h-3.5 w-3.5 opacity-60 transition-transform ${
+                open ? "rotate-180" : ""
+              }`}
               aria-hidden
             />
           )}
         </button>
       )}
 
-      {hasChildren && <ChildrenList children={sortedChildren} />}
+      {/* Sous-menu de premier niveau : rendu UNIQUEMENT si open === true. */}
+      {hasChildren && open && (
+        <ChildrenList
+          children={sortedChildren}
+          platformRole={platformRole}
+          depth={0}
+        />
+      )}
     </li>
   );
 }

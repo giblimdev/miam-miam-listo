@@ -15,6 +15,18 @@ role:            Logo de l'application. Affiche en priorité le logo
                  du survol CSS. Extrait pour être réutilisé par Header
                  (desktop + mobile) et Footer.
 
+                 Note Next/Image (warning « has either width or height
+                 modified, but not the other ») : <Image> est déclaré
+                 avec width={160} height={32} pour le préchargement et
+                 le calcul du layout, mais la taille finale est pilotée
+                 par CSS (`h-8` + `w-auto`). Next.js exige alors que les
+                 DEUX dimensions soient déclarées `auto` en style inline
+                 — sinon il compare width/height déclarés aux styles et
+                 lève le warning. On déclare donc `width: "auto"` ET
+                 `height: "auto"` ; la hauteur réelle reste fixée par
+                 `h-8` (32px), la largeur est déduite du ratio par le
+                 navigateur.
+
 flow:            Server Component → rend un <Link> vers "/" contenant
                  soit l'image <Image src="/mainLogo.png" />, soit le
                  fallback (icône + texte).
@@ -74,6 +86,7 @@ export default function Logo() {
           width={160}
           height={32}
           className="h-8 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
+          style={{ width: "auto", height: "auto" }}
           priority
         />
       ) : (

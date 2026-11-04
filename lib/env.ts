@@ -4,27 +4,47 @@ projectId:       new-genesis
 type:            config
 generic:         true
 
-role:            Validation et typage des variables d'environnement au démarrage. Empêche
-                 le build ou le démarrage serveur si une variable critique manque ou est mal
-                 formée. Source unique de vérité pour tous les accès à process.env côté
+role:            Validation et typage des variables d'environnement au
+                 démarrage. Empêche le build ou le démarrage serveur si
+                 une variable critique manque ou est mal formée. Source
+                 unique de vérité pour tous les accès à process.env côté
                  serveur.
-flow:            Au premier import, envSchema.safeParse() valide process.env → si échec :
-                 console.error des fieldErrors + throw. Si succès : export de l'objet env typé.
-                 Toute lecture côté app doit passer par env.* et non process.env.*.
+
+                 Base de données : deux variables distinctes pour Neon.
+                 - DATABASE_URL          : connexion POOLÉE (runtime,
+                   utilisée par l'adapter @prisma/adapter-neon dans
+                   lib/prisma.ts). Hostname avec « -pooler ».
+                 - DATABASE_URL_UNPOOLED : connexion DIRECTE (migrations
+                   Prisma CLI, lue par prisma7.config.ts). Hostname sans
+                   « -pooler ». Requise pour que `prisma migrate` puisse
+                   exécuter les prepared statements, que le pooler
+                   PgBouncer ne supporte pas.
+
+flow:            Au premier import, envSchema.safeParse() valide
+                 process.env → si échec : console.error des fieldErrors
+                 + throw. Si succès : export de l'objet env typé. Toute
+                 lecture côté app doit passer par env.* et non
+                 process.env.*.
+
 ecosystem:       Lib = [
                    "@/lib/env.ts",
                    "@/lib/prisma.ts",
                  ]
+
 relatedFiles:    ["@/lib/auth/auth.ts",
                   "@/lib/prisma.ts",
                   "@/lib/email/send.ts"]
+
 imports:         ["server-only", "zod"]
+
 exports:         ["env", "Env"]
+
 useBy:           ["@/lib/auth/auth.ts",
                   "@/lib/prisma.ts",
                   "@/lib/email/send.ts"]
 
 userStories:     ["*en tant que développeur je veux valider les env vars au démarrage"]
+
 status:          planned
 pathChecked:     ✘false
 metaDataChecked: ✘false
@@ -40,8 +60,9 @@ import { z } from "zod";
 /* ------------------------------------------------------------------ */
 
 const envSchema = z.object({
-  /* --- Base de données --- */
+  /* --- Base de données (Neon) --- */
   DATABASE_URL: z.string().min(1, "DATABASE_URL manquante."),
+  DATABASE_URL_UNPOOLED: z.string().min(1, "DATABASE_URL_UNPOOLED manquante."),
 
   /* --- Authentification (Better Auth) --- */
   BETTER_AUTH_SECRET: z
@@ -96,6 +117,7 @@ const envSchema = z.object({
 
 const parsed = envSchema.safeParse({
   DATABASE_URL: process.env.DATABASE_URL,
+  DATABASE_URL_UNPOOLED: process.env.DATABASE_URL_UNPOOLED,
 
   BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
   BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
