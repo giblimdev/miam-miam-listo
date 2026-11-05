@@ -1,7 +1,7 @@
 /*
 path :           components/layout/header/Logo.tsx
 tag :            ["layout", "header", "logo", "ui"]
-projectId:       new-genesis
+projectId:       miam-miam-listo
 type:            component
 generic:         false
 
@@ -14,6 +14,10 @@ role:            Logo de l'application. Affiche en priorité le logo
                  Server Component statique, aucune interactivité au-delà
                  du survol CSS. Extrait pour être réutilisé par Header
                  (desktop + mobile) et Footer.
+
+                 AJOUT `shrink-0` : le Link racine ne doit jamais être
+                 compressé dans un conteneur flex (header). Sans cette
+                 contrainte, le logo peut pousser le burger hors écran.
 
                  Note Next/Image (warning « has either width or height
                  modified, but not the other ») : <Image> est déclaré
@@ -32,17 +36,23 @@ flow:            Server Component → rend un <Link> vers "/" contenant
                  fallback (icône + texte).
 
 ecosystem:       Layout = [
+                   "@/app/blog/components/NotificationBell.tsx",
                    "@/app/globals.css",
                    "@/app/layout.tsx",
                    "@/components/layout/footer/Footer.tsx",
                    "@/components/layout/header/Header.tsx",
                    "@/components/layout/header/Logo.tsx",
                    "@/components/layout/header/MainNav.tsx",
+                   "@/components/layout/header/NavActiveLink.tsx",
                    "@/components/layout/header/UserMenu.tsx",
+                   "@/components/layout/header/UserMenuInner.tsx",
                    "@/components/layout/header/nav/frontWorkSpace.ts",
                    "@/components/layout/header/navTypes.ts",
+                   "@/components/ui/sheet.tsx",
                    "@/components/ui/sonner.tsx",
                    "@/components/ui/tooltip.tsx",
+                   "@/config/navigation.ts",
+                   "@/config/roles.ts",
                  ]
 
 relatedFiles:    ["@/components/layout/header/Header.tsx",
@@ -58,7 +68,7 @@ useBy:           ["@/components/layout/header/Header.tsx",
 
 userStories:     ["*en tant qu'utilisateur je veux un logo cliquable qui ramène à l'accueil"]
 
-status:          planned
+status:          wip
 pathChecked:     ✔true
 metaDataChecked: ✔true
 scriptChecked:   ✔true
@@ -77,7 +87,7 @@ export default function Logo() {
     <Link
       href="/"
       aria-label="Retour à l'accueil"
-      className="group inline-flex items-center gap-2 rounded-md px-1 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      className="group inline-flex shrink-0 items-center gap-2 rounded-md px-1 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
     >
       {useImage ? (
         <Image

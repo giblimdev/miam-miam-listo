@@ -1,5 +1,5 @@
 /*
-path :           app/admin/page.tsx
+path :           app/miam/admin/page.tsx
 tag :            ["admin", "hub", "page", "presentation", "features"]
 projectId :      <MiamMiamListo>
 type :           page

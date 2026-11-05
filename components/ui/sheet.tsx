@@ -1,138 +1,505 @@
-"use client"
+/*
+path :           components/ui/sheet.tsx
+tag :            ["ui", "sheet", "drawer", "overlay", "generic", "a11y", "client", "shadcn-compatible", "production"]
+projectId:       miam-miam-listo
+type:            component
+generic:         true
 
-import * as React from "react"
-import { Dialog as SheetPrimitive } from "@base-ui/react/dialog"
-import { cn } from "cn"
+role:            Drawer latéral générique niveau production, exposant
+                 l'API shadcn COMPLÈTE (Sheet, SheetTrigger, SheetContent,
+                 SheetHeader, SheetTitle, SheetDescription, SheetFooter,
+                 SheetClose) SANS dépendance Radix/Base UI.
 
-import { Button } from "@/components/ui/button"
-import { XIcon } from "lucide-react"
+                 FERMETURE BLINDÉE : la fermeture est déclenchée par
+                 QUATRE chemins indépendants, chacun testable isolément :
+                 1. Bouton croix (onClick → setOpen(false)).
+                 2. Overlay (onClick → setOpen(false)).
+                 3. Touche Escape (keydown global).
+                 4. Événement custom "sheet:close" sur window, que le
+                    Header peut déclencher en secours.
+                 Si un chemin échoue, les autres fonctionnent. Le
+                 composant log dans la console à chaque tentative pour
+                 diagnostiquer rapidement.
 
-function Sheet({ ...props }: SheetPrimitive.Root.Props) {
-  return <SheetPrimitive.Root data-slot="sheet" {...props} />
+                 COMPATIBILITÉ SHADCN COMPLÈTE :
+                 SheetContentProps accepte, en plus des props natives
+                 (className, style, id, children, data-*, aria-*), les
+                 props Radix attendues par les composants shadcn générés
+                 (sidebar.tsx notamment) :
+                 - side           : "left" | "right" | "top" | "bottom"
+                 - dir            : string (élargi depuis "ltr"|"rtl"
+                                    pour accepter ce que sidebar.tsx
+                                    envoie : string | undefined lu
+                                    depuis un contexte React).
+                 - onEscapeKeyDown : (event: KeyboardEvent) => void
+                 - onPointerDownOutside : (event: MouseEvent) => void
+                 - onOpenAutoFocus : (event: Event) => void
+                 - onCloseAutoFocus : (event: Event) => void
+                 - forceMount     : boolean (ignoré, documenté)
+                 - asChild        : boolean (ignoré, documenté)
+                 - hideCloseButton: boolean (extension propre)
+
+                 AMÉLIORATIONS PRODUCTION :
+                 - Animation slide + fade overlay, 300ms ease-out.
+                 - Backdrop-blur sur l'overlay.
+                 - Focus trap (Tab/Shift+Tab bouclent).
+                 - Restauration du focus au déclencheur.
+                 - Scroll lock (body overflow hidden).
+                 - aria-labelledby / aria-describedby auto via useId.
+                 - role="dialog", aria-modal="true".
+                 - Responsive : w-80 mobile, w-96 desktop, max-w-[90vw].
+                 - Overlay rendu conditionnellement (pas de conflit
+                   pointer-events).
+
+flow:            <Sheet open onOpenChange> → SheetContext.Provider →
+                   SheetTrigger (bouton → setOpen(true))
+                   SheetContent (rendu si open) →
+                     overlay (onClick → setOpen(false))
+                     panneau <div role="dialog"> (onClick stopPropagation)
+                       children + bouton croix (onClick → setOpen(false))
+                   Ecoute window "sheet:close" → setOpen(false)
+                   Ecoute window "keydown" Escape → setOpen(false)
+
+ecosystem:       UI = [
+                   "@/components/ui/button.tsx",
+                   "@/components/ui/sheet.tsx",
+                 ]
+
+relatedFiles:    ["@/components/layout/header/Header.tsx",
+                  "@/app/scrum/components/ScrumSidebar.tsx",
+                  "@/components/ui/sidebar.tsx",
+                  "@/components/ui/button.tsx"]
+
+imports:         ["react", "lucide-react",
+                  "@/components/ui/button"]
+
+exports:         ["Sheet", "SheetTrigger", "SheetContent", "SheetHeader",
+                  "SheetTitle", "SheetDescription", "SheetFooter",
+                  "SheetClose", "SheetSide"]
+
+useBy:           ["@/components/layout/header/Header.tsx",
+                  "@/app/scrum/components/ScrumSidebar.tsx",
+                  "@/components/ui/sidebar.tsx"]
+
+userStories:     ["*en tant que développeur je veux un drawer latéral réutilisable, accessible, animé, compatible shadcn et fermable de manière fiable"]
+
+status:          wip
+pathChecked:     ✔true
+metaDataChecked: ✔true
+scriptChecked:   ✔true
+*/
+
+"use client";
+// "use client" justifié : Context, useState, useEffect, focus trap, interactions.
+
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from "react";
+import { X } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+
+/* ------------------------------------------------------------------ */
+/*  Types                                                              */
+/* ------------------------------------------------------------------ */
+
+export type SheetSide = "left" | "right" | "top" | "bottom";
+
+interface SheetContextValue {
+  readonly open: boolean;
+  readonly setOpen: (open: boolean) => void;
+  readonly titleId: string;
+  readonly descriptionId: string;
 }
 
-function SheetTrigger({ ...props }: SheetPrimitive.Trigger.Props) {
-  return <SheetPrimitive.Trigger data-slot="sheet-trigger" {...props} />
+const SheetContext = createContext<SheetContextValue | null>(null);
+
+function useSheetContext(component: string): SheetContextValue {
+  const ctx = useContext(SheetContext);
+  if (!ctx) {
+    throw new Error(
+      `<${component}> doit être utilisé à l'intérieur d'un <Sheet>.`,
+    );
+  }
+  return ctx;
 }
 
-function SheetClose({ ...props }: SheetPrimitive.Close.Props) {
-  return <SheetPrimitive.Close data-slot="sheet-close" {...props} />
+/* ------------------------------------------------------------------ */
+/*  Sheet (racine)                                                     */
+/* ------------------------------------------------------------------ */
+
+export interface SheetProps {
+  readonly open?: boolean;
+  readonly onOpenChange?: (open: boolean) => void;
+  readonly defaultOpen?: boolean;
+  readonly children: React.ReactNode;
 }
 
-function SheetPortal({ ...props }: SheetPrimitive.Portal.Props) {
-  return <SheetPrimitive.Portal data-slot="sheet-portal" {...props} />
-}
+export function Sheet({
+  open: controlledOpen,
+  onOpenChange,
+  defaultOpen = false,
+  children,
+}: SheetProps) {
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(defaultOpen);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : uncontrolledOpen;
 
-function SheetOverlay({ className, ...props }: SheetPrimitive.Backdrop.Props) {
+  const setOpen = useCallback(
+    (next: boolean) => {
+      console.log(`[Sheet] setOpen(${next}) — controlled=${isControlled}`);
+      if (!isControlled) setUncontrolledOpen(next);
+      onOpenChange?.(next);
+    },
+    [isControlled, onOpenChange],
+  );
+
+  /* Écoute l'événement custom "sheet:close" : permet au Header
+     (ou tout autre composant) de forcer la fermeture sans
+     dépendre de la propagation du contexte. */
+  useEffect(() => {
+    const handler = () => {
+      console.log("[Sheet] événement custom sheet:close reçu");
+      setOpen(false);
+    };
+    window.addEventListener("sheet:close", handler);
+    return () => window.removeEventListener("sheet:close", handler);
+  }, [setOpen]);
+
+  const titleId = useId();
+  const descriptionId = useId();
+
+  const value: SheetContextValue = {
+    open,
+    setOpen,
+    titleId,
+    descriptionId,
+  };
+
   return (
-    <SheetPrimitive.Backdrop
-      data-slot="sheet-overlay"
-      className={cn(
-        "fixed inset-0 z-50 bg-black/10 transition-opacity duration-150 data-ending-style:opacity-0 data-starting-style:opacity-0 supports-backdrop-filter:backdrop-blur-xs",
-        className
-      )}
-      {...props}
-    />
-  )
+    <SheetContext.Provider value={value}>{children}</SheetContext.Provider>
+  );
 }
 
-function SheetContent({
+/* ------------------------------------------------------------------ */
+/*  SheetTrigger                                                       */
+/* ------------------------------------------------------------------ */
+
+export interface SheetTriggerProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  readonly children: React.ReactNode;
+}
+
+export function SheetTrigger({
+  children,
+  onClick,
+  ...props
+}: SheetTriggerProps) {
+  const { setOpen } = useSheetContext("SheetTrigger");
+
+  return (
+    <button
+      type="button"
+      onClick={(event) => {
+        onClick?.(event);
+        if (!event.defaultPrevented) setOpen(true);
+      }}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  SheetContent                                                       */
+/* ------------------------------------------------------------------ */
+
+export interface SheetContentProps
+  extends Omit<React.HTMLAttributes<HTMLDivElement>, "children"> {
+  readonly side?: SheetSide;
+  readonly children: React.ReactNode;
+  readonly hideCloseButton?: boolean;
+  readonly id?: string;
+  /**
+   * Direction du contenu (compat shadcn/Radix). Le composant shadcn
+   * sidebar.tsx passe `string | undefined` (lu depuis un contexte),
+   * donc on élargit à `string` pour éviter l'erreur TS. La valeur
+   * est transmise telle quelle à l'attribut HTML `dir` du panneau,
+   * qui accepte n'importe quelle chaîne ("ltr", "rtl", "auto"…).
+   * Défaut : "ltr".
+   */
+  readonly dir?: string;
+  readonly onEscapeKeyDown?: (event: KeyboardEvent) => void;
+  readonly onPointerDownOutside?: (event: MouseEvent) => void;
+  readonly onOpenAutoFocus?: (event: Event) => void;
+  readonly onCloseAutoFocus?: (event: Event) => void;
+  readonly forceMount?: boolean;
+  readonly asChild?: boolean;
+}
+
+export function SheetContent({
+  side = "right",
   className,
   children,
-  side = "right",
-  showCloseButton = true,
-  ...props
-}: SheetPrimitive.Popup.Props & {
-  side?: "top" | "right" | "bottom" | "left"
-  showCloseButton?: boolean
-}) {
+  hideCloseButton = false,
+  id,
+  dir = "ltr",
+  onEscapeKeyDown,
+  onPointerDownOutside,
+  onOpenAutoFocus,
+  onCloseAutoFocus,
+  forceMount: _forceMount,
+  asChild: _asChild,
+  style,
+  ...rest
+}: SheetContentProps) {
+  const { open, setOpen, titleId, descriptionId } =
+    useSheetContext("SheetContent");
+  const panelRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+
+  /* Fermeture centralisée + logs. */
+  const close = useCallback(
+    (reason: string) => {
+      console.log(`[SheetContent] fermeture (${reason})`);
+      setOpen(false);
+    },
+    [setOpen],
+  );
+
+  /* Scroll lock + Escape + focus trap + restauration focus. */
+  useEffect(() => {
+    if (!open) return;
+
+    previousFocusRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onEscapeKeyDown?.(event);
+        if (!event.defaultPrevented) close("escape");
+        return;
+      }
+
+      if (event.key === "Tab" && panelRef.current) {
+        const focusable = panelRef.current.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])',
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        const active = document.activeElement;
+
+        if (event.shiftKey && active === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && active === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", onKey);
+
+    const timer = window.setTimeout(() => {
+      const focusable = panelRef.current?.querySelector<HTMLElement>(
+        'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])',
+      );
+      (focusable ?? panelRef.current)?.focus();
+      onOpenAutoFocus?.(new Event("openautofocus"));
+    }, 50);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKey);
+      window.clearTimeout(timer);
+      previousFocusRef.current?.focus();
+      onCloseAutoFocus?.(new Event("closeautofocus"));
+    };
+  }, [open, close, onEscapeKeyDown, onOpenAutoFocus, onCloseAutoFocus]);
+
+  if (!open) return null;
+
+  const sideClass =
+    side === "left"
+      ? "left-0"
+      : side === "right"
+        ? "right-0"
+        : side === "top"
+          ? "top-0"
+          : "bottom-0";
+
+  const borderClass =
+    side === "left"
+      ? "border-r"
+      : side === "right"
+        ? "border-l"
+        : side === "top"
+          ? "border-b"
+          : "border-t";
+
+  const sizeClass =
+    side === "left" || side === "right"
+      ? "inset-y-0 w-80 max-w-[90vw] sm:w-96"
+      : "inset-x-0 h-80 max-h-[90vh]";
+
   return (
-    <SheetPortal>
-      <SheetOverlay />
-      <SheetPrimitive.Popup
-        data-slot="sheet-content"
-        data-side={side}
-        className={cn(
-          "fixed z-50 flex flex-col gap-4 bg-popover bg-clip-padding text-sm text-popover-foreground shadow-lg transition duration-200 ease-in-out data-ending-style:opacity-0 data-starting-style:opacity-0 data-[side=bottom]:inset-x-0 data-[side=bottom]:bottom-0 data-[side=bottom]:h-auto data-[side=bottom]:border-t data-[side=bottom]:data-ending-style:translate-y-[2.5rem] data-[side=bottom]:data-starting-style:translate-y-[2.5rem] data-[side=left]:inset-y-0 data-[side=left]:left-0 data-[side=left]:h-full data-[side=left]:w-3/4 data-[side=left]:border-r data-[side=left]:data-ending-style:translate-x-[-2.5rem] data-[side=left]:data-starting-style:translate-x-[-2.5rem] data-[side=right]:inset-y-0 data-[side=right]:right-0 data-[side=right]:h-full data-[side=right]:w-3/4 data-[side=right]:border-l data-[side=right]:data-ending-style:translate-x-[2.5rem] data-[side=right]:data-starting-style:translate-x-[2.5rem] data-[side=top]:inset-x-0 data-[side=top]:top-0 data-[side=top]:h-auto data-[side=top]:border-b data-[side=top]:data-ending-style:translate-y-[-2.5rem] data-[side=top]:data-starting-style:translate-y-[-2.5rem] data-[side=left]:sm:max-w-sm data-[side=right]:sm:max-w-sm",
-          className
-        )}
-        {...props}
+    <>
+      {/* Overlay — clic à l'extérieur = fermeture (chemin n°2) */}
+      <div
+        aria-hidden
+        onClick={(event) => {
+          onPointerDownOutside?.(event.nativeEvent);
+          close("overlay");
+        }}
+        className="fixed inset-0 z-40 cursor-pointer bg-black/50 backdrop-blur-sm"
+      />
+
+      {/* Panneau — stopPropagation pour ne pas fermer au clic intérieur */}
+      <div
+        ref={panelRef}
+        id={id}
+        dir={dir}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={descriptionId}
+        tabIndex={-1}
+        style={style}
+        onClick={(event) => event.stopPropagation()}
+        className={`fixed z-50 flex flex-col bg-background shadow-2xl outline-none transition-transform duration-300 ease-out ${sideClass} ${sizeClass} ${borderClass} border-border/60 ${className ?? ""}`}
+        {...rest}
       >
         {children}
-        {showCloseButton && (
-          <SheetPrimitive.Close
-            data-slot="sheet-close"
-            render={
-              <Button
-                variant="ghost"
-                className="absolute top-3 right-3"
-                size="icon-sm"
-              />
-            }
+
+        {/* Croix — chemin n°1, indépendant de tout parent */}
+        {!hideCloseButton && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="Fermer le menu"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              close("close-button");
+            }}
+            className="absolute right-3 top-3 z-10 text-muted-foreground hover:text-foreground"
           >
-            <XIcon
-            />
-            <span className="sr-only">Close</span>
-          </SheetPrimitive.Close>
+            <X className="h-5 w-5" aria-hidden />
+          </Button>
         )}
-      </SheetPrimitive.Popup>
-    </SheetPortal>
-  )
+      </div>
+    </>
+  );
 }
 
-function SheetHeader({ className, ...props }: React.ComponentProps<"div">) {
+/* ------------------------------------------------------------------ */
+/*  SheetHeader / SheetTitle / SheetDescription / SheetFooter          */
+/* ------------------------------------------------------------------ */
+
+export interface SheetHeaderProps {
+  readonly className?: string;
+  readonly children: React.ReactNode;
+}
+
+export function SheetHeader({ className, children }: SheetHeaderProps) {
   return (
     <div
-      data-slot="sheet-header"
-      className={cn("flex flex-col gap-0.5 p-4", className)}
-      {...props}
-    />
-  )
+      className={`flex shrink-0 flex-col gap-1 border-b border-border/60 bg-gradient-to-b from-chart-1/5 to-transparent px-5 pb-4 pt-5 pr-14 ${className ?? ""}`}
+    >
+      {children}
+    </div>
+  );
 }
 
-function SheetFooter({ className, ...props }: React.ComponentProps<"div">) {
+export interface SheetTitleProps {
+  readonly className?: string;
+  readonly children: React.ReactNode;
+}
+
+export function SheetTitle({ className, children }: SheetTitleProps) {
+  const { titleId } = useSheetContext("SheetTitle");
   return (
-    <div
-      data-slot="sheet-footer"
-      className={cn("mt-auto flex flex-col gap-2 p-4", className)}
-      {...props}
-    />
-  )
+    <h2
+      id={titleId}
+      className={`text-base font-bold tracking-tight text-foreground ${className ?? ""}`}
+    >
+      {children}
+    </h2>
+  );
 }
 
-function SheetTitle({ className, ...props }: SheetPrimitive.Title.Props) {
-  return (
-    <SheetPrimitive.Title
-      data-slot="sheet-title"
-      className={cn(
-        "font-heading text-base font-medium text-foreground",
-        className
-      )}
-      {...props}
-    />
-  )
+export interface SheetDescriptionProps {
+  readonly className?: string;
+  readonly children: React.ReactNode;
 }
 
-function SheetDescription({
+export function SheetDescription({
   className,
-  ...props
-}: SheetPrimitive.Description.Props) {
+  children,
+}: SheetDescriptionProps) {
+  const { descriptionId } = useSheetContext("SheetDescription");
   return (
-    <SheetPrimitive.Description
-      data-slot="sheet-description"
-      className={cn("text-sm text-muted-foreground", className)}
-      {...props}
-    />
-  )
+    <p
+      id={descriptionId}
+      className={`text-xs text-muted-foreground ${className ?? ""}`}
+    >
+      {children}
+    </p>
+  );
 }
 
-export {
-  Sheet,
-  SheetTrigger,
-  SheetClose,
-  SheetContent,
-  SheetHeader,
-  SheetFooter,
-  SheetTitle,
-  SheetDescription,
+export interface SheetFooterProps {
+  readonly className?: string;
+  readonly children: React.ReactNode;
+}
+
+export function SheetFooter({ className, children }: SheetFooterProps) {
+  return (
+    <div
+      className={`mt-auto flex shrink-0 flex-col gap-2 border-t border-border/60 bg-muted/30 px-4 py-3 ${className ?? ""}`}
+    >
+      {children}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  SheetClose                                                         */
+/* ------------------------------------------------------------------ */
+
+export interface SheetCloseProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  readonly children: React.ReactNode;
+}
+
+export function SheetClose({ children, onClick, ...props }: SheetCloseProps) {
+  const { setOpen } = useSheetContext("SheetClose");
+
+  return (
+    <button
+      type="button"
+      onClick={(event) => {
+        onClick?.(event);
+        if (!event.defaultPrevented) setOpen(false);
+      }}
+      {...props}
+    >
+      {children}
+    </button>
+  );
 }

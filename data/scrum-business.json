@@ -813,132 +813,145 @@
     {
       "id": "98c2456c-f238-44d0-98bd-d4211f4d47eb",
       "createdAt": "2026-11-05T11:35:35.764Z",
-      "updatedAt": "2026-11-05T12:39:53.600Z",
+      "updatedAt": "2026-11-05T16:14:48.269Z",
       "order": 0,
       "title": "Créer un commerce multi-tenant",
       "story": "En tant que Propriétaire de commerce, je veux créer un commerce (nom, type, adresse, horaires, visibilité) afin d'ouvrir mon enseigne sur Miam-miam Listo.",
       "acceptance": "Étant donné que je suis authentifié et que j'ai le rôle owner ou superAdmin, quand je soumets le formulaire de création d'un commerce valide, alors le commerce est créé avec un slug unique (slugifyWithFallback + findFreeSlug), statut=actif, et je deviens automatiquement membre avec role=owner et status=active dans commerce_members. Un autre utilisateur peut être client de ce commerce et merchant d'un autre commerce, jamais les deux sur le même. Les erreurs Zod sont renvoyées dans ActionResult.",
-      "estimate": "5"
+      "estimate": "5",
+      "epicId": "b73e2afe-c0a8-43e3-8071-9496381bf199"
     },
     {
       "id": "160089e7-1bf8-4274-b940-d38816c43b4b",
       "createdAt": "2026-11-05T11:35:35.764Z",
-      "updatedAt": "2026-11-05T12:40:05.028Z",
+      "updatedAt": "2026-11-05T16:14:27.322Z",
       "order": 1,
       "title": "S'authentifier et lire son rôle",
       "story": "En tant qu'utilisateur, je veux m'inscrire, me connecter et voir mon rôle par commerce afin d'accéder aux fonctionnalités adaptées à mon profil.",
       "acceptance": "Étant donné que je soumets le formulaire d'inscription, alors mon compte est créé via Better Auth et je suis redirigé vers /auth/welcome. À chaque requête serveur, getSession() dérive mon userId (jamais un paramètre client). Mes rôles commerce sont lus depuis commerce_members (role owner/staff/client/courier, status pending/active/banned). Les helpers requireSession / requireRole / requireCommerceMember / requireCommerceRole lèvent une erreur 401/403 si la vérification échoue. Le premier utilisateur est promu admin via bootstrap idempotent (ou email ADMIN_EMAIL).",
-      "estimate": "5"
+      "estimate": "5",
+      "epicId": "80331d04-20f1-40a9-9096-a4cc3883925f"
     },
     {
       "id": "160dd7ec-1095-45d2-9293-55d3aa8ede20",
       "createdAt": "2026-11-05T11:35:35.764Z",
-      "updatedAt": "2026-11-05T11:35:35.764Z",
+      "updatedAt": "2026-11-05T16:14:02.179Z",
       "order": 2,
       "title": "Inscrire un client en 2 étapes",
       "story": "En tant que Visiteur, je veux créer un compte en 2 étapes (email + mot de passe, puis nom + téléphone optionnel) afin de pouvoir valider ma commande sans friction.",
       "acceptance": "L'inscription est possible en 2 étapes max. Un magic link est envoyé par email. L'exploration du catalogue est possible sans compte, mais la validation de commande requiert une inscription. La session dure 7 jours avec renouvellement automatique. La récupération de mot de passe fonctionne par email. Le client retrouve ses adresses et son historique. Les erreurs de validation sont renvoyées dans ActionResult.",
-      "estimate": "5"
+      "estimate": "5",
+      "epicId": "80331d04-20f1-40a9-9096-a4cc3883925f"
     },
     {
       "id": "940f3fe5-77a3-421d-bb6f-6c928522deae",
       "createdAt": "2026-11-05T11:35:35.764Z",
-      "updatedAt": "2026-11-05T11:35:35.764Z",
+      "updatedAt": "2026-11-05T16:14:42.214Z",
       "order": 3,
       "title": "Gérer les membres d'un commerce",
       "story": "En tant que Propriétaire de commerce, je veux inviter un staff ou un admin, changer son rôle, le suspendre ou le supprimer afin de faire grandir mon commerce.",
       "acceptance": "La page /merchant/settings/members liste les membres avec rôle et statut. L'invitation par email envoie un magic link. Le changement de rôle est tracé dans l'audit. Un owner unique par commerce (transfert en feature dédiée). Un membre banned ne peut plus accéder au commerce. Les erreurs de validation sont renvoyées dans ActionResult.",
-      "estimate": "8"
+      "estimate": "8",
+      "epicId": "5cae4325-0cd4-41e5-b86f-4a8754f137ea"
     },
     {
       "id": "7943b75e-a740-47b4-916c-3e6814618fc0",
       "createdAt": "2026-11-05T11:35:35.764Z",
-      "updatedAt": "2026-11-05T11:35:35.764Z",
+      "updatedAt": "2026-11-05T16:14:09.190Z",
       "order": 4,
       "title": "Réinitialiser son mot de passe",
       "story": "En tant qu'utilisateur, je veux réinitialiser mon mot de passe via un lien email afin de récupérer l'accès à mon compte.",
       "acceptance": "La page /auth/forgot-password envoie un lien signé valable 1h. La page /auth/reset-password?token=... permet de saisir un nouveau mot de passe. Le token est invalidé après usage. Un email de confirmation est envoyé après succès. Les erreurs de validation sont renvoyées dans ActionResult.",
-      "estimate": "3"
+      "estimate": "3",
+      "epicId": "80331d04-20f1-40a9-9096-a4cc3883925f"
     },
     {
       "id": "0fe51338-8334-4064-8f62-e364d658a9c8",
       "createdAt": "2026-11-05T11:35:35.764Z",
-      "updatedAt": "2026-11-05T11:35:35.764Z",
+      "updatedAt": "2026-11-05T16:14:20.745Z",
       "order": 5,
       "title": "Gérer le catalogue produits",
       "story": "En tant que Propriétaire de commerce ou Merchant, je veux créer, éditer, lister et supprimer des produits (nom, prix, catégorie, options, image, disponibilité) afin de tenir mon catalogue à jour.",
       "acceptance": "Quand je crée un produit, il est ajouté à produits[] avec order=max+1, disponibilité=disponible, et ses options (taille, suppléments) sont portées par options[] avec un prix delta. Un client ne voit que les produits disponibles. Le listing est responsive (grid-cols-1 sm:grid-cols-2 lg:grid-cols-3). Les mutations passent par des Server Actions et revalident /merchant/catalog. Les erreurs de validation sont renvoyées dans ActionResult.",
-      "estimate": "8"
+      "estimate": "8",
+      "epicId": "b73e2afe-c0a8-43e3-8071-9496381bf199"
     },
     {
       "id": "6f61c185-a855-4c2e-bfab-ee7ac7e07b1f",
       "createdAt": "2026-11-05T11:35:35.764Z",
-      "updatedAt": "2026-11-05T11:35:35.764Z",
+      "updatedAt": "2026-11-05T16:15:25.782Z",
       "order": 6,
       "title": "Gérer les catégories et options du catalogue",
       "story": "En tant que Propriétaire de commerce, je veux créer des catégories (entrées, plats, desserts) et des options (taille, cuisson, suppléments) avec prix delta afin d'organiser mon catalogue.",
       "acceptance": "Les catégories sont ordonnées par order. Les options ont un prix delta positif ou nul. Une option peut être marquée indisponible indépendamment du produit. Le POS affiche les options disponibles au moment de la commande. Un produit peut avoir 0 à N options. La suppression d'une catégorie non vide est bloquée. Les erreurs de validation sont renvoyées dans ActionResult.",
-      "estimate": "5"
+      "estimate": "5",
+      "epicId": "d7892c5e-fbf4-4b76-8e68-49d3601f88f0"
     },
     {
       "id": "3df8ffbe-0c57-4ed7-b914-e202174c2c02",
       "createdAt": "2026-11-05T11:35:35.764Z",
-      "updatedAt": "2026-11-05T11:35:35.764Z",
+      "updatedAt": "2026-11-05T16:15:04.581Z",
       "order": 7,
       "title": "Prendre une commande au POS",
       "story": "En tant que Merchant (staff), je veux prendre une commande (sur place / à emporter / livraison), ajouter des produits avec options, gérer le panier et valider l'encaissement afin de servir un client en service.",
       "acceptance": "Le POS est mobile-first et utilisable depuis un téléphone (pas de poste fixe). Le panier affiche sous-total + frais et le total. À la validation, une Commande est créée et déclenche dans la même transaction Prisma : la déduction de stock (via les recettes des produits) et l'attribution de points fidélité. Les erreurs de stock (ingrédient sous zéro) sont rejetées et le panier reste intact. Un toast confirme la création et la commande apparaît dans /merchant/orders. Le paiement client est traité dans l'epic Paiement client & checkout.",
-      "estimate": "13"
+      "estimate": "13",
+      "epicId": "d7892c5e-fbf4-4b76-8e68-49d3601f88f0"
     },
     {
       "id": "85588fc0-2278-4463-818c-87de78603a8e",
       "createdAt": "2026-11-05T11:35:35.764Z",
-      "updatedAt": "2026-11-05T11:35:35.764Z",
+      "updatedAt": "2026-11-05T16:16:50.582Z",
       "order": 8,
       "title": "Déduire le stock automatiquement",
       "story": "En tant que Propriétaire de commerce, je veux que la vente d'un produit déduise automatiquement les ingrédients de sa recette afin d'éviter les doubles saisies et les ruptures en service.",
       "acceptance": "Quand une commande est créée au POS ou côté client, chaque ligne produit résout sa recette et déduit les quantités d'ingrédients dans la même transaction. Un mouvement de stock (vente) est enregistré avec horodatage + acteur. Si le stock résultant est ≤ seuil d'alerte, une alerte de rupture est affichée dans le POS et dans le tableau de bord. Une annulation de commande restaure le stock déduit. La réconciliation (inventaire manuel) crée un mouvement d'ajustement.",
-      "estimate": "13"
+      "estimate": "13",
+      "epicId": "82e51e10-7f3f-41ca-a72d-7e17df5baeb4"
     },
     {
       "id": "c68e2f73-e77c-4740-acb6-c987f48982c3",
       "createdAt": "2026-11-05T11:35:35.764Z",
-      "updatedAt": "2026-11-05T11:35:35.764Z",
+      "updatedAt": "2026-11-05T16:27:57.562Z",
       "order": 9,
       "title": "Gérer les ingrédients et recettes (REPAS)",
       "story": "En tant que Propriétaire de commerce, je veux créer des ingrédients (nom, unité, stock, seuil d'alerte) et des recettes (produit → liste d'ingrédients avec quantités) afin que la vente déduise automatiquement le stock.",
       "acceptance": "Un ingrédient a une unité (g, kg, ml, L, pièce). Une recette associe un produit à N ingrédients avec quantités. Un produit sans recette ne déduit pas de stock (alerte à la création). La suppression d'un ingrédient utilisé dans une recette est bloquée. Le coût unitaire de l'ingrédient est utilisé pour calculer la marge. Les erreurs de validation sont renvoyées dans ActionResult.",
-      "estimate": "8"
+      "estimate": "8",
+      "epicId": "82e51e10-7f3f-41ca-a72d-7e17df5baeb4"
     },
     {
       "id": "c9f02efd-3654-4cb5-889b-cd273ca4cd99",
       "createdAt": "2026-11-05T11:35:35.764Z",
-      "updatedAt": "2026-11-05T11:35:35.764Z",
+      "updatedAt": "2026-11-05T16:28:15.400Z",
       "order": 10,
       "title": "Gérer les lots et la péremption (COURSES)",
       "story": "En tant que Merchant (staff), je veux enregistrer les lots (date de péremption, quantité, prix d'achat) et voir les alertes J-2/J-1/J-0 afin d'éviter les ventes de produits périmés.",
       "acceptance": "Chaque produit COURSES a un ou plusieurs lots. La déduction FIFO consomme d'abord le lot le plus proche de la péremption. Le POS affiche la quantité par lot et la date de péremption la plus proche. Les alertes J-2/J-1/J-0 apparaissent dans le POS et le dashboard. Le verrouillage transactionnel (SELECT FOR UPDATE) empêche les doubles ventes du dernier lot. Un mouvement perte/périmé retire un lot de la vente.",
-      "estimate": "13"
+      "estimate": "13",
+      "epicId": "82e51e10-7f3f-41ca-a72d-7e17df5baeb4"
     },
     {
       "id": "50eb64c6-c882-48de-a48a-38f40358ad49",
       "createdAt": "2026-11-05T11:35:35.764Z",
-      "updatedAt": "2026-11-05T11:35:35.764Z",
+      "updatedAt": "2026-11-05T16:28:22.169Z",
       "order": 11,
       "title": "Réconcilier le stock par inventaire",
       "story": "En tant que Propriétaire de commerce, je veux saisir un inventaire physique qui crée un mouvement d'ajustement afin de corriger les écarts entre stock théorique et stock réel.",
       "acceptance": "La page /merchant/stock/inventory liste les ingrédients (REPAS) ou produits (COURSES) avec stock théorique. La saisie du stock physique crée un MouvementStock type ajustement avec la différence. Un motif est obligatoire. L'ajustement est tracé dans l'audit. Les erreurs de validation sont renvoyées dans ActionResult.",
-      "estimate": "5"
+      "estimate": "5",
+      "epicId": "82e51e10-7f3f-41ca-a72d-7e17df5baeb4"
     },
     {
       "id": "14a55639-7c1c-45bf-9b06-c41690bad03d",
       "createdAt": "2026-11-05T11:35:35.764Z",
-      "updatedAt": "2026-11-05T11:35:35.764Z",
+      "updatedAt": "2026-11-05T16:15:51.507Z",
       "order": 12,
       "title": "Commander en 3 clics",
       "story": "En tant que Client, je veux parcourir le catalogue d'un commerce, remplir mon panier, choisir mon mode (livraison / à emporter / sur place) et valider ma commande en 3 clics afin de gagner du temps.",
       "acceptance": "Le parcours est : catalogue → panier → confirmation (3 étapes max). Le panier affiche les options (taille, suppléments), la quantité, et le total. En livraison, l'adresse est obligatoire ; le créneau ou l'ETA est affiché. Après validation, le statut est received et le client suit sa commande en temps réel. Le paiement est traité dans l'epic Paiement client & checkout. Le client voit son historique de commandes par commerce et peut recommander une commande passée en 1 clic.",
-      "estimate": "8"
+      "estimate": "8",
+      "epicId": "2cc87cb0-a88a-4c54-869b-dcf80d932428"
     },
     {
       "id": "6b28fe8b-2686-4530-9bee-5f73443ccd96",
@@ -953,42 +966,46 @@
     {
       "id": "0f843d3b-62bb-47ac-8f7d-81abc22803c5",
       "createdAt": "2026-11-05T11:35:35.764Z",
-      "updatedAt": "2026-11-05T11:35:35.764Z",
+      "updatedAt": "2026-11-05T16:27:30.343Z",
       "order": 14,
       "title": "Suivre ses missions en tant que livreur",
       "story": "En tant que Livreur indépendant, je veux voir mes missions en cours, mon CA du jour et mon historique afin de piloter mon activité.",
       "acceptance": "La page /courier affiche le CA du jour/semaine/mois (forfait + pourcentage), les missions en cours (statut + ETA), les missions disponibles à accepter, l'historique des missions livrées, la moyenne des notes reçues, le statut de disponibilité. La page /courier/earnings détaille chaque mission avec export CSV. La page /courier/history filtre par période, statut, montant.",
-      "estimate": "8"
+      "estimate": "8",
+      "epicId": "2cc87cb0-a88a-4c54-869b-dcf80d932428"
     },
     {
       "id": "400d3d51-4a95-48f2-be5c-1bb2092cea3e",
       "createdAt": "2026-11-05T11:35:35.764Z",
-      "updatedAt": "2026-11-05T11:35:35.764Z",
+      "updatedAt": "2026-11-05T16:27:20.252Z",
       "order": 15,
       "title": "S'inscrire en tant que livreur et uploader ses documents",
       "story": "En tant que Livreur indépendant, je veux m'inscrire, uploader mes documents (pièce d'identité, permis, assurance) et attendre la validation admin afin de pouvoir accepter des missions.",
       "acceptance": "L'inscription livreur demande nom, téléphone, email, mot de passe, véhicule (vélo/scooter/voiture), zone. L'upload des documents est stocké et visible par l'admin. Le statut initial est pending. Le livreur ne peut pas accepter de missions tant que le statut n'est pas active. L'admin dispose d'une file d'attente /admin/couriers/pending avec aperçu des documents.",
-      "estimate": "8"
+      "estimate": "8",
+      "epicId": "2cc87cb0-a88a-4c54-869b-dcf80d932428"
     },
     {
       "id": "d350ba21-e4a8-4e04-bf14-1a63090470fb",
       "createdAt": "2026-11-05T11:35:35.764Z",
-      "updatedAt": "2026-11-05T11:35:35.764Z",
+      "updatedAt": "2026-11-05T16:27:07.184Z",
       "order": 16,
       "title": "Annuler une commande et restaurer le stock",
       "story": "En tant que Client ou Propriétaire de commerce, je veux annuler une commande (avant preparing pour le client, avant ready pour le commerçant) afin de récupérer le stock et le paiement.",
       "acceptance": "Le client peut annuler avant preparing, le commerçant avant ready, l'admin à tout moment avec motif obligatoire. Le statut cancelled est tracé (horodatage, acteur, motif). Le stock est restauré automatiquement si la déduction a eu lieu (mouvement ajustement inverse). Les points fidélité sont restaurés si déjà attribués. Un avoir est crédité sur le compte client. Une notification in-app est envoyée au client et au commerçant. Une commande delivered ne peut pas être annulée (seulement un litige).",
-      "estimate": "5"
+      "estimate": "5",
+      "epicId": "2cc87cb0-a88a-4c54-869b-dcf80d932428"
     },
     {
       "id": "958d693b-a005-43c0-bd8f-fad9941a59b5",
       "createdAt": "2026-11-05T11:35:35.764Z",
-      "updatedAt": "2026-11-05T11:35:35.764Z",
+      "updatedAt": "2026-11-05T16:27:13.522Z",
       "order": 17,
       "title": "Choisir le mode de livraison (livreur ou commerce)",
       "story": "En tant que Propriétaire de commerce, je veux choisir si mon commerce livre lui-même ou passe par un livreur indépendant afin de m'adapter à mon organisation.",
       "acceptance": "La page /merchant/settings permet de choisir le mode par défaut (livreur indépendant ou commerce). Le mode peut être mixte (certains jours avec livreur, d'autres sans). Si le mode commerce est choisi, les statuts picked_up → delivering → delivered sont marqués par le staff au POS, sans assignation de livreur. La rémunération livreur n'est pas calculée dans ce cas. Le client ne voit pas la différence (même parcours).",
-      "estimate": "5"
+      "estimate": "5",
+      "epicId": "2cc87cb0-a88a-4c54-869b-dcf80d932428"
     },
     {
       "id": "3aff0f38-3925-4683-b36c-fdefa3ebbc53",
@@ -1103,42 +1120,46 @@
     {
       "id": "f043a82e-a261-4d39-acc7-d5829355b08f",
       "createdAt": "2026-11-05T11:35:35.764Z",
-      "updatedAt": "2026-11-05T11:35:35.764Z",
+      "updatedAt": "2026-11-05T16:25:53.313Z",
       "order": 29,
       "title": "S'inscrire comme commerçant et soumettre ses documents",
       "story": "En tant que Propriétaire de commerce, je veux m'inscrire en self-service, choisir mon type (restaurant / food-truck / supérette / épicerie / primeur / marché), remplir mon formulaire commerce et uploader mes documents afin d'ouvrir mon enseigne.",
       "acceptance": "L'inscription se fait en plusieurs étapes (/commerce/onboarding/<step>) avec sauvegarde brouillon. Choix du kind (détermine les écrans adaptés). Formulaire commerce (type, adresse, horaires, zone de livraison, description, couverture). Upload documents (Kbis, attestation hygiène). Statut initial pending → validation admin. Le commerce ne reçoit aucune commande et n'apparaît pas dans le catalogue public tant que le statut n'est pas actif. Une notification de bienvenue in-app est envoyée après validation.",
-      "estimate": "13"
+      "estimate": "13",
+      "epicId": "e0027e2e-0419-449b-b1fc-0851b9aa67e4"
     },
     {
       "id": "4668c92a-8df1-4fb1-8ee3-ea5b9a36aeb3",
       "createdAt": "2026-11-05T11:35:35.764Z",
-      "updatedAt": "2026-11-05T11:35:35.764Z",
+      "updatedAt": "2026-11-05T16:25:27.674Z",
       "order": 30,
       "title": "Souscrire à l'abonnement commerçant",
       "story": "En tant que Propriétaire de commerce, je veux souscrire à l'abonnement mensuel de 49 €/mois afin d'utiliser la plateforme.",
       "acceptance": "La page /merchant/settings/billing permet de souscrire à l'abonnement via Stripe Billing. Un abonnement récurrent est créé avec facturation automatique. Une facture est générée chaque mois. Un impayé déclenche une relance automatique. Après 30 jours d'impayé, le commerce est suspendu (status = suspended). Le commerçant reçoit une notification in-app à chaque facturation / impayé / blocage.",
-      "estimate": "8"
+      "estimate": "8",
+      "epicId": "b73e2afe-c0a8-43e3-8071-9496381bf199"
     },
     {
       "id": "5ec8517a-57c1-458d-8fbf-e9ee6862276f",
       "createdAt": "2026-11-05T11:35:35.764Z",
-      "updatedAt": "2026-11-05T11:35:35.764Z",
+      "updatedAt": "2026-11-05T16:25:12.255Z",
       "order": 31,
       "title": "Consulter ses factures et son abonnement",
       "story": "En tant que Propriétaire de commerce, je veux voir mon abonnement en cours et télécharger mes factures afin de gérer ma comptabilité.",
       "acceptance": "La page /merchant/settings/billing affiche le plan en cours, le statut, la prochaine date de facturation, l'historique des factures (téléchargeables en PDF). Un changement de plan (si disponible) est possible. Le CA plateforme est visible dans /admin/billing.",
-      "estimate": "3"
+      "estimate": "3",
+      "epicId": "434c56cb-2619-4c7f-9073-35e326314411"
     },
     {
       "id": "ef44b5ad-0d86-4d81-bae5-9afd582c89f9",
       "createdAt": "2026-11-05T11:35:35.764Z",
-      "updatedAt": "2026-11-05T11:35:35.764Z",
+      "updatedAt": "2026-11-05T16:24:58.108Z",
       "order": 32,
       "title": "Payer sa commande en ligne",
       "story": "En tant que Client, je veux payer ma commande en ligne (CB, Apple Pay, Google Pay) afin de valider mon achat en 1 clic.",
       "acceptance": "La page /c/[slug]/checkout utilise Stripe Elements. Un PaymentIntent est créé à la validation du panier. Le webhook Stripe confirme le paiement et met à jour payment_status (pending / succeeded / failed / refunded). En cas d'échec, le panier est restauré. En cas d'annulation, un remboursement Stripe est déclenché. Le statut de paiement est visible dans /client/orders.",
-      "estimate": "8"
+      "estimate": "8",
+      "epicId": "434c56cb-2619-4c7f-9073-35e326314411"
     },
     {
       "id": "aa0f8acf-f52a-4369-af24-72392f978cf0",
@@ -1163,32 +1184,35 @@
     {
       "id": "c300275d-8339-4fc0-b183-3d0c571f3fd2",
       "createdAt": "2026-11-05T11:35:35.764Z",
-      "updatedAt": "2026-11-05T11:35:35.764Z",
+      "updatedAt": "2026-11-05T16:24:45.534Z",
       "order": 35,
       "title": "Laisser un avis sur une commande",
       "story": "En tant que Client, je veux noter ma commande (1-5 étoiles + commentaire) dans les 7 jours après delivered afin de partager mon expérience.",
       "acceptance": "La page /client/orders propose un bouton Laisser un avis pour les commandes delivered dans les 7 jours. Un avis par commande maximum. L'avis porte sur le commerce ET le livreur séparément. La moyenne est affichée sur la page catalogue. Les avis signalés passent en modération.",
-      "estimate": "3"
+      "estimate": "3",
+      "epicId": "74b43631-8fe3-495e-9c5f-e1ac9c981158"
     },
     {
       "id": "78265a5b-bab8-4dba-9767-5a209666e227",
       "createdAt": "2026-11-05T11:35:35.764Z",
-      "updatedAt": "2026-11-05T11:35:35.764Z",
+      "updatedAt": "2026-11-05T16:24:15.171Z",
       "order": 36,
       "title": "Répondre à un avis client",
       "story": "En tant que Propriétaire de commerce, je veux répondre une fois à un avis client afin de montrer mon engagement.",
       "acceptance": "La page /merchant/reviews liste les avis reçus. Une réponse unique par avis est possible. La réponse est visible sur la page catalogue. La réponse est tracée (timestamp, auteur).",
-      "estimate": "2"
+      "estimate": "2",
+      "epicId": "74b43631-8fe3-495e-9c5f-e1ac9c981158"
     },
     {
       "id": "4c4d529a-d69c-4e03-87fa-3cd73401fd86",
       "createdAt": "2026-11-05T11:35:35.764Z",
-      "updatedAt": "2026-11-05T11:35:35.764Z",
+      "updatedAt": "2026-11-05T16:24:22.473Z",
       "order": 37,
       "title": "Ouvrir et suivre un litige",
       "story": "En tant que Client, je veux ouvrir un litige (commande non livrée, produit périmé, erreur) dans les 24h après delivered afin de faire valoir mes droits.",
       "acceptance": "La page /client/orders propose un bouton Ouvrir un litige dans les 24h après delivered. Un motif est obligatoire (non_livré, produit_périmé, erreur_commande, autre). Un fil de discussion permet d'échanger avec l'admin et le commerçant. Le litige a un SLA 48h/7 jours. Les actions disponibles : remboursement, avoir, re-livraison, rejet. Une notification in-app est envoyée à chaque changement de statut.",
-      "estimate": "8"
+      "estimate": "8",
+      "epicId": "74b43631-8fe3-495e-9c5f-e1ac9c981158"
     },
     {
       "id": "ff0a78f2-cd70-469f-af0e-4d80122680f7",
@@ -1203,12 +1227,13 @@
     {
       "id": "dc131411-5ff3-4bea-93f1-14bc094054cf",
       "createdAt": "2026-11-05T11:35:35.764Z",
-      "updatedAt": "2026-11-05T11:35:35.764Z",
+      "updatedAt": "2026-11-05T16:19:37.254Z",
       "order": 39,
       "title": "Donner son consentement à l'inscription",
       "story": "En tant qu'Utilisateur, je veux accepter explicitement les CGU et la politique de confidentialité à l'inscription afin de donner un consentement conforme au RGPD.",
       "acceptance": "La case à cocher n'est pas pré-cochée. Le consentement est stocké avec timestamp et version des CGU. Le refus empêche l'inscription. Les pages /legal/privacy et /legal/terms sont accessibles. Le journal des consentements est visible dans l'admin.",
-      "estimate": "3"
+      "estimate": "3",
+      "epicId": "80331d04-20f1-40a9-9096-a4cc3883925f"
     },
     {
       "id": "aa92efb5-dd83-4bcd-b20f-39bb794a6b4a",
@@ -1223,22 +1248,35 @@
     {
       "id": "03566cb7-3265-45ae-9da4-810afb87c004",
       "createdAt": "2026-11-05T11:35:35.764Z",
-      "updatedAt": "2026-11-05T11:35:35.764Z",
+      "updatedAt": "2026-11-05T16:19:10.035Z",
       "order": 41,
       "title": "Supprimer son compte et anonymiser ses commandes",
       "story": "En tant que Client, je veux supprimer mon compte tout en conservant mes commandes anonymisées afin de respecter mes droits RGPD et les obligations comptables.",
       "acceptance": "La page /account/delete demande une confirmation (saisie du mot de passe). Le compte est supprimé (deletedAt), les données personnelles sont anonymisées (nom → Utilisateur supprimé, email → deleted-<uuid>@local). Les commandes sont conservées avec un clientId anonymisé. Les points fidélité sont supprimés. Un email de confirmation est envoyé. L'action est tracée dans l'audit.",
-      "estimate": "5"
+      "estimate": "5",
+      "epicId": "80331d04-20f1-40a9-9096-a4cc3883925f"
     },
     {
       "id": "1bb3276f-48af-4aeb-b0f2-dd30437dfc19",
       "createdAt": "2026-11-05T11:35:35.764Z",
-      "updatedAt": "2026-11-05T11:35:35.764Z",
+      "updatedAt": "2026-11-05T16:17:49.508Z",
       "order": 42,
       "title": "Transférer la propriété d'un commerce",
       "story": "En tant que Propriétaire de commerce, je veux transférer la propriété de mon commerce à un autre utilisateur (vente, retraite) afin de passer la main sans perdre l'historique.",
       "acceptance": "La page /merchant/settings/transfer lance une demande. Le nouveau propriétaire reçoit une notification + email et accepte dans les 7 jours. Double confirmation (owner actuel + admin metier). Transfert atomique dans commerce_members (ancien owner → staff, nouveau owner → owner). Audit obligatoire. Si le nouveau owner possède déjà un commerce, autorisé (multi-enseignes). En cas de refus ou d'expiration, transfert annulé.",
-      "estimate": "8"
+      "estimate": "8",
+      "epicId": "b73e2afe-c0a8-43e3-8071-9496381bf199"
+    },
+    {
+      "id": "a62c2e5c-502b-4c2f-ba19-1f93314b61f3",
+      "createdAt": "2026-11-05T16:13:32.900Z",
+      "updatedAt": "2026-11-05T16:13:32.900Z",
+      "order": 43,
+      "title": "se connecter a vec WatsApp",
+      "story": "user",
+      "acceptance": "je utiliser wathsapp pour me connecter",
+      "estimate": "1",
+      "epicId": "80331d04-20f1-40a9-9096-a4cc3883925f"
     }
   ],
   "sprint": [
@@ -2763,6 +2801,6 @@
   ],
   "meta": {
     "schemaVersion": 1,
-    "updatedAt": "2026-11-05T12:40:05.029Z"
+    "updatedAt": "2026-11-05T16:28:22.169Z"
   }
 }

@@ -1,7 +1,7 @@
 /*
 path :           components/layout/header/nav/frontWorkSpace.ts
 tag :            ["navigation", "config", "platform-role", "header"]
-projectId:       new-genesis
+projectId:       miam-miam-listo
 type:            config
 generic:         false
 
@@ -17,13 +17,11 @@ role:            Source unique de navigation de l'application. Exporte
                  (item parent > enfants directs). Un 3ᵉ niveau est
                  remplacé par une page hub (ex. /admin/legal liste
                  Privacy et Terms en cartes). Cela évite un menu à
-                 plusieurs niveaux imbriqués, mauvais pour l'UX (surtout
-                 mobile) et non supporté par le rendu actuel de
-                 MainNav.tsx / Header.tsx.
+                 plusieurs niveaux imbriqués, mauvais pour l'UX.
 
                  Le filtrage effectif est délégué à canSee(item,
                  platformRole) exporté par navTypes.ts (source unique de
-                 vérité, partagée par Header.tsx et MainNav.tsx).
+                 vérité).
 
                  Aligné sur config/roles.ts (source unique des rôles).
 
@@ -31,12 +29,22 @@ flow:            Module TypeScript pur → export d'un tableau readonly
                  de NavItem. Aucun état, aucun effet.
 
 ecosystem:       Layout = [
-                   "@/components/layout/header/nav/frontWorkSpace.ts",
+                   "@/app/blog/components/NotificationBell.tsx",
+                   "@/app/globals.css",
+                   "@/app/layout.tsx",
+                   "@/components/layout/footer/Footer.tsx",
                    "@/components/layout/header/Header.tsx",
                    "@/components/layout/header/Logo.tsx",
                    "@/components/layout/header/MainNav.tsx",
+                   "@/components/layout/header/NavActiveLink.tsx",
                    "@/components/layout/header/UserMenu.tsx",
+                   "@/components/layout/header/UserMenuInner.tsx",
+                   "@/components/layout/header/nav/frontWorkSpace.ts",
                    "@/components/layout/header/navTypes.ts",
+                   "@/components/ui/sheet.tsx",
+                   "@/components/ui/sonner.tsx",
+                   "@/components/ui/tooltip.tsx",
+                   "@/config/navigation.ts",
                    "@/config/roles.ts",
                  ]
 
@@ -44,8 +52,7 @@ relatedFiles:    ["@/components/layout/header/navTypes.ts",
                   "@/components/layout/header/Header.tsx",
                   "@/config/roles.ts"]
 
-imports:         ["@/components/layout/header/navTypes",
-                  "@/config/roles"]
+imports:         ["@/components/layout/header/navTypes"]
 
 exports:         ["mainNavData"]
 
@@ -289,7 +296,6 @@ export const mainNavData: readonly NavItem[] = [
         external: false,
         minPlatformRole: "dev",
       },
-
       {
         id: "nav-genesis-read-files",
         label: "SelectFiles",

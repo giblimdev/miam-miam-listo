@@ -1,5 +1,5 @@
 /*
-path :           app/legal/privacy/page.tsx
+path :           app/miam/admin/legal/privacy/page.tsx
 tag :            ["legal", "privacy", "rgpd", "page", "public"]
 projectId :      <à fournir>
 type :           page
@@ -130,8 +130,8 @@ export default function PrivacyPage() {
       <div className="space-y-8 rounded-2xl border border-border/60 bg-card p-6 sm:p-8">
         <Section id="responsable" title="1. Responsable du traitement">
           <p>
-            Le responsable du traitement des données personnelles collectées
-            via Miam-miam Listo est l&apos;équipe Miam-miam Listo, joignable à
+            Le responsable du traitement des données personnelles collectées via
+            Miam-miam Listo est l&apos;équipe Miam-miam Listo, joignable à
             l&apos;adresse{" "}
             <a
               href="mailto:contact@miam-miam-listo.example"
@@ -159,17 +159,17 @@ export default function PrivacyPage() {
               <strong>Profil</strong> : bio, téléphone, adresses de livraison.
             </li>
             <li>
-              <strong>Commandes</strong> : contenu du panier, montant, mode
-              (sur place / à emporter / livraison), adresse de livraison,
-              statut, horodatage.
+              <strong>Commandes</strong> : contenu du panier, montant, mode (sur
+              place / à emporter / livraison), adresse de livraison, statut,
+              horodatage.
             </li>
             <li>
               <strong>Fidélité</strong> : points cumulés par commerce,
               récompenses utilisées.
             </li>
             <li>
-              <strong>Notifications</strong> : type, extrait, horodatage,
-              statut lu/non-lu.
+              <strong>Notifications</strong> : type, extrait, horodatage, statut
+              lu/non-lu.
             </li>
             <li>
               <strong>Consentements</strong> : acceptation des CGU et de la
@@ -203,8 +203,8 @@ export default function PrivacyPage() {
             Les traitements reposent sur : (a) l&apos;exécution du contrat
             (compte, commandes, fidélité), (b) votre consentement explicite
             (CGU, notifications), (c) notre intérêt légitime (sécurité,
-            prévention de la fraude), (d) nos obligations légales
-            (conservation comptable).
+            prévention de la fraude), (d) nos obligations légales (conservation
+            comptable).
           </p>
         </Section>
 
@@ -227,22 +227,22 @@ export default function PrivacyPage() {
               <strong>Logs techniques</strong> : conservés 90 jours.
             </li>
             <li>
-              <strong>Notifications</strong> : plafonnées à 200 entrées,
-              purgées au-delà de 90 jours.
+              <strong>Notifications</strong> : plafonnées à 200 entrées, purgées
+              au-delà de 90 jours.
             </li>
           </ul>
         </Section>
 
         <Section id="destinataires" title="6. Destinataires">
           <p>
-            Vos données sont accessibles aux personnes suivantes, dans la
-            limite de leurs attributions :
+            Vos données sont accessibles aux personnes suivantes, dans la limite
+            de leurs attributions :
           </p>
           <ul className="list-disc space-y-1.5 pl-5">
             <li>Vous-même (via votre espace).</li>
             <li>
-              Le commerçant concerné par votre commande (nom, contenu du
-              panier, adresse de livraison, téléphone).
+              Le commerçant concerné par votre commande (nom, contenu du panier,
+              adresse de livraison, téléphone).
             </li>
             <li>
               Le livreur assigné (nom, adresse, téléphone, montant de la
@@ -262,9 +262,9 @@ export default function PrivacyPage() {
         <Section id="transferts" title="7. Transferts hors UE">
           <p>
             En MVP, les données sont hébergées localement (SQLite) et ne font
-            l&apos;objet d&apos;aucun transfert hors de l&apos;Union
-            européenne. Une migration cloud pourra être envisagée en V2, avec
-            des garanties conformes au RGPD.
+            l&apos;objet d&apos;aucun transfert hors de l&apos;Union européenne.
+            Une migration cloud pourra être envisagée en V2, avec des garanties
+            conformes au RGPD.
           </p>
         </Section>
 
@@ -293,8 +293,8 @@ export default function PrivacyPage() {
               >
                 /client/rgpd
               </Link>{" "}
-              supprime votre compte. Vos commandes sont anonymisées pour
-              rester conformes aux obligations comptables.
+              supprime votre compte. Vos commandes sont anonymisées pour rester
+              conformes aux obligations comptables.
             </li>
             <li>
               <strong>Contact</strong> :{" "}
@@ -314,11 +314,11 @@ export default function PrivacyPage() {
 
         <Section id="cookies" title="9. Cookies">
           <p>
-            En MVP, Miam-miam Listo n&apos;utilise <strong>aucun cookie
-            analytique ni publicitaire</strong>. Seuls les cookies strictement
-            nécessaires au fonctionnement (session Better Auth, préférence de
-            thème) sont déposés. Ils ne nécessitent pas de bandeau de
-            consentement.
+            En MVP, Miam-miam Listo n&apos;utilise{" "}
+            <strong>aucun cookie analytique ni publicitaire</strong>. Seuls les
+            cookies strictement nécessaires au fonctionnement (session Better
+            Auth, préférence de thème) sont déposés. Ils ne nécessitent pas de
+            bandeau de consentement.
           </p>
         </Section>
 
@@ -338,14 +338,17 @@ export default function PrivacyPage() {
           <p>
             Cette politique peut être modifiée. En cas de changement
             substantiel, vous serez informé via une notification in-app et
-            invité à accepter la nouvelle version. La date de mise à jour
-            figure en haut de cette page.
+            invité à accepter la nouvelle version. La date de mise à jour figure
+            en haut de cette page.
           </p>
         </Section>
       </div>
 
       <footer className="flex flex-wrap justify-center gap-2 pt-2">
-        <Link href="/legal/terms" className={buttonVariants({ variant: "outline" })}>
+        <Link
+          href="/legal/terms"
+          className={buttonVariants({ variant: "outline" })}
+        >
           Conditions générales
         </Link>
         <Link href="/" className={buttonVariants({ variant: "ghost" })}>
