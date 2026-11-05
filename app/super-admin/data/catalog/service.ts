@@ -1,68 +1,28 @@
 /*
 path :           app/super-admin/data/catalog/service.ts
-tag :            ["super-admin", "catalog", "service", "crud", "dev-only"]
-projectId:       <à fournir>
-type:            helper
-generic:         false
+tag :            ["super-admin", "catalog", "service", "in-memory", "source-of-truth"]
 
-role:            Service CRUD pour les catalogues. Un seul service
-                 pour les 3 catégories (merchant, product, food),
-                 discriminé par `category`. Chaque opération
-                 d'écriture est gardée par la garde production
-                 (storage.assertDev) : en prod, elle lève une erreur,
-                 l'action la convertit en ActionResult.
+role:            Service CRUD pour les catalogues, sans AUCUNE I/O.
+                 La source de vérité est :
+                   - merchant : MERCHANT_TYPES  (mercantType.ts)
+                   - product  : PRODUCT_TYPES   (productType.ts)
+                   - food     : FOOD_TYPES      (foodType.ts)
 
-                 Le service ne connaît PAS les composants React ni
-                 les Server Actions : il ne manipule que CatalogData
-                 via storage. C'est l'unique point de lecture/écriture
-                 des catalogues côté serveur.
+                 ⚠️ Les mutations (create / update / delete / toggle)
+                 sont IN-MEMORY : elles modifient un cache module-scoped
+                 initialisé depuis les constantes. Elles sont perdues
+                 au redémarrage du serveur. Aucun fichier, aucun JSON.
 
-flow:            listCatalog(category) → readCatalogData() →
-                 retourne data[category].
-                 createCatalogItem(category, input) → read → calcule
-                 l'id unique (slug) → push → write → retourne l'item.
-                 updateCatalogItem(category, slug, patch) → read →
-                 find + merge → write → retourne l'item mis à jour.
-                 deleteCatalogItem(category, slug) → read → filter
-                 → write.
-                 toggleCatalogVisibility(category, slug, visible) →
-                 read → map + patch visibility → write → retourne
-                 l'item.
-
-ecosystem:       SuperAdminCatalog = [
-                   "@/app/super-admin/data/catalog/actions.ts",
-                   "@/app/super-admin/data/catalog/service.ts",
-                   "@/app/super-admin/data/catalog/storage.ts",
-                   "@/app/super-admin/data/catalog/types.ts",
-                   "@/app/super-admin/data/DataCatalogManager.tsx",
-                   "@/app/super-admin/interface/page.tsx",
-                 ]
-
-relatedFiles:    ["@/app/super-admin/data/catalog/storage.ts",
-                  "@/app/super-admin/data/catalog/types.ts"]
-
-imports:         ["@/app/super-admin/data/catalog/storage",
-                  "@/app/super-admin/data/catalog/types"]
-
-exports:         ["listCatalog", "createCatalogItem",
-                  "updateCatalogItem", "deleteCatalogItem",
-                  "toggleCatalogVisibility", "CatalogInput"]
-
-useBy:           ["/app/super-admin/data/catalog/actions.ts",
-                  "/app/super-admin/interface/page.tsx"]
-
-userStories:     ["*en tant que super-admin je veux gérer les catalogues de types"]
-
-status:          wip
-pathChecked:     ✔true
-metaDataChecked: ✔true
-scriptChecked:   ✔true
+flow:            listCatalog(category) → getStore()[category]
+                 createCatalogItem → calcule slug unique → push
+                 updateCatalogItem → merge
+                 deleteCatalogItem → filter
+                 toggleCatalogVisibility → patch visibility
 */
 
-import {
-  readCatalogData,
-  writeCatalogData,
-} from "@/app/super-admin/data/catalog/storage";
+import { MERCHANT_TYPES } from "@/app/super-admin/data/mercantType";
+import { PRODUCT_TYPES } from "@/app/super-admin/data/productType";
+import { FOOD_TYPES } from "@/app/super-admin/data/foodType";
 import type {
   CatalogCategory,
   CatalogData,
@@ -70,7 +30,7 @@ import type {
 } from "@/app/super-admin/data/catalog/types";
 
 /* ------------------------------------------------------------------ */
-/*  Types                                                              */
+/*  Input                                                              */
 /* ------------------------------------------------------------------ */
 
 export interface CatalogInput {
@@ -80,7 +40,7 @@ export interface CatalogInput {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Helpers                                                            */
+/*  Seeds depuis les constantes .ts                                    */
 /* ------------------------------------------------------------------ */
 
 function slugify(input: string): string {
@@ -90,6 +50,59 @@ function slugify(input: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
+}
+
+function buildInitialData(): CatalogData {
+  const merchant: CatalogItem[] = MERCHANT_TYPES.map((item, index) => ({
+    slug: item.id,
+    label: item.label,
+    accent: item.accent,
+    imageSrc: item.imageSrc,
+    visibility: item.visibility,
+    order: index,
+  }));
+
+  const product: CatalogItem[] = PRODUCT_TYPES.map((item, index) => ({
+    slug: item.id,
+    label: item.label,
+    accent: item.accent,
+    imageSrc: item.imageSrc,
+    visibility: item.visibility,
+    order: index,
+  }));
+
+  const food: CatalogItem[] = FOOD_TYPES.map((item, index) => ({
+    slug: slugify(item.text),
+    label: item.text,
+    imageSrc: item.src,
+    visibility: item.visibility,
+    order: index,
+  }));
+
+  return { merchant, product, food };
+}
+
+/* ------------------------------------------------------------------ */
+/*  Store in-memory (module-scoped)                                    */
+/* ------------------------------------------------------------------ */
+
+// Initialisé paresseusement au premier accès, puis muté par les
+// opérations d'écriture. Aucune persistance disque.
+let store: CatalogData | null = null;
+
+function getStore(): CatalogData {
+  if (store === null) {
+    store = buildInitialData();
+  }
+  return store;
+}
+
+function replaceCategory(
+  data: CatalogData,
+  category: CatalogCategory,
+  items: readonly CatalogItem[],
+): CatalogData {
+  return { ...data, [category]: items };
 }
 
 function uniqueSlug(
@@ -105,14 +118,6 @@ function uniqueSlug(
   return `${base}-${Date.now()}`;
 }
 
-function replaceCategory(
-  data: CatalogData,
-  category: CatalogCategory,
-  items: readonly CatalogItem[],
-): CatalogData {
-  return { ...data, [category]: items };
-}
-
 /* ------------------------------------------------------------------ */
 /*  Lecture                                                            */
 /* ------------------------------------------------------------------ */
@@ -120,8 +125,7 @@ function replaceCategory(
 export async function listCatalog(
   category: CatalogCategory,
 ): Promise<readonly CatalogItem[]> {
-  const data = await readCatalogData();
-  return data[category];
+  return getStore()[category];
 }
 
 /* ------------------------------------------------------------------ */
@@ -137,7 +141,7 @@ export async function createCatalogItem(
     throw new Error("Le libellé est requis.");
   }
 
-  const data = await readCatalogData();
+  const data = getStore();
   const items = data[category];
   const existing = new Set(items.map((i) => i.slug));
 
@@ -150,7 +154,7 @@ export async function createCatalogItem(
     order: items.length,
   };
 
-  await writeCatalogData(replaceCategory(data, category, [...items, item]));
+  store = replaceCategory(data, category, [...items, item]);
   return item;
 }
 
@@ -163,7 +167,7 @@ export async function updateCatalogItem(
   slug: string,
   patch: Partial<CatalogInput>,
 ): Promise<CatalogItem> {
-  const data = await readCatalogData();
+  const data = getStore();
   const items = data[category];
   const existing = items.find((i) => i.slug === slug);
   if (!existing) {
@@ -177,12 +181,10 @@ export async function updateCatalogItem(
     ...(patch.imageSrc !== undefined ? { imageSrc: patch.imageSrc } : {}),
   };
 
-  await writeCatalogData(
-    replaceCategory(
-      data,
-      category,
-      items.map((i) => (i.slug === slug ? updated : i)),
-    ),
+  store = replaceCategory(
+    data,
+    category,
+    items.map((i) => (i.slug === slug ? updated : i)),
   );
   return updated;
 }
@@ -195,19 +197,17 @@ export async function deleteCatalogItem(
   category: CatalogCategory,
   slug: string,
 ): Promise<void> {
-  const data = await readCatalogData();
+  const data = getStore();
   const items = data[category];
   const exists = items.some((i) => i.slug === slug);
   if (!exists) {
     throw new Error(`Item introuvable : ${slug}`);
   }
 
-  await writeCatalogData(
-    replaceCategory(
-      data,
-      category,
-      items.filter((i) => i.slug !== slug),
-    ),
+  store = replaceCategory(
+    data,
+    category,
+    items.filter((i) => i.slug !== slug),
   );
 }
 
@@ -220,7 +220,7 @@ export async function toggleCatalogVisibility(
   slug: string,
   visible: boolean,
 ): Promise<CatalogItem> {
-  const data = await readCatalogData();
+  const data = getStore();
   const items = data[category];
   const existing = items.find((i) => i.slug === slug);
   if (!existing) {
@@ -228,12 +228,10 @@ export async function toggleCatalogVisibility(
   }
 
   const updated: CatalogItem = { ...existing, visibility: visible };
-  await writeCatalogData(
-    replaceCategory(
-      data,
-      category,
-      items.map((i) => (i.slug === slug ? updated : i)),
-    ),
+  store = replaceCategory(
+    data,
+    category,
+    items.map((i) => (i.slug === slug ? updated : i)),
   );
   return updated;
 }

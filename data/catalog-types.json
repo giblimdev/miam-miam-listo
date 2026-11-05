@@ -41,6 +41,12 @@
       "accent": "chart-1",
       "visibility": true,
       "order": 5
+    },
+    {
+      "slug": "circuit-coury",
+      "label": "circuit coury",
+      "visibility": true,
+      "order": 6
     }
   ],
   "product": [

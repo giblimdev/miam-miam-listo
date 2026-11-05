@@ -1,5 +1,5 @@
 /*
-path :           app/super-admin/data/foodTypeData.ts
+path :           app/super-admin/data/foodType.ts
 tag :            ["super-admin", "data", "food-type", "config", "catalog"]
 projectId:       <à fournir>
 type:            config
@@ -73,8 +73,8 @@ export interface FoodImage {
 /* ------------------------------------------------------------------ */
 
 export const FOOD_TYPES: readonly FoodImage[] = [
-  { src: "/arabe.webp", text: "Moyen-orientale", visibility: true },
-  { src: "/arepas.webp", text: "Arepas", visibility: true },
+  { src: "/foodtype/arabe.webp", text: "Moyen-orientale", visibility: true },
+  { src: "/foodtype/arepas.webp", text: "Arepas", visibility: true },
   { src: "/foodtype/asiat.webp", text: "Asiatique", visibility: true },
   { src: "/foodtype/assado.webp", text: "Assado", visibility: true },
   { src: "/foodtype/boisson.webp", text: "Boisson", visibility: true },
@@ -88,7 +88,11 @@ export const FOOD_TYPES: readonly FoodImage[] = [
   { src: "/foodtype/grill.webp", text: "Grillade", visibility: true },
   { src: "/foodtype/hamburger.webp", text: "Burger", visibility: true },
   { src: "/foodtype/hot-dog.webp", text: "Hot-dog", visibility: true },
-  { src: "/foodtype/international.webp", text: "International", visibility: true },
+  {
+    src: "/foodtype/international.webp",
+    text: "International",
+    visibility: true,
+  },
   { src: "/foodtype/mexicain.png", text: "Mexicain", visibility: true },
   { src: "/foodtype/patisserie.webp", text: "Pâtisserie", visibility: true },
   { src: "/foodtype/perou.webp", text: "Pérou", visibility: true },
