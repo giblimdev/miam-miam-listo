@@ -1,53 +1,56 @@
 /*
 path :           app/scrum/[flow]/persona/page.tsx
-tag :            ["help", "persona", "page", "scrum"]
-projectId:       new-genesis
+tag :            ["help", "persona", "page", "scrum", "section-json"]
+projectId:       <à fournir>
 type:            page
 generic:         false
 
-role:            Page de gestion des personas pour un flux Scrum. Composant page
-                 synchrone qui monte un <Suspense> ; validation du flow et lecture
-                 des données isolées dans un composant async. Le skeleton reproduit
-                 la grille 1 / 2 / 3 / 4 colonnes de PersonaList.
+role:            Page de gestion des personas pour un flux Scrum. Sync page
+                 + Suspense ; validation et lecture dans un composant async.
+                 Sous PersonaList, un éditeur JSON (SectionJsonEditor) permet
+                 d'éditer en masse le tableau "persona" du flux et de
+                 l'enregistrer via updateSectionJsonAction.
 
 flow:            Sync page → <Suspense fallback=<PersonaListSkeleton />> →
-                 <PersonaSection params /> async → await params → validation →
-                 listPersonas(flow) → <PersonaList />.
+                 <PersonaSection params /> async → await params → validation
+                 → listPersonas(flow) → JSON.stringify → <PersonaList /> +
+                 <SectionJsonEditor section="persona" />.
 
 ecosystem:       Scrum = [
-                   "@/app/scrum/[flow]/epic/page.tsx",
-                   "@/app/scrum/[flow]/feature/page.tsx",
-                   "@/app/scrum/[flow]/global-json/page.tsx",
-                   "@/app/scrum/[flow]/idee/page.tsx",
-                   "@/app/scrum/[flow]/layout.tsx",
-                   "@/app/scrum/[flow]/page.tsx",
                    "@/app/scrum/[flow]/persona/page.tsx",
-                   "@/app/scrum/[flow]/sprint/page.tsx",
-                   "@/app/scrum/[flow]/user-story/page.tsx",
-                   "@/app/scrum/layout.tsx",
-                   "@/app/scrum/page.tsx",
+                   "@/app/scrum/lib/actions/section-json.ts",
+                   "@/app/scrum/lib/services/persona.ts",
+                   "@/app/scrum/lib/types.ts",
+                   "@/app/scrum/lib/validations/sections.ts",
+                   "@/components/scrum/PersonaList.tsx",
+                   "@/components/scrum/SectionJsonEditor.tsx",
+                   "@/components/ui/skeleton.tsx",
                  ]
 
-relatedFiles:    ["@/app/scrum/components/PersonaList.tsx",
-                  "@/app/scrum/lib/services/persona.ts",
-                  "@/app/scrum/lib/types.ts"]
+relatedFiles:    ["@/app/scrum/lib/services/persona.ts",
+                  "@/app/scrum/lib/types.ts",
+                  "@/app/scrum/lib/actions/section-json.ts",
+                  "@/components/scrum/PersonaList.tsx",
+                  "@/components/scrum/SectionJsonEditor.tsx"]
 
 imports:         ["react", "next/navigation",
                   "@/app/scrum/lib/types",
                   "@/app/scrum/lib/services/persona",
                   "@/app/scrum/components/PersonaList",
+                  "@/components/scrum/SectionJsonEditor",
                   "@/components/ui/skeleton"]
 
 exports:         ["default PersonaPage"]
 
 useBy:           []
 
-userStories:     ["*en tant qu'utilisateur je veux gérer les personas d'un flux Scrum"]
+userStories:     ["*en tant qu'utilisateur je veux gérer les personas d'un flux Scrum",
+                  "*en tant qu'utilisateur je veux éditer le JSON de la section persona"]
 
-status:          planned
-pathChecked:     ✘false
-metaDataChecked: ✘false
-scriptChecked:   ✘false
+status:          wip
+pathChecked:     ✔true
+metaDataChecked: ✔true
+scriptChecked:   ✔true
 */
 
 import { Suspense } from "react";
@@ -56,6 +59,7 @@ import { notFound } from "next/navigation";
 import { SCRUM_FLOWS, type ScrumFlow } from "@/app/scrum/lib/types";
 import { listPersonas } from "@/app/scrum/lib/services/persona";
 import { PersonaList } from "@/app/scrum/components/PersonaList";
+import { SectionJsonEditor } from "@/app/scrum/components/SectionJsonEditor";
 import { Skeleton } from "@/components/ui/skeleton";
 
 type PageParams = Promise<{ flow: string }>;
@@ -80,7 +84,18 @@ async function PersonaSection({ params }: { readonly params: PageParams }) {
   }
 
   const personas = await listPersonas(flow);
-  return <PersonaList flow={flow} personas={personas} />;
+  const personasJson = JSON.stringify(personas, null, 2);
+
+  return (
+    <div className="space-y-10">
+      <PersonaList flow={flow} personas={personas} />
+      <SectionJsonEditor
+        flow={flow}
+        section="persona"
+        initialJson={personasJson}
+      />
+    </div>
+  );
 }
 
 function PersonaListSkeleton() {

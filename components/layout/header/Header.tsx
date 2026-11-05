@@ -15,18 +15,27 @@ role:            En-tête global. Composant CLIENT (useState pour le
                  Le Header ne lit PAS la session (interdit côté client) :
                  tout vient du layout serveur.
 
+                 ROUTES STATIQUES : le projet n'a qu'un seul flux Scrum
+                 (scrum-business). Les hrefs Scrum sont écrits en dur
+                 dans frontWorkSpace.ts (/scrum/scrum-business/...),
+                 SANS segment dynamique `[flow]`. Ce composant N'UTILISE
+                 PLUS useParams() — évite l'erreur « Blocking Route »
+                 de Next.js 16 (hook bloquant pour le prérendu).
+
                  Le menu mobile est RÉCURSIF : chaque groupe
                  (item avec children) affiche ses enfants, et chaque
                  enfant qui a lui-même des children ouvre un sous-groupe
                  indenté (pl-6, pl-9, …). Supporte N niveaux.
 
-flow:            Client Component → useState(mobileOpen) → rend
-                 <header> sticky → zone gauche (Logo + MainNav avec
-                 items + platformRole) + zone droite (notificationSlot +
-                 UserMenu + burger mobile) → panneau mobile conditionnel.
-                 Filtrage : canSee(item, platformRole) importé depuis
-                 navTypes.ts. Anonyme (null) : seuls les items
-                 minPlatformRole: "user" sont visibles. superAdmin : tous.
+flow:            Client Component → useState(mobileOpen) → useMemo
+                 (sortedItems : filtre canSee + tri) → rend <header>
+                 sticky → zone gauche (Logo + MainNav avec items +
+                 platformRole) + zone droite (notificationSlot +
+                 UserMenu + burger mobile) → panneau mobile conditionnel
+                 (MobileGroup). Filtrage : canSee(item, platformRole)
+                 importé depuis navTypes.ts. Anonyme (null) : seuls les
+                 items minPlatformRole: "user" sont visibles.
+                 superAdmin : tous.
 
 ecosystem:       Layout = [
                    "@/app/globals.css",
@@ -81,7 +90,7 @@ scriptChecked:   ✔true
 "use client";
 // "use client" justifié : useState (mobileOpen) + interactions burger.
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 
@@ -98,15 +107,7 @@ import type { PlatformRole } from "@/config/roles";
 /* ------------------------------------------------------------------ */
 
 export interface HeaderProps {
-  /**
-   * Slot optionnel rendu côté serveur (Server Component async) — par
-   * exemple <NotificationBell />. Monté sous Suspense par app/layout.tsx.
-   */
   readonly notificationSlot?: React.ReactNode;
-  /**
-   * Rôle plateforme de l'utilisateur courant (null = anonyme).
-   * Calculé côté serveur par app/layout.tsx.
-   */
   readonly platformRole: PlatformRole | null;
 }
 
@@ -118,7 +119,6 @@ interface MobileGroupProps {
   readonly item: NavItem;
   readonly platformRole: PlatformRole | null;
   readonly onNavigate: () => void;
-  /** Profondeur d'indentation (0 = premier niveau). */
   readonly depth: number;
 }
 
@@ -132,10 +132,8 @@ function MobileGroup({
     .filter((child) => canSee(child, platformRole))
     .sort((a, b) => a.displayOrder - b.displayOrder);
 
-  /* Si aucun enfant visible, ne rien rendre (évite les en-têtes vides). */
   if (children.length === 0) return null;
 
-  /* Indentation progressive : depth 0 → pl-3, depth 1 → pl-6, depth 2 → pl-9. */
   const indent = { paddingLeft: `${0.75 + depth * 0.75}rem` };
 
   return (
@@ -207,9 +205,13 @@ export default function Header({
   const toggleMobile = () => setMobileOpen((v) => !v);
   const closeMobile = () => setMobileOpen(false);
 
-  const sortedItems = [...mainNavData]
-    .filter((item) => canSee(item, platformRole))
-    .sort((a, b) => a.displayOrder - b.displayOrder);
+  const sortedItems = useMemo(
+    () =>
+      [...mainNavData]
+        .filter((item) => canSee(item, platformRole))
+        .sort((a, b) => a.displayOrder - b.displayOrder),
+    [platformRole],
+  );
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border/60 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">

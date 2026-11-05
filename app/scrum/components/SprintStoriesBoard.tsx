@@ -1,65 +1,50 @@
 /*
 path :           app/scrum/components/SprintStoriesBoard.tsx
-tag :            ["scrum", "sprint", "board", "dnd", "ui", "hydration"]
+tag :            ["scrum", "sprint", "board", "dnd", "ui", "hydration", "cross-container"]
 projectId:       new-genesis
 type:            component
 generic:         false
 
-role:            Board DnD à deux colonnes (Backlog ↔ Sprint). La colonne
-                 Backlog contient les US sans sprint (ordre global, non
-                 réordonnable). La colonne Sprint contient les US du sprint
-                 courant, réordonnables par glisser-déposer. Une US peut
-                 passer d'une colonne à l'autre par drag. Le composant est
-                 purement présentationnel : il remonte les changements via
-                 onChange(inSprintIds). Le sous-composant Column reçoit une
-                 prop `empty: boolean` explicite (plus fiable que tester
-                 `children` car SortableContext rend un Fragment).
+role:            Board DnD à deux colonnes (Backlog ↔ Sprint). La
+                 colonne Backlog contient les US sans sprint (ordre
+                 global, non réordonnable). La colonne Sprint contient
+                 les US du sprint courant, réordonnables par
+                 glisser-déposer. Une US peut passer d'une colonne à
+                 l'autre par drag. Le composant est purement
+                 présentationnel : il remonte les changements via
+                 onChange(inSprintIds).
+
+                 ⚠️ CROSS-CONTAINER DND : chaque UserStoryMiniCard
+                 reçoit `containerId` (BACKLOG_ID ou SPRINT_ID) pour
+                 que le DndContext du parent sache de quelle colonne
+                 vient la carte. C'est indispensable pour que le
+                 handler du parent (SprintEditor) calcule correctement
+                 la cible du drop.
 
                  ⚠️ CORRECTIF HYDRATATION : un `id` stable produit par
-                 `useId()` est passé à <DndContext>. Sans cet id, dnd-kit
-                 génère un identifiant via un compteur global
-                 (`DndDescribedBy-N`), qui diverge entre le serveur et le
-                 client — et qui plus est, entre les multiples DndContext
-                 montés dans l'app (SortableList, SprintStoriesBoard) → React
-                 lève « tree hydrated but some attributes of the server
-                 rendered HTML didn't match the client ». `useId()` garantit
-                 la même valeur SSR/client (même position dans l'arbre).
+                 `useId()` est passé à <DndContext>. Sans cet id,
+                 dnd-kit génère un identifiant via un compteur global
+                 (`DndDescribedBy-N`), qui diverge entre le serveur et
+                 le client — et qui plus est, entre les multiples
+                 DndContext montés dans l'app (SortableList,
+                 SprintStoriesBoard) → React lève « tree hydrated but
+                 some attributes of the server rendered HTML didn't
+                 match the client ». `useId()` garantit la même valeur
+                 SSR/client (même position dans l'arbre).
 
-flow:            Reçoit backlog (US) + inSprint (US ordonnées) + onChange
-                 → useId() → dndId stable → DndContext(id=dndId) +
-                 2 * SortableContext + useDroppable par colonne →
-                 handleDragEnd calcule : réordonnancement (source = dest =
-                 sprint), ajout (backlog → sprint), retrait (sprint → backlog)
-                 → onChange(newIds).
+flow:            Reçoit backlog (US) + inSprint (US ordonnées) +
+                 onChange → useId() → dndId stable → DndContext(id=
+                 dndId) + 2 * SortableContext + useDroppable par
+                 colonne → handleDragEnd calcule : réordonnancement
+                 (source = dest = sprint), ajout (backlog → sprint),
+                 retrait (sprint → backlog) → onChange(newIds).
+                 Chaque UserStoryMiniCard reçoit containerId
+                 (BACKLOG_ID ou SPRINT_ID).
 
-ecosystem:       ScrumUI = [
-                   "@/app/scrum/components/EpicCard.tsx",
-                   "@/app/scrum/components/EpicForm.tsx",
-                   "@/app/scrum/components/EpicList.tsx",
-                   "@/app/scrum/components/FeatureCard.tsx",
-                   "@/app/scrum/components/FeatureForm.tsx",
-                   "@/app/scrum/components/FeatureList.tsx",
-                   "@/app/scrum/components/FlowSelector.tsx",
-                   "@/app/scrum/components/GlobalJsonExport.tsx",
-                   "@/app/scrum/components/IdeeCard.tsx",
-                   "@/app/scrum/components/IdeeDetailDialog.tsx",
-                   "@/app/scrum/components/IdeeForm.tsx",
-                   "@/app/scrum/components/IdeeList.tsx",
-                   "@/app/scrum/components/PersonaCard.tsx",
-                   "@/app/scrum/components/PersonaForm.tsx",
-                   "@/app/scrum/components/PersonaList.tsx",
-                   "@/app/scrum/components/ScrumNav.tsx",
-                   "@/app/scrum/components/SortableItem.tsx",
-                   "@/app/scrum/components/SortableList.tsx",
-                   "@/app/scrum/components/SprintCard.tsx",
-                   "@/app/scrum/components/SprintEditor.tsx",
-                   "@/app/scrum/components/SprintForm.tsx",
-                   "@/app/scrum/components/SprintList.tsx",
+ecosystem:       Scrum = [
                    "@/app/scrum/components/SprintStoriesBoard.tsx",
-                   "@/app/scrum/components/UserStoryCard.tsx",
-                   "@/app/scrum/components/UserStoryForm.tsx",
-                   "@/app/scrum/components/UserStoryList.tsx",
                    "@/app/scrum/components/UserStoryMiniCard.tsx",
+                   "@/app/scrum/lib/types.ts",
                  ]
 
 relatedFiles:    ["@/app/scrum/lib/types.ts",
@@ -264,6 +249,7 @@ export function SprintStoriesBoard({
                 epicName={
                   story.epicId ? epicNames.get(story.epicId) : undefined
                 }
+                containerId={BACKLOG_ID}
                 disabled={disabled}
               />
             ))}
@@ -290,6 +276,7 @@ export function SprintStoriesBoard({
                 epicName={
                   story.epicId ? epicNames.get(story.epicId) : undefined
                 }
+                containerId={SPRINT_ID}
                 disabled={disabled}
               />
             ))}

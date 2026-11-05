@@ -1,52 +1,56 @@
 /*
-path :           app/super-admin/users/RoleSelect.tsx
+path :           app/super-admin/user-manager/RoleSelect.tsx
 tag :            ["super-admin", "users", "role", "select", "client", "update", "platform-role"]
-projectId:       new-genesis
+projectId:       <à fournir>
 type:            component
 generic:         false
 
 role:            Sélecteur de rôle plateforme pour un utilisateur. Affiche
                  un <NativeSelect> avec les rôles définis dans
-                 PLATFORM_ROLES (user / admin / superAdmin) et leurs
-                 labels lisibles via PLATFORM_ROLE_LABELS. Au changement,
-                 appelle updateUserPlatformRoleAction(userId, role) via
+                 PLATFORM_ROLES et leurs labels lisibles via
+                 PLATFORM_ROLE_LABELS. Au changement, appelle
+                 updateUserPlatformRoleAction(userId, role) via
                  useActionResult (toast + rollback optimiste). La prop
                  `disabled` permet au parent de bloquer l'édition (ex.
-                 dernier admin, super-admin) — le serveur refuse aussi
-                 (anti-lockout, anti-auto-promotion). Le type
-                 `currentRole` est PlatformRole (pas string) pour la
-                 sécurité de typage.
+                 dernier superAdmin) — le serveur refuse aussi
+                 (anti-lockout, anti-auto-promotion). Le type `currentRole`
+                 est PlatformRole (pas string) pour la sécurité de typage ;
+                 la valeur issue du <NativeSelect> est validée par
+                 platformRoleSchema.safeParse() avant setRole, pour ne
+                 jamais propager un rôle invalide dans l'UI.
 
 flow:            Props { userId, currentRole: PlatformRole, disabled? } →
                  useState<PlatformRole>(currentRole) → onChange →
-                 optimistic setRole(nextRole) → useActionResult.run(() =>
-                 updateUserPlatformRoleAction(userId, nextRole), {
-                 successMessage, rollback: () => setRole(previous) }).
+                 platformRoleSchema.safeParse(nextRole) → si succès :
+                 optimistic setRole(parsed.data) → useActionResult.run(
+                 () => updateUserPlatformRoleAction(userId, parsed.data),
+                 { successMessage, rollback: () => setRole(previous) }).
 
 ecosystem:       SuperAdmin = [
                    "@/app/super-admin/page.tsx",
-                   "@/app/super-admin/users/actions.ts",
-                   "@/app/super-admin/users/page.tsx",
-                   "@/app/super-admin/users/RoleSelect.tsx",
+                   "@/app/super-admin/user-manager/RoleSelect.tsx",
+                   "@/app/super-admin/user-manager/UsersTable.tsx",
+                   "@/app/super-admin/user-manager/actions.ts",
+                   "@/app/super-admin/user-manager/page.tsx",
                    "@/config/roles.ts",
                    "@/lib/actions/result.ts",
                    "@/lib/auth/rbac.ts",
                    "@/lib/prisma.ts",
                  ]
 
-relatedFiles:    ["@/app/super-admin/users/actions.ts",
+relatedFiles:    ["@/app/super-admin/user-manager/actions.ts",
                   "@/hooks/useActionResult.ts",
                   "@/config/roles.ts"]
 
 imports:         ["react",
-                  "@/app/super-admin/users/actions",
+                  "@/app/super-admin/user-manager/actions",
                   "@/config/roles.ts",
                   "@/components/ui/native-select",
                   "@/hooks/useActionResult"]
 
 exports:         ["RoleSelect", "RoleSelectProps"]
 
-useBy:           ["@/app/super-admin/users/page.tsx"]
+useBy:           ["@/app/super-admin/user-manager/page.tsx"]
 
 userStories:     ["*en tant que super-administrateur je veux changer le rôle plateforme d'un utilisateur"]
 
@@ -65,6 +69,7 @@ import { updateUserPlatformRoleAction } from "@/app/super-admin/user-manager/act
 import {
   PLATFORM_ROLES,
   PLATFORM_ROLE_LABELS,
+  platformRoleSchema,
   type PlatformRole,
 } from "@/config/roles";
 import {
@@ -96,9 +101,16 @@ export function RoleSelect({
   const { run, isPending } = useActionResult();
 
   function handleChange(nextRole: string) {
-    /* Cast sécurisé : la valeur vient d'un <NativeSelect> alimenté par
-       PLATFORM_ROLES, donc nextRole est nécessairement un PlatformRole. */
-    const typedRole = nextRole as PlatformRole;
+    /* La valeur vient d'un <NativeSelect> alimenté par PLATFORM_ROLES,
+       mais on valide quand même via Zod : c'est la source de vérité
+       unique, et cela protège contre un <option> injecté ou une
+       évolution future de l'enum. */
+    const parsed = platformRoleSchema.safeParse(nextRole);
+    if (!parsed.success) {
+      return;
+    }
+
+    const typedRole = parsed.data;
     const previous = role;
     setRole(typedRole);
 

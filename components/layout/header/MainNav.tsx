@@ -5,44 +5,35 @@ projectId:       new-genesis
 type :           component
 generic:         true
 
-role:            Navigation principale desktop. Reçoit les items + le
-                 rôle plateforme (PlatformRole) de l'utilisateur courant
-                 par props. Filtre les items ET leurs enfants (récursif)
-                 selon `visible` ET `minPlatformRole`.
+role:            Navigation principale desktop. Reçoit les items (déjà
+                 filtrés par Header) + le rôle plateforme (PlatformRole)
+                 de l'utilisateur courant. Filtre les items ET leurs
+                 enfants (récursif) selon `visible` ET `minPlatformRole`.
+
+                 ROUTES STATIQUES : le projet n'a qu'un seul flux Scrum
+                 (scrum-business). Les hrefs Scrum sont donc écrits en
+                 dur dans frontWorkSpace.ts (/scrum/scrum-business/...),
+                 SANS segment dynamique `[flow]`. Ce composant N'UTILISE
+                 PLUS useParams() — évite l'erreur « Blocking Route »
+                 de Next.js 16 (hook bloquant pour le prérendu).
+
+                 Résolution défensive conservée via resolveHrefString
+                 (utile si un jour un flux dynamique est ajouté) mais
+                 appelée avec un objet params vide : aucun placeholder
+                 n'est substitué, ce qui est le comportement voulu
+                 aujourd'hui (les hrefs sont déjà concrets).
 
                  OUVERTURE AU SURVOL UNIQUEMENT : chaque item avec
                  children gère son propre état `open` via useState
                  (false par défaut). Le sous-menu n'est RENDU DANS LE
-                 DOM que si `open === true` — pas de opacity-0, pas de
-                 data-open, pas de classe conditionnelle fragile. Si
-                 `open` est false, le <ul> n'existe pas : il ne peut
-                 pas être visible.
+                 DOM que si `open === true`.
 
-                 Ouverture : onMouseEnter sur le wrapper de l'item →
-                 setOpen(true). Fermeture : onMouseLeave → setOpen(false)
-                 après un délai de 120ms (laisse le temps à la souris de
-                 traverser le gap entre le bouton et le sous-menu).
-                 Clavier : onFocus ouvre, onBlur ferme (même délai).
-
-                 Rendu RÉCURSIF : un item avec children ouvre un
-                 sous-menu (ChildrenList), et chaque enfant qui a
-                 lui-même des children ouvre un sous-menu imbriqué.
-                 Supporte N niveaux. À partir du 2ᵉ niveau, le sous-menu
-                 s'ouvre à droite du parent (left-full top-0) avec un
-                 chevron ChevronRight.
-
-                 canSee est importé depuis navTypes.ts (source unique de
-                 vérité, partagée avec Header.tsx).
-
-flow:            Client Component → useMemo(filtre + tri des items
-                 selon platformRole via canSee) → NavItemRow (state
+flow:            Client Component → reçoit items + platformRole →
+                 useMemo(filtre via canSee + tri) → NavItemRow (state
                  local `open`) → wrapper <li onMouseEnter/onMouseLeave/
-                 onFocus/onBlur> → bouton/lien + sous-menu conditionnel
-                 ({open && <ChildrenList …/>}). ChildrenList rend
-                 ChildrenListItem qui gère son propre `open` pour les
-                 sous-sous-menus. Anonyme (platformRole null) : seuls
-                 les items minPlatformRole: "user" sont visibles.
-                 superAdmin : tous.
+                 onFocus/onBlur> → bouton/lien + sous-menu conditionnel.
+                 Anonyme (platformRole null) : seuls les items
+                 minPlatformRole: "user" sont visibles. superAdmin : tous.
 
 ecosystem:       Layout = [
                    "@/app/globals.css",
@@ -95,10 +86,23 @@ import { ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
 
 import {
   canSee,
+  resolveHrefString,
   type NavItem,
+  type RouteParams,
 } from "@/components/layout/header/navTypes";
 import { NavActiveLink } from "@/components/layout/header/NavActiveLink";
 import type { PlatformRole } from "@/config/roles";
+
+/* ------------------------------------------------------------------ */
+/*  Constante : params vides (routes statiques)                        */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Le projet n'a qu'un flux Scrum (scrum-business) : les hrefs sont
+ * statiques. On passe un objet vide pour que resolveHrefString ne
+ * fasse aucune substitution (aucun placeholder à résoudre).
+ */
+const EMPTY_PARAMS: RouteParams = {};
 
 /* ------------------------------------------------------------------ */
 /*  Helpers de style                                                   */
@@ -146,9 +150,23 @@ function NeutralLink({ item }: { readonly item: NavItem }) {
 }
 
 function NeutralSubLink({ child }: { readonly child: NavItem }) {
+  if (!child.href) {
+    return (
+      <span className="flex items-start gap-2 rounded-md px-2.5 py-2 text-sm text-muted-foreground">
+        <span className="flex flex-1 flex-col gap-0.5">
+          <span className="font-medium">{child.label}</span>
+          {child.description && (
+            <span className="text-xs text-muted-foreground">
+              {child.description}
+            </span>
+          )}
+        </span>
+      </span>
+    );
+  }
   return (
     <Link
-      href={child.href!}
+      href={child.href}
       target={child.external ? "_blank" : undefined}
       rel={child.external ? "noopener noreferrer" : undefined}
       className={SUB_LINK_INACTIVE}
@@ -178,7 +196,6 @@ function NeutralSubLink({ child }: { readonly child: NavItem }) {
 interface ChildrenListProps {
   readonly children: readonly NavItem[];
   readonly platformRole: PlatformRole | null;
-  /** Profondeur (0 = premier sous-menu, 1 = sous-sous-menu, …). */
   readonly depth: number;
 }
 
@@ -193,8 +210,6 @@ function ChildrenList({ children, platformRole, depth }: ChildrenListProps) {
 
   if (sorted.length === 0) return null;
 
-  /* Premier niveau : sous le parent (left-0 top-full).
-     Niveaux suivants : à droite du parent (left-full top-0). */
   const positionClass =
     depth === 0 ? "left-0 top-full mt-1" : "left-full top-0 ml-1";
 
@@ -231,7 +246,6 @@ function ChildrenListItem({
   const [open, setOpen] = useState(false);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  /* Nettoyage du timer au démontage. */
   useEffect(
     () => () => {
       if (closeTimer.current) clearTimeout(closeTimer.current);
@@ -251,6 +265,12 @@ function ChildrenListItem({
     }
     setOpen(true);
   }
+
+  /* Résolution défensive : les hrefs sont statiques aujourd'hui,
+     donc resolveHrefString retourne child.href inchangé. */
+  const resolvedHref = child.href
+    ? (resolveHrefString(child.href, EMPTY_PARAMS) ?? child.href)
+    : undefined;
 
   const content = (
     <>
@@ -285,10 +305,10 @@ function ChildrenListItem({
       onFocus={hasChildren ? cancelClose : undefined}
       onBlur={hasChildren ? scheduleClose : undefined}
     >
-      {child.href ? (
+      {resolvedHref ? (
         <Suspense fallback={<NeutralSubLink child={child} />}>
           <NavActiveLink
-            href={child.href}
+            href={resolvedHref}
             external={child.external}
             classNameInactive={SUB_LINK_INACTIVE}
             classNameActive={SUB_LINK_ACTIVE}
@@ -303,7 +323,6 @@ function ChildrenListItem({
         </span>
       )}
 
-      {/* Sous-sous-menu : rendu UNIQUEMENT si open === true. */}
       {hasChildren && open && child.children && (
         <ChildrenList
           children={child.children}
@@ -357,6 +376,10 @@ function NavItemRow({ item, platformRole }: NavItemRowProps) {
     setOpen(true);
   }
 
+  const resolvedHref = item.href
+    ? (resolveHrefString(item.href, EMPTY_PARAMS) ?? item.href)
+    : undefined;
+
   return (
     <li
       className="relative"
@@ -365,10 +388,10 @@ function NavItemRow({ item, platformRole }: NavItemRowProps) {
       onFocus={hasChildren ? cancelClose : undefined}
       onBlur={hasChildren ? scheduleClose : undefined}
     >
-      {item.href ? (
+      {resolvedHref ? (
         <Suspense fallback={<NeutralLink item={item} />}>
           <NavActiveLink
-            href={item.href}
+            href={resolvedHref}
             external={item.external}
             classNameInactive={LINK_INACTIVE}
             classNameActive={LINK_ACTIVE}
@@ -407,7 +430,6 @@ function NavItemRow({ item, platformRole }: NavItemRowProps) {
         </button>
       )}
 
-      {/* Sous-menu de premier niveau : rendu UNIQUEMENT si open === true. */}
       {hasChildren && open && (
         <ChildrenList
           children={sortedChildren}
@@ -424,12 +446,7 @@ function NavItemRow({ item, platformRole }: NavItemRowProps) {
 /* ------------------------------------------------------------------ */
 
 export type MainNavProps = {
-  /** Items à afficher. Obligatoire : la source est décidée par l'appelant. */
   readonly items: readonly NavItem[];
-  /**
-   * Rôle plateforme de l'utilisateur courant (null = anonyme).
-   * Filtrage via canSee (hiérarchie superAdmin > dev > admin > user).
-   */
   readonly platformRole?: PlatformRole | null;
 };
 

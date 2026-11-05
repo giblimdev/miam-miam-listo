@@ -1,54 +1,58 @@
 /*
 path :           app/scrum/[flow]/idee/page.tsx
-tag :            ["help", "idee", "page", "scrum"]
-projectId:       new-genesis
+tag :            ["help", "idee", "page", "scrum", "section-json"]
+projectId:       <à fournir>
 type:            page
 generic:         false
 
-role:            Page de gestion des idées pour un flux Scrum donné. Le composant
-                 page est synchrone et ne fait que monter un <Suspense>. Tout l'accès
-                 runtime (await params, validation, lecture des données) est isolé
-                 dans le composant async <IdeeSection />, conformément à Cache
-                 Components.
+role:            Page de gestion des idées pour un flux Scrum. Sync page +
+                 Suspense ; validation et lecture dans un composant async.
+                 Sous la liste CRUD existante (IdeeList), un éditeur JSON
+                 (SectionJsonEditor) permet d'éditer en masse le tableau
+                 "idee" du flux et de l'enregistrer via la Server Action
+                 générique updateSectionJsonAction. Les deux modes (formulaire
+                 + JSON) coexistent sur la même page.
 
-flow:            Server Component sync → <Suspense fallback=<IdeeListSkeleton />> →
-                 <IdeeSection params={params} /> async → await params → validation
-                 via SCRUM_FLOWS → listIdees(flow) → <IdeeList />.
+flow:            Sync page → <Suspense fallback=<IdeeListSkeleton />> →
+                 <IdeeSection params /> async → await params → validation →
+                 listIdees(flow) → JSON.stringify(idees, null, 2) →
+                 <IdeeList /> + <SectionJsonEditor section="idee" />.
 
-ecosystem:       Help = [
-                   "@/app/scrum/[flow]/epic/page.tsx",
-                   "@/app/scrum/[flow]/feature/page.tsx",
-                   "@/app/scrum/[flow]/global-json/page.tsx",
+ecosystem:       Scrum = [
                    "@/app/scrum/[flow]/idee/page.tsx",
-                   "@/app/scrum/[flow]/layout.tsx",
-                   "@/app/scrum/[flow]/page.tsx",
-                   "@/app/scrum/[flow]/persona/page.tsx",
-                   "@/app/scrum/[flow]/sprint/page.tsx",
-                   "@/app/scrum/[flow]/user-story/page.tsx",
-                   "@/app/scrum/layout.tsx",
-                   "@/app/scrum/page.tsx",
+                   "@/app/scrum/lib/actions/section-json.ts",
+                   "@/app/scrum/lib/services/idee.ts",
+                   "@/app/scrum/lib/types.ts",
+                   "@/app/scrum/lib/validations/sections.ts",
+                   "@/components/scrum/IdeeList.tsx",
+                   "@/components/scrum/SectionJsonEditor.tsx",
+                   "@/components/ui/skeleton.tsx",
                  ]
 
-relatedFiles:    ["@/app/scrum/components/IdeeList.tsx",
-                  "@/app/scrum/lib/services/idee.ts",
-                  "@/app/scrum/lib/types.ts"]
+relatedFiles:    ["@/app/scrum/lib/services/idee.ts",
+                  "@/app/scrum/lib/types.ts",
+                  "@/app/scrum/lib/actions/section-json.ts",
+                  "@/components/scrum/IdeeList.tsx",
+                  "@/components/scrum/SectionJsonEditor.tsx"]
 
 imports:         ["react", "next/navigation",
                   "@/app/scrum/lib/types",
                   "@/app/scrum/lib/services/idee",
                   "@/app/scrum/components/IdeeList",
+                  "@/components/scrum/SectionJsonEditor",
                   "@/components/ui/skeleton"]
 
 exports:         ["default IdeePage"]
 
 useBy:           []
 
-userStories:     ["*en tant qu'utilisateur je veux gérer les idées d'un flux Scrum"]
+userStories:     ["*en tant qu'utilisateur je veux gérer les idées d'un flux Scrum",
+                  "*en tant qu'utilisateur je veux éditer le JSON de la section idée"]
 
-status:          planned
-pathChecked:     ✘false
-metaDataChecked: ✘false
-scriptChecked:   ✘false
+status:          wip
+pathChecked:     ✔true
+metaDataChecked: ✔true
+scriptChecked:   ✔true
 */
 
 import { Suspense } from "react";
@@ -57,6 +61,7 @@ import { notFound } from "next/navigation";
 import { SCRUM_FLOWS, type ScrumFlow } from "@/app/scrum/lib/types";
 import { listIdees } from "@/app/scrum/lib/services/idee";
 import { IdeeList } from "@/app/scrum/components/IdeeList";
+import { SectionJsonEditor } from "@/app/scrum/components/SectionJsonEditor";
 import { Skeleton } from "@/components/ui/skeleton";
 
 /* ------------------------------------------------------------------ */
@@ -74,7 +79,7 @@ function isScrumFlow(value: string): value is ScrumFlow {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Page (sync, ne fait que monter le Suspense)                        */
+/*  Page (sync)                                                        */
 /* ------------------------------------------------------------------ */
 
 export default function IdeePage({ params }: { params: PageParams }) {
@@ -86,7 +91,7 @@ export default function IdeePage({ params }: { params: PageParams }) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Section async (toute la logique runtime est ici)                   */
+/*  Section async                                                      */
 /* ------------------------------------------------------------------ */
 
 async function IdeeSection({ params }: { readonly params: PageParams }) {
@@ -97,7 +102,14 @@ async function IdeeSection({ params }: { readonly params: PageParams }) {
   }
 
   const idees = await listIdees(flow);
-  return <IdeeList flow={flow} idees={idees} />;
+  const ideesJson = JSON.stringify(idees, null, 2);
+
+  return (
+    <div className="space-y-10">
+      <IdeeList flow={flow} idees={idees} />
+      <SectionJsonEditor flow={flow} section="idee" initialJson={ideesJson} />
+    </div>
+  );
 }
 
 /* ------------------------------------------------------------------ */

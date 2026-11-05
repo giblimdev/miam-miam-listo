@@ -1,80 +1,67 @@
 /*
-path :           app/core/componentsSprintList.tsx
+path :           app/scrum/components/SprintList.tsx
 tag :            ["scrum", "sprint", "list", "ui", "dnd"]
-projectId:       new-genesis
+projectId:       <à fournir>
 type:            component
 generic:         false
 
-role:            Liste des sprints d'un flux Scrum avec DnD. Depuis la
-                 refonte Sprint, l'édition se fait sur une page dédiée
-                 /core/[flow]/sprint/[sprintId]/edit (bouton Éditer →
-                 router.push). La modale d'édition a été supprimée car
-                 inadaptée au DnD cross-container. Seule la création rapide
-                 passe par une modale (SprintForm).
+role:            Liste des sprints d'un flux Scrum avec DnD. L'édition
+                 se fait sur une page dédiée
+                 /scrum/[flow]/sprint/[sprintId]/edit (bouton Éditer →
+                 router.push). Seule la création rapide passe par une
+                 modale (SprintForm).
+
+                 ⚠️ CORRECTIF ROUTE : les router.push utilisaient
+                 `/${flow}/sprint/...` (sans le préfixe /scrum), ce qui
+                 produisait une URL inexistante
+                 (/scrum-business/sprint/.../edit) → 404. La route
+                 physique réelle est /scrum/[flow]/sprint/[sprintId]/edit,
+                 donc le préfixe DOIT être `/scrum/${flow}/sprint/...`.
 
 flow:            flow + sprints + userStories → Map<storyId, UserStory> →
                  useState(optimistic) → useEffect resync → SortableList +
                  SortableItem → handleReorder → Server Action.
-                 handleEdit(sprint) → router.push(`/core/${flow}/sprint/${sprint.id}/edit`).
+                 handleEdit(sprint) →
+                 router.push(`/scrum/${flow}/sprint/${sprint.id}/edit`).
 
 ecosystem:       ScrumUI = [
-                   "@/app/core/components/scrum/EpicCard.tsx",
-                   "@/app/core/components/scrum/EpicForm.tsx",
-                   "@/app/core/components/scrum/EpicList.tsx",
-                   "@/app/core/components/scrum/FeatureCard.tsx",
-                   "@/app/core/components/scrum/FeatureForm.tsx",
-                   "@/app/core/components/scrum/FeatureList.tsx",
-                   "@/app/core/components/scrum/FlowSelector.tsx",
-                   "@/app/core/components/scrum/GlobalJsonExport.tsx",
-                   "@/app/core/components/scrum/IdeeCard.tsx",
-                   "@/app/core/components/scrum/IdeeDetailDialog.tsx",
-                   "@/app/core/components/scrum/IdeeForm.tsx",
-                   "@/app/core/components/scrum/IdeeList.tsx",
-                   "@/app/core/components/scrum/PersonaCard.tsx",
-                   "@/app/core/components/scrum/PersonaForm.tsx",
-                   "@/app/core/components/scrum/PersonaList.tsx",
-                   "@/app/core/components/scrum/ScrumNav.tsx",
-                   "@/app/core/components/scrum/SortableItem.tsx",
-                   "@/app/core/components/scrum/SortableList.tsx",
-                   "@/app/core/components/scrum/SprintCard.tsx",
-                   "@/app/core/components/scrum/SprintEditor.tsx",
-                   "@/app/core/components/scrum/SprintForm.tsx",
-                   "@/app/core/components/scrum/SprintList.tsx",
-                   "@/app/core/components/scrum/SprintStoriesBoard.tsx",
-                   "@/app/core/components/scrum/UserStoryCard.tsx",
-                   "@/app/core/components/scrum/UserStoryForm.tsx",
-                   "@/app/core/components/scrum/UserStoryList.tsx",
-                   "@/app/core/components/scrum/UserStoryMiniCard.tsx",
+                   "@/app/scrum/components/SortableItem.tsx",
+                   "@/app/scrum/components/SortableList.tsx",
+                   "@/app/scrum/components/SprintCard.tsx",
+                   "@/app/scrum/components/SprintForm.tsx",
+                   "@/app/scrum/components/SprintList.tsx",
+                   "@/app/scrum/lib/actions/sprint.ts",
+                   "@/app/scrum/lib/types.ts",
                  ]
 
-relatedFiles:    ["@/app/core/components/scrum/SprintCard.tsx",
-                  "@/app/core/components/scrum/SprintForm.tsx",
-                  "@/app/core/components/scrum/SortableItem.tsx",
-                  "@/app/core/components/scrum/SortableList.tsx",
-                  "@/app/core/lib/scrum/types.ts",
-                  "@/app/core/lib/scrum/actions/sprint.ts"]
+relatedFiles:    ["@/app/scrum/components/SprintCard.tsx",
+                  "@/app/scrum/components/SprintForm.tsx",
+                  "@/app/scrum/components/SortableItem.tsx",
+                  "@/app/scrum/components/SortableList.tsx",
+                  "@/app/scrum/lib/types.ts",
+                  "@/app/scrum/lib/actions/sprint.ts"]
 
 imports:         ["react", "next/navigation", "lucide-react", "sonner",
-                  "@/app/core/lib/scrum/types",
-                  "@/app/core/lib/scrum/actions/sprint",
-                  "@/app/core/components/scrum/SprintCard",
-                  "@/app/core/components/scrum/SprintForm",
-                  "@/app/core/components/scrum/SortableItem",
-                  "@/app/core/components/scrum/SortableList",
+                  "@/app/scrum/lib/types",
+                  "@/app/scrum/lib/actions/sprint",
+                  "@/app/scrum/components/SprintCard",
+                  "@/app/scrum/components/SprintForm",
+                  "@/app/scrum/components/SortableItem",
+                  "@/app/scrum/components/SortableList",
                   "@/components/ui/button",
                   "@/components/ui/dialog",
                   "@/components/ui/alert-dialog"]
 
 exports:         ["SprintList", "SprintListProps"]
 
-useBy:           ["@/app/core/[flow]/sprint/page.tsx"]
+useBy:           ["/app/scrum/[flow]/sprint/page.tsx"]
 
 userStories:     ["*en tant qu'utilisateur je veux lister, réorganiser et gérer les sprints Scrum"]
 
-status:          planned
-pathChecked:     ✘false
-metaDataChecked: ✘false
-scriptChecked:   ✘false
+status:          wip
+pathChecked:     ✔true
+metaDataChecked: ✔true
+scriptChecked:   ✔true
 */
 
 "use client";
@@ -189,8 +176,14 @@ export function SprintList({ flow, sprints, userStories }: SprintListProps) {
     }
   }
 
+  /**
+   * ⚠️ CORRECTIF ROUTE : la route physique réelle est
+   * /scrum/[flow]/sprint/[sprintId]/edit. Le préfixe `/scrum/` est
+   * OBLIGATOIRE — sans lui, l'URL produite est
+   * `/scrum-business/sprint/.../edit` et renvoie 404.
+   */
   function handleEdit(sprint: Sprint) {
-    router.push(`/${flow}/sprint/${sprint.id}/edit`);
+    router.push(`/scrum/${flow}/sprint/${sprint.id}/edit`);
   }
 
   return (

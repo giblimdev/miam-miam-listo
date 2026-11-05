@@ -30,15 +30,22 @@ role:            Tableau responsive des utilisateurs. Affiche une liste
                  PLATFORM_ROLE_LABELS[role], donc un nouveau rôle
                  apparaît automatiquement.
 
+                 La valeur issue du <NativeSelect> est validée par
+                 platformRoleSchema.safeParse() avant d'être transmise à
+                 la Server Action — cohérent avec RoleSelect.tsx et la
+                 règle « Zod source unique de vérité ».
+
 flow:            Reçoit users (UserListItem[]) → calcule
                  superAdminCount + lastSuperAdminId → pour chaque user,
                  rend une ligne avec NativeSelect (désactivé UNIQUEMENT
                  si user.id === lastSuperAdminId) → onChange →
-                 updateUserPlatformRoleAction(user.id, newRole) → toast
-                 succès/erreur → router.refresh().
+                 platformRoleSchema.safeParse(rawRole) → si succès :
+                 updateUserPlatformRoleAction(user.id, parsed.data) →
+                 toast succès/erreur → router.refresh().
 
 ecosystem:       SuperAdmin = [
                    "@/app/super-admin/page.tsx",
+                   "@/app/super-admin/user-manager/RoleSelect.tsx",
                    "@/app/super-admin/user-manager/UsersTable.tsx",
                    "@/app/super-admin/user-manager/actions.ts",
                    "@/app/super-admin/user-manager/page.tsx",
@@ -49,6 +56,7 @@ ecosystem:       SuperAdmin = [
                  ]
 
 relatedFiles:    ["@/app/super-admin/user-manager/actions.ts",
+                  "@/app/super-admin/user-manager/RoleSelect.tsx",
                   "@/config/roles.ts"]
 
 imports:         ["react", "next/navigation", "sonner",
@@ -79,6 +87,7 @@ import { toast } from "sonner";
 import {
   PLATFORM_ROLES,
   PLATFORM_ROLE_LABELS,
+  platformRoleSchema,
   type PlatformRole,
 } from "@/config/roles";
 import {
@@ -108,7 +117,13 @@ export interface UsersTableProps {
 /*  Badge de rôle                                                      */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Record<PlatformRole, string> exhaustif. Ajouter un rôle dans
+ * PLATFORM_ROLES sans ajouter son entrée ici provoque une erreur de
+ * compilation — garantit qu'aucun rôle n'est oublié dans l'UI.
+ */
 const ROLE_BADGE_CLASS: Record<PlatformRole, string> = {
+  visitor: "bg-muted/40 text-muted-foreground/70",
   user: "bg-muted/60 text-muted-foreground",
   admin: "bg-chart-3/15 text-chart-3",
   dev: "bg-chart-2/15 text-chart-2",
@@ -142,10 +157,17 @@ export function UsersTable({ users, currentUserId }: UsersTableProps) {
   }, [users]);
 
   async function handleRoleChange(userId: string, rawRole: string) {
-    const platformRole = rawRole as PlatformRole;
+    /* Valide la valeur issue du <NativeSelect> via Zod avant d'appeler
+       la Server Action. La source de vérité reste platformRoleSchema —
+       on ne propage jamais un rôle invalide dans le circuit serveur. */
+    const parsed = platformRoleSchema.safeParse(rawRole);
+    if (!parsed.success) {
+      return;
+    }
+
     setPendingId(userId);
 
-    const result = await updateUserPlatformRoleAction(userId, platformRole);
+    const result = await updateUserPlatformRoleAction(userId, parsed.data);
 
     setPendingId(null);
 

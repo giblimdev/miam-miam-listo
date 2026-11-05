@@ -1,20 +1,37 @@
 /*
 path :           app/scrum/components/ScrumNav.tsx
-tag :            ["scrum", "nav", "ui"]
-projectId:       new-genesis
+tag :            ["scrum", "nav", "ui", "dashboard", "roadmap", "progress", "board"]
+projectId :      <à fournir>
 type:            component
 generic:         false
 
-role:            Navigation entre les 8 sections d'un flux Scrum. Affiche des
-                 onglets (Idée, Feature, Persona, Epic, User story, Sprint,
-                 Task, Global JSON) et met en évidence la section active selon
-                 le pathname. Le préfixe d'URL est `/scrum/${flow}` — aligné
-                 sur le layout et la page vue d'ensemble du flow.
+role:            Navigation entre les sections d'un flux Scrum. Affiche
+                 des onglets regroupés en TROIS familles visuelles :
 
-flow:            Client Component → usePathname → détecte la section active →
-                 rend une liste de liens (Next/Link) avec styles conditionnels.
+                 1. SECTIONS  — pipeline CRUD du flux : Idée, Feature,
+                    Persona, Epic, User story, Sprint, Task.
+                 2. BOARDS    — pages d'association par glisser-déposer :
+                    Epic ↔ US (epic/board), Task ↔ US (task/board),
+                    US ↔ Sprint (sprint/board, page hub qui mène vers
+                    l'éditeur DnD du sprint).
+                 3. DASHBOARD — vues de synthèse / suivi : Tableau de
+                    bord, Roadmap, Progress.
+
+                 « Vue d'ensemble » (accueil du flux) et « Global JSON »
+                 (export) encadrent les trois familles : ce sont des
+                 pages transverses, pas des sections métier.
+
+                 Le préfixe d'URL est `/scrum/${flow}` — aligné sur le
+                 layout et les pages du flux. Chaque famille est séparée
+                 par un trait vertical fin pour matérialiser les groupes.
+
+flow:            Client Component → usePathname → détecte la section
+                 active → rend une liste de liens (Next/Link) avec styles
+                 conditionnels. Aucun état, aucun effet de bord.
 
 ecosystem:       Scrum = [
+                   "@/app/scrum/[flow]/dashboard/page.tsx",
+                   "@/app/scrum/[flow]/epic/board/page.tsx",
                    "@/app/scrum/[flow]/epic/page.tsx",
                    "@/app/scrum/[flow]/feature/page.tsx",
                    "@/app/scrum/[flow]/global-json/page.tsx",
@@ -22,39 +39,14 @@ ecosystem:       Scrum = [
                    "@/app/scrum/[flow]/layout.tsx",
                    "@/app/scrum/[flow]/page.tsx",
                    "@/app/scrum/[flow]/persona/page.tsx",
+                   "@/app/scrum/[flow]/progress/page.tsx",
+                   "@/app/scrum/[flow]/roadmap/page.tsx",
+                   "@/app/scrum/[flow]/sprint/board/page.tsx",
                    "@/app/scrum/[flow]/sprint/page.tsx",
+                   "@/app/scrum/[flow]/task/board/page.tsx",
                    "@/app/scrum/[flow]/task/page.tsx",
                    "@/app/scrum/[flow]/user-story/page.tsx",
-                   "@/app/scrum/components/EpicCard.tsx",
-                   "@/app/scrum/components/EpicForm.tsx",
-                   "@/app/scrum/components/EpicList.tsx",
-                   "@/app/scrum/components/FeatureCard.tsx",
-                   "@/app/scrum/components/FeatureForm.tsx",
-                   "@/app/scrum/components/FeatureList.tsx",
-                   "@/app/scrum/components/FlowSelector.tsx",
-                   "@/app/scrum/components/GlobalJsonExport.tsx",
-                   "@/app/scrum/components/IdeeCard.tsx",
-                   "@/app/scrum/components/IdeeDetailDialog.tsx",
-                   "@/app/scrum/components/IdeeForm.tsx",
-                   "@/app/scrum/components/IdeeList.tsx",
-                   "@/app/scrum/components/PersonaCard.tsx",
-                   "@/app/scrum/components/PersonaForm.tsx",
-                   "@/app/scrum/components/PersonaList.tsx",
                    "@/app/scrum/components/ScrumNav.tsx",
-                   "@/app/scrum/components/SortableItem.tsx",
-                   "@/app/scrum/components/SortableList.tsx",
-                   "@/app/scrum/components/SprintCard.tsx",
-                   "@/app/scrum/components/SprintEditor.tsx",
-                   "@/app/scrum/components/SprintForm.tsx",
-                   "@/app/scrum/components/SprintList.tsx",
-                   "@/app/scrum/components/SprintStoriesBoard.tsx",
-                   "@/app/scrum/components/TaskCard.tsx",
-                   "@/app/scrum/components/TaskForm.tsx",
-                   "@/app/scrum/components/TaskList.tsx",
-                   "@/app/scrum/components/UserStoryCard.tsx",
-                   "@/app/scrum/components/UserStoryForm.tsx",
-                   "@/app/scrum/components/UserStoryList.tsx",
-                   "@/app/scrum/components/UserStoryMiniCard.tsx",
                    "@/app/scrum/layout.tsx",
                    "@/app/scrum/page.tsx",
                  ]
@@ -69,11 +61,14 @@ exports:         ["ScrumNav", "ScrumNavProps"]
 
 useBy:           ["@/app/scrum/[flow]/layout.tsx"]
 
-userStories:     ["*en tant qu'utilisateur je veux naviguer entre les sections Scrum"]
+userStories:     ["*en tant qu'utilisateur je veux naviguer entre les sections Scrum",
+                  "*en tant qu'utilisateur je veux accéder aux boards d'association",
+                  "*en tant qu'utilisateur je veux accéder au tableau de bord, à la roadmap et au suivi"]
+
 status:          wip
 pathChecked:     ✔true
 metaDataChecked: ✔true
-scriptChecked:   ✔true
+scriptChecked:   ✔true 
 */
 
 "use client";
@@ -85,7 +80,7 @@ import { usePathname } from "next/navigation";
 import type { ScrumFlow } from "@/app/scrum/lib/types";
 
 /* ------------------------------------------------------------------ */
-/*  Config                                                             */
+/*  Config — trois familles + pages transverses                        */
 /* ------------------------------------------------------------------ */
 
 interface NavEntry {
@@ -93,6 +88,7 @@ interface NavEntry {
   readonly label: string;
 }
 
+/** 1. Pipeline CRUD du flux Scrum (dans l'ordre logique). */
 const SECTIONS: readonly NavEntry[] = [
   { slug: "idee", label: "Idée" },
   { slug: "feature", label: "Feature" },
@@ -101,7 +97,26 @@ const SECTIONS: readonly NavEntry[] = [
   { slug: "user-story", label: "User story" },
   { slug: "sprint", label: "Sprint" },
   { slug: "task", label: "Task" },
-  { slug: "global-json", label: "Global JSON" },
+];
+
+/**
+ * 2. Pages d'association par glisser-déposer.
+ * - epic/board   : UserStoryBoard (US ↔ Epic)
+ * - task/board   : TaskBoard (Task ↔ US)
+ * - sprint/board : page hub qui liste les sprints et mène vers
+ *                  l'éditeur DnD US ↔ Sprint (SprintStoriesBoard).
+ */
+const BOARDS: readonly NavEntry[] = [
+  { slug: "epic/board", label: "Epic ↔ US" },
+  { slug: "task/board", label: "Task ↔ US" },
+  { slug: "sprint/board", label: "US ↔ Sprint" },
+];
+
+/** 3. Vues de synthèse et de suivi (phases 2, 3, 4). */
+const DASHBOARD: readonly NavEntry[] = [
+  { slug: "dashboard", label: "Tableau de bord" },
+  { slug: "roadmap", label: "Roadmap" },
+  { slug: "progress", label: "Progress" },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -113,13 +128,49 @@ export interface ScrumNavProps {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Sous-composants                                                    */
+/* ------------------------------------------------------------------ */
+
+function NavLink({
+  href,
+  label,
+  isActive,
+}: {
+  readonly href: string;
+  readonly label: string;
+  readonly isActive: boolean;
+}) {
+  return (
+    <li>
+      <Link
+        href={href}
+        aria-current={isActive ? "page" : undefined}
+        className={`inline-flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+          isActive
+            ? "bg-chart-1/10 text-chart-1"
+            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+        }`}
+      >
+        {label}
+      </Link>
+    </li>
+  );
+}
+
+function GroupSeparator() {
+  return <li aria-hidden className="mx-1 h-5 w-px shrink-0 bg-border/60" />;
+}
+
+/* ------------------------------------------------------------------ */
 /*  Composant                                                          */
 /* ------------------------------------------------------------------ */
 
 export function ScrumNav({ flow }: ScrumNavProps) {
   const pathname = usePathname();
-  /* ✅ Préfixe aligné sur le layout et la page vue d'ensemble : /scrum/${flow} */
   const base = `/scrum/${flow}`;
+
+  const isActive = (href: string): boolean =>
+    pathname === href || pathname.startsWith(`${href}/`);
 
   return (
     <nav
@@ -127,39 +178,66 @@ export function ScrumNav({ flow }: ScrumNavProps) {
       className="overflow-x-auto border-b border-border/60 pb-px"
     >
       <ul className="flex min-w-max items-center gap-1">
-        <li>
-          <Link
-            href={base}
-            className={`inline-flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-              pathname === base
-                ? "bg-chart-1/10 text-chart-1"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
-            }`}
-          >
-            Vue d&apos;ensemble
-          </Link>
-        </li>
+        {/* Vue d'ensemble (transverse, en tête) */}
+        <NavLink
+          href={base}
+          label="Vue d'ensemble"
+          isActive={pathname === base}
+        />
 
+        <GroupSeparator />
+
+        {/* 1. SECTIONS — pipeline CRUD */}
         {SECTIONS.map((section) => {
           const href = `${base}/${section.slug}`;
-          const isActive = pathname === href || pathname.startsWith(`${href}/`);
-
           return (
-            <li key={section.slug}>
-              <Link
-                href={href}
-                aria-current={isActive ? "page" : undefined}
-                className={`inline-flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                  isActive
-                    ? "bg-chart-1/10 text-chart-1"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
-              >
-                {section.label}
-              </Link>
-            </li>
+            <NavLink
+              key={section.slug}
+              href={href}
+              label={section.label}
+              isActive={isActive(href)}
+            />
           );
         })}
+
+        <GroupSeparator />
+
+        {/* 2. BOARDS — associations DnD */}
+        {BOARDS.map((board) => {
+          const href = `${base}/${board.slug}`;
+          return (
+            <NavLink
+              key={board.slug}
+              href={href}
+              label={board.label}
+              isActive={isActive(href)}
+            />
+          );
+        })}
+
+        <GroupSeparator />
+
+        {/* 3. DASHBOARD — synthèse et suivi */}
+        {DASHBOARD.map((view) => {
+          const href = `${base}/${view.slug}`;
+          return (
+            <NavLink
+              key={view.slug}
+              href={href}
+              label={view.label}
+              isActive={isActive(href)}
+            />
+          );
+        })}
+
+        <GroupSeparator />
+
+        {/* Global JSON (transverse, en pied) */}
+        <NavLink
+          href={`${base}/global-json`}
+          label="Global JSON"
+          isActive={isActive(`${base}/global-json`)}
+        />
       </ul>
     </nav>
   );

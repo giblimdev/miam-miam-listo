@@ -1,6 +1,6 @@
 /*
 path :           app/scrum/lib/actions/sprint.ts
-tag :            ["scrum", "action", "sprint", "server-action", "crud", "reorder"]
+tag :            ["scrum", "action", "sprint", "server-action", "crud", "reorder", "move"]
 projectId:       new-genesis
 type:            action
 generic:         false
@@ -9,11 +9,17 @@ role:            Server Actions pour la section "sprint" du module Scrum.
                  Délègue au service sprint et utilise _helpers.
                  updateSprintMetaAction et updateSprintStoriesAction sont
                  distinctes (édition scindée du service sprint).
+                 moveUserStoryToSprintAction AJOUTÉE pour le board DnD
+                 US↔Sprint (sprintId null = backlog).
                  Les revalidations utilisent `/scrum/${flow}` et
                  `/scrum/${flow}/sprint/${sprintId}/edit` — routes physiques
                  réelles.
 
 flow:            FormData → parse → service → revalidate → ActionResult.
+                 moveUserStoryToSprintAction(flow, storyId, sprintId | null)
+                 → service.moveStoryToSprint → revalidateScrumFlow(flow,
+                 "sprint") + revalidateScrumFlow(flow, "user-story") →
+                 ActionResult.
 
 ecosystem:       Scrum = [
                    "@/app/scrum/lib/actions/_helpers.ts",
@@ -50,12 +56,14 @@ imports:         ["next/cache",
 
 exports:         ["createSprintAction", "updateSprintMetaAction",
                   "updateSprintStoriesAction", "deleteSprintAction",
-                  "reorderSprintsAction"]
+                  "reorderSprintsAction", "moveUserStoryToSprintAction"]
 
 useBy:           ["@/app/scrum/components/SprintList.tsx",
-                  "@/app/scrum/components/SprintEditor.tsx"]
+                  "@/app/scrum/components/SprintEditor.tsx",
+                  "@/app/scrum/components/SprintBoardDnd.tsx"]
 
-userStories:     ["*en tant que développeur je veux muter et réorganiser les sprints via Server Actions"]
+userStories:     ["*en tant que développeur je veux muter et réorganiser les sprints via Server Actions",
+                  "*en tant qu'utilisateur je veux déplacer une US entre backlog et sprint"]
 status:          wip
 pathChecked:     ✔true
 metaDataChecked: ✔true
@@ -76,6 +84,7 @@ import type { ScrumFlow, Sprint } from "@/app/scrum/lib/types";
 import {
   createSprint,
   deleteSprint,
+  moveStoryToSprint,
   reorderSprints,
   updateSprintMeta,
   updateSprintStories,
@@ -164,6 +173,27 @@ export async function reorderSprintsAction(
     const entities = await reorderSprints(flow, orderedIds);
     revalidate(flow);
     return { ok: true, data: entities };
+  } catch (error) {
+    return handleActionError(error);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Move : rattacher / détacher une US à un sprint (board DnD)         */
+/* ------------------------------------------------------------------ */
+
+export async function moveUserStoryToSprintAction(
+  flow: ScrumFlow,
+  storyId: string,
+  sprintId: string | null,
+): Promise<
+  ActionResult<{ readonly storyId: string; readonly sprintId: string | null }>
+> {
+  try {
+    const data = await moveStoryToSprint(flow, storyId, sprintId);
+    revalidateScrumFlow(flow, "sprint");
+    revalidateScrumFlow(flow, "user-story");
+    return { ok: true, data };
   } catch (error) {
     return handleActionError(error);
   }

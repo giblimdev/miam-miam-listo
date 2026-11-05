@@ -11,7 +11,6 @@
     "build",
     "dist",
     "node_modules",
-    "data",
     "generated",
     "prisma",
     "public",

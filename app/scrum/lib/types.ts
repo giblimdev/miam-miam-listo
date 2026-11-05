@@ -1,25 +1,46 @@
 /*
 path :           app/scrum/lib/types.ts
-tag :            ["scrum", "types", "config"]
+tag :            ["scrum", "types", "config", "mono-flux"]
 projectId:       <à fournir>
 type:            config
 generic:         true
 
-role:            Types partagés pour le module Scrum. Définit ScrumFlow (les
-                 trois flux disponibles : scrum-business, scrum-app,
-                 scrum-genesis), ScrumDocument (structure du JSON de
-                 persistance), ScrumEntityBase (base commune avec order pour
-                 le drag-and-drop) et les 7 entités : Idee, Feature, Persona,
-                 Epic, UserStory, Sprint, Task. Task est la couche d'exécution
-                 du sprint : chaque task référence OPTIONNELLEMENT une
-                 UserStory (storyId?: string — backlog implicite) et porte un
-                 statut (todo / in_progress / done). UserStory.epicId est
-                 également optionnel (backlog implicite côté epic). Aucune
-                 dépendance runtime, aucun effet.
+role:            Types partagés pour le module Scrum. Source unique de
+                 vérité pour :
+                 - ScrumFlow : un SEUL flux actif aujourd'hui
+                   ("scrum-business"). Le type littéral est déclaré
+                   AVANT la constante SCRUM_FLOWS (ordre imposé par
+                   TypeScript pour éviter la circularité TS2502/TS2456
+                   quand on écrit `const X: readonly T[] = [...]`
+                   puis `type T = (typeof X)[number]`). Le tableau
+                   SCRUM_FLOWS est conservé pour ne PAS casser les
+                   signatures existantes qui itèrent dessus
+                   (isScrumFlow, validation de params, storage.assertValidFlow,
+                   FlowSelector, etc.). Ajouter un flux plus tard =
+                   ajouter sa valeur dans l'union + dans le tableau
+                   (les deux doivent rester synchronisés — c'est la
+                   seule duplication tolérée, imposée par TS).
+                 - ScrumDocument : structure du JSON de persistance.
+                 - ScrumEntityBase : base commune avec `order` pour le
+                   drag-and-drop.
+                 - Les 7 entités : Idee, Feature, Persona, Epic,
+                   UserStory, Sprint, Task.
+                 Task est la couche d'exécution du sprint : chaque task
+                 référence OPTIONNELLEMENT une UserStory
+                 (storyId?: string — backlog implicite) et porte un
+                 statut (todo / in_progress / done). UserStory.epicId
+                 est également optionnel (backlog implicite côté epic).
+                 Aucune dépendance runtime, aucun effet.
+
+                 ⚠️ MONO-FLUX : SCRUM_FLOWS ne contient plus que
+                 "scrum-business". Les fichiers data/scrum-app.json et
+                 data/scrum-genesis.json sont désormais orphelins et
+                 doivent être supprimés manuellement (hors périmètre
+                 de ce fichier).
 
 flow:            Module TypeScript pur → export des types + factory
-                 createEmptyScrumDocument(). Importable côté serveur ET côté
-                 client.
+                 createEmptyScrumDocument(). Importable côté serveur ET
+                 côté client.
 
 ecosystem:       Scrum = [
                    "@/app/scrum/components/BoardColumn.tsx",
@@ -29,7 +50,7 @@ ecosystem:       Scrum = [
                    "@/app/scrum/components/FeatureCard.tsx",
                    "@/app/scrum/components/FeatureForm.tsx",
                    "@/app/scrum/components/FeatureList.tsx",
-                   "@/app/scrum/components/FlowSelector.tsx",
+                   "@/app/scrum/components/FlowShellContent.tsx",
                    "@/app/scrum/components/GlobalJsonExport.tsx",
                    "@/app/scrum/components/IdeeCard.tsx",
                    "@/app/scrum/components/IdeeDetailDialog.tsx",
@@ -38,9 +59,11 @@ ecosystem:       Scrum = [
                    "@/app/scrum/components/PersonaCard.tsx",
                    "@/app/scrum/components/PersonaForm.tsx",
                    "@/app/scrum/components/PersonaList.tsx",
-                   "@/app/scrum/components/ScrumNav.tsx",
+                   "@/app/scrum/components/ScrumSidebar.tsx",
+                   "@/app/scrum/components/ScrumSidebarGroup.tsx",
                    "@/app/scrum/components/SortableItem.tsx",
                    "@/app/scrum/components/SortableList.tsx",
+                   "@/app/scrum/components/SprintBoardHub.tsx",
                    "@/app/scrum/components/SprintCard.tsx",
                    "@/app/scrum/components/SprintEditor.tsx",
                    "@/app/scrum/components/SprintForm.tsx",
@@ -64,6 +87,7 @@ ecosystem:       Scrum = [
                    "@/app/scrum/lib/actions/sprint.ts",
                    "@/app/scrum/lib/actions/task.ts",
                    "@/app/scrum/lib/actions/user-story.ts",
+                   "@/app/scrum/lib/navigation.ts",
                    "@/app/scrum/lib/services/_crud.ts",
                    "@/app/scrum/lib/services/epic.ts",
                    "@/app/scrum/lib/services/feature.ts",
@@ -105,9 +129,11 @@ useBy:           ["@/app/scrum/lib/validations.ts",
                   "@/app/scrum/lib/actions/epic.ts",
                   "@/app/scrum/lib/actions/user-story.ts",
                   "@/app/scrum/lib/actions/sprint.ts",
-                  "@/app/scrum/lib/actions/task.ts"]
+                  "@/app/scrum/lib/actions/task.ts",
+                  "@/app/scrum/lib/navigation.ts"]
 
-userStories:     ["*en tant que développeur je veux des types partagés pour le CRUD Scrum"]
+userStories:     ["*en tant que développeur je veux des types partagés pour le CRUD Scrum",
+                  "*en tant que développeur je veux un seul flux Scrum actif (scrum-business)"]
 
 status:          wip
 pathChecked:     ✔true
@@ -116,23 +142,58 @@ scriptChecked:   ✔true
 */
 
 /* ------------------------------------------------------------------ */
-/*  Flow                                                               */
+/*  Flow — un seul flux actif (scrum-business)                         */
 /* ------------------------------------------------------------------ */
 
-export type ScrumFlow = "scrum-business" | "scrum-app" | "scrum-genesis";
+/**
+ * Flux Scrum actifs.
+ *
+ * Aujourd'hui un seul : "scrum-business".
+ *
+ * ⚠️ ORDRE IMPORTANT : le type littéral ScrumFlow est déclaré AVANT la
+ * constante SCRUM_FLOWS, et SCRUM_FLOWS est typé `readonly ScrumFlow[]`.
+ * Si on inversait (const d'abord, type dérivé via `typeof SCRUM_FLOWS[number]`),
+ * TypeScript lèverait une erreur de circularité (TS2502 / TS2456) car
+ * l'annotation de la const référence le type qu'elle sert à définir.
+ *
+ * Le type et le tableau restent des tableaux (pas un scalaire) pour
+ * ne PAS casser les signatures existantes qui itèrent sur SCRUM_FLOWS
+ * (isScrumFlow, validation de params, storage.assertValidFlow, etc.).
+ * Réduire le tableau à un seul élément suffit : les anciens flux
+ * ("scrum-app", "scrum-genesis") deviennent automatiquement invalides
+ * et leurs URLs tombent en notFound().
+ *
+ * Pour ajouter un flux plus tard :
+ *   1. Ajouter sa valeur dans l'union ScrumFlow ci-dessous.
+ *   2. Ajouter sa valeur dans SCRUM_FLOWS (les deux doivent rester
+ *      synchronisés — c'est la seule duplication tolérée, imposée par
+ *      TypeScript pour éviter la circularité).
+ *   3. Créer data/{flow}.json (ou laisser readScrumFile le créer vide).
+ *   4. Rien d'autre : toutes les couches (services, actions, pages)
+ *      reçoivent déjà le flow en paramètre.
+ *
+ * ⚠️ Les fichiers data/scrum-app.json et data/scrum-genesis.json sont
+ * désormais orphelins. À supprimer manuellement.
+ */
 
-export const SCRUM_FLOWS: readonly ScrumFlow[] = [
-  "scrum-business",
-  "scrum-app",
-  "scrum-genesis",
-] as const;
+/** Union littérale des flux actifs. Un seul aujourd'hui. */
+export type ScrumFlow = "scrum-business";
+
+/** Tableau des flux actifs (source d'itération runtime). */
+export const SCRUM_FLOWS: readonly ScrumFlow[] = ["scrum-business"];
 
 /* ------------------------------------------------------------------ */
 /*  Sections                                                           */
 /* ------------------------------------------------------------------ */
 
 export type ScrumSection =
-  "idee" | "feature" | "persona" | "epic" | "userStory" | "sprint" | "task";
+  | "idee"
+  | "feature"
+  | "persona"
+  | "epic"
+  | "userStory"
+  | "sprint"
+  | "task";
 
 export const SCRUM_SECTIONS: readonly ScrumSection[] = [
   "idee",

@@ -1,57 +1,61 @@
 /*
-path :           app/core/[flow]/user-story/page.tsx
-tag :            [ "user-story", "page", "scrum"]
-projectId:       new-genesis
+path :           app/scrum/[flow]/user-story/page.tsx
+tag :            ["user-story", "page", "scrum", "section-json"]
+projectId:       <à fournir>
 type:            page
 generic:         false
 
-role:            Page de gestion des user stories pour un flux Scrum. Sync page +
-                 Suspense ; validation et lecture des user stories ET des epics
-                 dans un composant async (Promise.all) pour permettre l'affichage
-                 du nom d'epic sur chaque carte. Le skeleton reproduit la grille
-                 1 / 2 / 3 / 4 colonnes de UserStoryList.
+role:            Page de gestion des user stories pour un flux Scrum. Sync
+                 page + Suspense ; validation et lecture des US ET des
+                 epics dans un composant async (Promise.all). Sous
+                 UserStoryList, un éditeur JSON (SectionJsonEditor) permet
+                 d'éditer en masse le tableau "userStory" et de
+                 l'enregistrer via updateSectionJsonAction.
 
 flow:            Sync page → <Suspense fallback=<UserStoryListSkeleton />> →
-                 <UserStorySection params /> async → await params → validation →
-                 Promise.all([listUserStories(flow), listEpics(flow)]) →
-                 <UserStoryList flow stories epics />.
+                 <UserStorySection params /> async → await params →
+                 validation → Promise.all([listUserStories, listEpics]) →
+                 JSON.stringify(stories) → <UserStoryList /> +
+                 <SectionJsonEditor section="userStory" />.
 
-ecosystem:       Help = [
-                   "@/app/core/[flow]/epic/page.tsx",
-                   "@/app/core/[flow]/feature/page.tsx",
-                   "@/app/core/[flow]/global-json/page.tsx",
-                   "@/app/core/[flow]/idee/page.tsx",
-                   "@/app/core/[flow]/layout.tsx",
-                   "@/app/core/[flow]/page.tsx",
-                   "@/app/core/[flow]/persona/page.tsx",
-                   "@/app/core/[flow]/sprint/page.tsx",
-                   "@/app/core/[flow]/user-story/page.tsx",
-                   "@/app/core/layout.tsx",
-                   "@/app/core/page.tsx",
+ecosystem:       Scrum = [
+                   "@/app/scrum/[flow]/user-story/page.tsx",
+                   "@/app/scrum/lib/actions/section-json.ts",
+                   "@/app/scrum/lib/services/epic.ts",
+                   "@/app/scrum/lib/services/user-story.ts",
+                   "@/app/scrum/lib/types.ts",
+                   "@/app/scrum/lib/validations/sections.ts",
+                   "@/components/scrum/SectionJsonEditor.tsx",
+                   "@/components/scrum/UserStoryList.tsx",
+                   "@/components/ui/skeleton.tsx",
                  ]
 
-relatedFiles:    ["@/app/core/components/scrum/UserStoryList.tsx",
-                  "@/app/core/lib/scrum/services/user-story.ts",
-                  "@/app/core/lib/scrum/services/epic.ts",
-                  "@/app/core/lib/scrum/types.ts"]
+relatedFiles:    ["@/app/scrum/lib/services/user-story.ts",
+                  "@/app/scrum/lib/services/epic.ts",
+                  "@/app/scrum/lib/types.ts",
+                  "@/app/scrum/lib/actions/section-json.ts",
+                  "@/components/scrum/UserStoryList.tsx",
+                  "@/components/scrum/SectionJsonEditor.tsx"]
 
 imports:         ["react", "next/navigation",
-                  "@/app/core/lib/scrum/types",
-                  "@/app/core/lib/scrum/services/user-story",
-                  "@/app/core/lib/scrum/services/epic",
-                  "@/app/core/components/scrum/UserStoryList",
+                  "@/app/scrum/lib/types",
+                  "@/app/scrum/lib/services/user-story",
+                  "@/app/scrum/lib/services/epic",
+                  "@/app/scrum/components/UserStoryList",
+                  "@/components/scrum/SectionJsonEditor",
                   "@/components/ui/skeleton"]
 
 exports:         ["default UserStoryPage"]
 
 useBy:           []
 
-userStories:     ["*en tant qu'utilisateur je veux gérer les user stories d'un flux Scrum"]
+userStories:     ["*en tant qu'utilisateur je veux gérer les user stories d'un flux Scrum",
+                  "*en tant qu'utilisateur je veux éditer le JSON de la section user story"]
 
-status:          planned
-pathChecked:     ✘false
-metaDataChecked: ✘false
-scriptChecked:   ✘false
+status:          wip
+pathChecked:     ✔true
+metaDataChecked: ✔true
+scriptChecked:   ✔true
 */
 
 import { Suspense } from "react";
@@ -61,6 +65,7 @@ import { SCRUM_FLOWS, type ScrumFlow } from "@/app/scrum/lib/types";
 import { listUserStories } from "@/app/scrum/lib/services/user-story";
 import { listEpics } from "@/app/scrum/lib/services/epic";
 import { UserStoryList } from "@/app/scrum/components/UserStoryList";
+import { SectionJsonEditor } from "@/app/scrum/components/SectionJsonEditor";
 import { Skeleton } from "@/components/ui/skeleton";
 
 type PageParams = Promise<{ flow: string }>;
@@ -88,8 +93,18 @@ async function UserStorySection({ params }: { readonly params: PageParams }) {
     listUserStories(flow),
     listEpics(flow),
   ]);
+  const storiesJson = JSON.stringify(stories, null, 2);
 
-  return <UserStoryList flow={flow} stories={stories} epics={epics} />;
+  return (
+    <div className="space-y-10">
+      <UserStoryList flow={flow} stories={stories} epics={epics} />
+      <SectionJsonEditor
+        flow={flow}
+        section="userStory"
+        initialJson={storiesJson}
+      />
+    </div>
+  );
 }
 
 function UserStoryListSkeleton() {

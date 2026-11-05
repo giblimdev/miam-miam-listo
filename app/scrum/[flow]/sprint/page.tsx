@@ -1,57 +1,61 @@
 /*
 path :           app/scrum/[flow]/sprint/page.tsx
-tag :            ["help", "sprint", "page", "scrum"]
-projectId:       new-genesis
+tag :            ["help", "sprint", "page", "scrum", "section-json"]
+projectId:       <à fournir>
 type:            page
 generic:         false
 
-role:            Page de gestion des sprints pour un flux Scrum. Sync page +
-                 Suspense ; validation et lecture des sprints ET des user stories
-                 dans un composant async (Promise.all) pour permettre l'affichage
-                 des US résolues dans chaque SprintCard. Le skeleton reproduit
-                 la grille 1 / 2 / 3 / 4 colonnes de SprintList.
+role:            Page de gestion des sprints pour un flux Scrum. Sync page
+                 + Suspense ; validation et lecture des sprints ET des US
+                 dans un composant async (Promise.all). Sous SprintList, un
+                 éditeur JSON (SectionJsonEditor) permet d'éditer en masse
+                 le tableau "sprint" et de l'enregistrer via
+                 updateSectionJsonAction.
 
 flow:            Sync page → <Suspense fallback=<SprintListSkeleton />> →
-                 <SprintSection params /> async → await params → validation →
-                 Promise.all([listSprints(flow), listUserStories(flow)]) →
-                 <SprintList flow sprints userStories />.
+                 <SprintSection params /> async → await params → validation
+                 → Promise.all([listSprints, listUserStories]) →
+                 JSON.stringify(sprints) → <SprintList /> +
+                 <SectionJsonEditor section="sprint" />.
 
-ecosystem:       Help = [
-                   "@/app/scrum/[flow]/epic/page.tsx",
-                   "@/app/scrum/[flow]/feature/page.tsx",
-                   "@/app/scrum/[flow]/global-json/page.tsx",
-                   "@/app/scrum/[flow]/idee/page.tsx",
-                   "@/app/scrum/[flow]/layout.tsx",
-                   "@/app/scrum/[flow]/page.tsx",
-                   "@/app/scrum/[flow]/persona/page.tsx",
+ecosystem:       Scrum = [
                    "@/app/scrum/[flow]/sprint/page.tsx",
-                   "@/app/scrum/[flow]/user-story/page.tsx",
-                   "@/app/scrum/layout.tsx",
-                   "@/app/scrum/page.tsx",
+                   "@/app/scrum/lib/actions/section-json.ts",
+                   "@/app/scrum/lib/services/sprint.ts",
+                   "@/app/scrum/lib/services/user-story.ts",
+                   "@/app/scrum/lib/types.ts",
+                   "@/app/scrum/lib/validations/sections.ts",
+                   "@/components/scrum/SectionJsonEditor.tsx",
+                   "@/components/scrum/SprintList.tsx",
+                   "@/components/ui/skeleton.tsx",
                  ]
 
-relatedFiles:    ["@/app/scrum/components/scrum/SprintList.tsx",
-                  "@/app/scrum/lib/services/sprint.ts",
+relatedFiles:    ["@/app/scrum/lib/services/sprint.ts",
                   "@/app/scrum/lib/services/user-story.ts",
-                  "@/app/scrum/lib/types.ts"]
+                  "@/app/scrum/lib/types.ts",
+                  "@/app/scrum/lib/actions/section-json.ts",
+                  "@/components/scrum/SprintList.tsx",
+                  "@/components/scrum/SectionJsonEditor.tsx"]
 
 imports:         ["react", "next/navigation",
                   "@/app/scrum/lib/types",
                   "@/app/scrum/lib/services/sprint",
                   "@/app/scrum/lib/services/user-story",
                   "@/app/scrum/components/SprintList",
+                  "@/components/scrum/SectionJsonEditor",
                   "@/components/ui/skeleton"]
 
 exports:         ["default SprintPage"]
 
 useBy:           []
 
-userStories:     ["*en tant qu'utilisateur je veux gérer les sprints d'un flux Scrum"]
+userStories:     ["*en tant qu'utilisateur je veux gérer les sprints d'un flux Scrum",
+                  "*en tant qu'utilisateur je veux éditer le JSON de la section sprint"]
 
-status:          planned
-pathChecked:     ✘false
-metaDataChecked: ✘false
-scriptChecked:   ✘false
+status:          wip
+pathChecked:     ✔true
+metaDataChecked: ✔true
+scriptChecked:   ✔true
 */
 
 import { Suspense } from "react";
@@ -61,6 +65,7 @@ import { SCRUM_FLOWS, type ScrumFlow } from "@/app/scrum/lib/types";
 import { listSprints } from "@/app/scrum/lib/services/sprint";
 import { listUserStories } from "@/app/scrum/lib/services/user-story";
 import { SprintList } from "@/app/scrum/components/SprintList";
+import { SectionJsonEditor } from "@/app/scrum/components/SectionJsonEditor";
 import { Skeleton } from "@/components/ui/skeleton";
 
 type PageParams = Promise<{ flow: string }>;
@@ -88,8 +93,18 @@ async function SprintSection({ params }: { readonly params: PageParams }) {
     listSprints(flow),
     listUserStories(flow),
   ]);
+  const sprintsJson = JSON.stringify(sprints, null, 2);
 
-  return <SprintList flow={flow} sprints={sprints} userStories={userStories} />;
+  return (
+    <div className="space-y-10">
+      <SprintList flow={flow} sprints={sprints} userStories={userStories} />
+      <SectionJsonEditor
+        flow={flow}
+        section="sprint"
+        initialJson={sprintsJson}
+      />
+    </div>
+  );
 }
 
 function SprintListSkeleton() {

@@ -25,10 +25,12 @@ model User {
   updatedAt     DateTime  @updatedAt
   deletedAt     DateTime? // soft delete
 
-  // Relations
-  sessions Session[]
-  accounts Account[]
-  profile  Profile?
+  // Better Auth
+  sessions    Session[]
+  accounts    Account[]
+  // App (multi-tenant)
+  profile     Profile?
+  memberships CommerceMember[]
 
   @@index([deletedAt])
   @@map("user")
@@ -99,6 +101,87 @@ model Profile {
 
   @@index([displayOrder])
   @@map("profil")
+}
+
+////////////////////////
+/////   multi-tenant ///
+////////////////////////
+
+model Commerce {
+  id        String         @id @default(cuid())
+  slug      String         @unique
+  name      String
+  kind      CommerceKind
+  status    CommerceStatus @default(pending)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  deletedAt DateTime? // soft delete
+
+  members CommerceMember[]
+
+  @@index([kind])
+  @@index([status])
+  @@index([deletedAt])
+  @@map("commerce")
+}
+
+model CommerceMember {
+  id          String        @id @default(cuid())
+  commerceId  String
+  userId      String
+  role        AppRole
+  status      AppRoleStatus @default(pending)
+  invitedById String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  commerce Commerce @relation(fields: [commerceId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([commerceId, userId, role])
+  @@index([commerceId, role])
+  @@index([userId])
+  @@map("commerce_members")
+}
+
+///////////////////////////////
+/////     enums Tenant   //////
+///////////////////////////////
+
+enum PlatformRole {
+  visitor
+  user
+  admin
+  dev
+  superAdmin
+}
+
+enum CommerceKind {
+  restaurant
+  food_truck
+  grocery
+  market
+  greengrocer
+}
+
+enum CommerceStatus {
+  pending
+  active
+  suspended
+}
+
+enum AppRole {
+  owner
+  admin
+  staff
+  courier
+  client
+}
+
+enum AppRoleStatus {
+  pending
+  active
+  banned
 }
 
 ////////////////////////

@@ -1,17 +1,17 @@
 /*
 path :           app/super-admin/rbca/page.tsx
-tag :            ["super-admin", "rbca", "rbac", "platform-role", "documentation", "worker-role", "prisma"]
+tag :            ["super-admin", "rbca", "platform-role", "documentation", "worker-role", "prisma"]
 projectId:       <à fournir>
 type:            page
 generic:         false
 
 role:            Page de documentation du modèle RBAC de Genesis. Explique
                  la séparation entre :
-                 1) PlatformRole (user / admin / dev / superAdmin) — rôle
-                    GLOBAL de l'utilisateur sur la plateforme, stocké dans
-                    User.platformRole (String, validé côté app par
-                    platformRoleSchema). C'est le seul rôle natif Better
-                    Auth.
+                 1) PlatformRole (visitor / user / admin / dev / superAdmin)
+                    — rôle GLOBAL de l'utilisateur sur la plateforme,
+                    stocké dans User.platformRole (String, validé côté app
+                    par platformRoleSchema). C'est le seul rôle natif
+                    Better Auth.
                  2) WorkerRole (rôles MÉTIER, à venir) — rôles contextuels
                     liés à une organisation (commerce, équipe, agence…)
                     qui seront stockés dans une table dédiée (Worker,
@@ -26,17 +26,33 @@ role:            Page de documentation du modèle RBAC de Genesis. Explique
                  helpers rbac + UI).
 
                  Source de vérité : les rôles affichés proviennent
-                 DIRECTEMENT de PLATFORM_ROLES (@/config/roles.ts). Ajouter
-                 un rôle dans config/roles.ts le fait apparaître ici
-                 automatiquement (aucune duplication à maintenir). Les
+                 DIRECTEMENT de PLATFORM_ROLES et PLATFORM_ROLES_BY_RANK
+                 (@/config/roles.ts). Ajouter un rôle dans config/roles.ts
+                 le fait apparaître ici automatiquement (aucune duplication
+                 à maintenir). Le tri par rang est centralisé dans
+                 PLATFORM_ROLES_BY_RANK — la page ne le recalcule pas. Les
                  contenus rédactionnels (périmètre, qui l'attribue, notes,
                  icône, accent) sont portés par un Record<PlatformRole,
                  RolePresentation> local — le compilateur TypeScript force
                  l'exhaustivité : impossible d'oublier une entrée.
 
-                 Hiérarchie : superAdmin (3) > dev (2) > admin (1) >
-                 user (0). Un superAdmin voit TOUS les items de
-                 navigation, quel que soit leur minPlatformRole (règle
+                 "visitor" est affiché comme rôle de repli pour les
+                 sessions anonymes (rang 0). Il ne doit jamais être
+                 persisté dans User.platformRole pour un compte réel ;
+                 le rôle stocké par défaut à l'inscription est "user".
+
+                 Les blocs de code Prisma/Better Auth utilisent le
+                 composant @/components/ui/code-block (CodeBlock +
+                 CodeBlockHeader + CodeBlockTitle + CodeBlockActions +
+                 CodeBlockCopyButton + CodeBlockContent), au lieu d'un
+                 <pre> brut. Cela fournit un bouton « Copier » accessible
+                 (aria-label, aria-live), un scroll horizontal fluide
+                 (scroll-fade-x), et une cohérence visuelle avec le
+                 design system.
+
+                 Hiérarchie : superAdmin (4) > dev (3) > admin (2) >
+                 user (1) > visitor (0). Un superAdmin voit TOUS les items
+                 de navigation, quel que soit leur minPlatformRole (règle
                  appliquée par canSee() via hasPlatformRank).
 
                  Page statique (Server Component) sans fetch ni état.
@@ -45,25 +61,28 @@ role:            Page de documentation du modèle RBAC de Genesis. Explique
 
 flow:            Server Component pur → rend un wrapper max-w-5xl →
                  Hero (badge, titre, tagline) → section « Les rôles
-                 plateforme » (grille dynamique : map sur PLATFORM_ROLES
-                 triés par rang → RoleCard pour chaque rôle, avec
+                 plateforme » (grille dynamique : map sur
+                 PLATFORM_ROLES_BY_RANK → RoleCard pour chaque rôle, avec
                  présentation lue dans ROLE_PRESENTATION[role]) →
                  section « Hiérarchie » (tableau des rangs + règle
                  superAdmin voit tout) → section « PlatformRole en
                  détail » (tableau des fichiers) → section « WorkerRole »
-                 (à venir, modèle Prisma, contraintes, impact Better
-                 Auth) → section « Qui attribue quoi » (règles) → section
-                 « Garde-fous » (anti-lockout, anti-auto-promotion) →
-                 section « Procédure de migration WorkerRole » (5 étapes
-                 numérotées) → CTA vers /super-admin/user-manager.
-                 Aucun état, aucun effet, aucun fetch.
+                 (à venir, modèle Prisma rendu via CodeBlock, contraintes,
+                 impact Better Auth) → section « Qui attribue quoi »
+                 (règles) → section « Garde-fous » (anti-lockout,
+                 anti-auto-promotion) → section « Procédure de migration
+                 WorkerRole » (5 étapes numérotées) → CTA vers
+                 /super-admin/user-manager. Aucun état, aucun effet,
+                 aucun fetch.
 
 ecosystem:       SuperAdmin = [
                    "@/app/super-admin/page.tsx",
                    "@/app/super-admin/rbca/page.tsx",
+                   "@/app/super-admin/user-manager/RoleSelect.tsx",
                    "@/app/super-admin/user-manager/UsersTable.tsx",
                    "@/app/super-admin/user-manager/actions.ts",
                    "@/app/super-admin/user-manager/page.tsx",
+                   "@/components/ui/code-block.tsx",
                    "@/config/roles.ts",
                    "@/lib/actions/result.ts",
                    "@/lib/auth/auth.ts",
@@ -76,12 +95,17 @@ relatedFiles:    ["@/config/roles.ts",
                   "@/lib/auth/auth.ts",
                   "@/lib/prisma.ts",
                   "@/app/super-admin/user-manager/page.tsx",
-                  "@/components/layout/header/navTypes.ts"]
+                  "@/components/layout/header/navTypes.ts",
+                  "@/components/ui/code-block.tsx"]
 
-imports:         ["next/link", "lucide-react",
+imports:         ["next",
+                  "next/link",
+                  "react",
+                  "lucide-react",
                   "@/config/roles",
                   "@/components/ui/button",
-                  "@/components/ui/card"]
+                  "@/components/ui/card",
+                  "@/components/ui/code-block"]
 
 exports:         ["default RcbaPage", "metadata"]
 
@@ -99,11 +123,13 @@ scriptChecked:   ✔true
 
 import type { Metadata } from "next";
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import {
   ArrowRight,
   BadgeCheck,
   Building2,
   Cog,
+  Eye,
   KeyRound,
   Layers,
   ListChecks,
@@ -115,9 +141,9 @@ import {
 } from "lucide-react";
 
 import {
-  PLATFORM_ROLES,
   PLATFORM_ROLE_LABELS,
   PLATFORM_ROLE_RANK,
+  PLATFORM_ROLES_BY_RANK,
   type PlatformRole,
 } from "@/config/roles";
 import { buttonVariants } from "@/components/ui/button";
@@ -128,6 +154,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  CodeBlock,
+  CodeBlockActions,
+  CodeBlockContent,
+  CodeBlockCopyButton,
+  CodeBlockHeader,
+  CodeBlockTitle,
+} from "@/components/ui/code-block";
 
 /* ------------------------------------------------------------------ */
 /*  Métadonnées                                                        */
@@ -136,7 +170,7 @@ import {
 export const metadata: Metadata = {
   title: "RBAC — Rôles plateforme et rôles métier",
   description:
-    "Modèle de rôles de Genesis : PlatformRole global (user / admin / dev / superAdmin), hiérarchie stricte, rôles métier contextuels (WorkerRole, à venir) et règles d'attribution.",
+    "Modèle de rôles de Genesis : PlatformRole global (visitor / user / admin / dev / superAdmin), hiérarchie stricte, rôles métier contextuels (WorkerRole, à venir) et règles d'attribution.",
 };
 
 /* ------------------------------------------------------------------ */
@@ -163,6 +197,30 @@ interface MigrationStep {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Contenu des blocs de code                                          */
+/* ------------------------------------------------------------------ */
+
+const PRISMA_WORKER_SNIPPET = `model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  workers   Worker[]
+}
+
+model Worker {
+  id             String   @id @default(cuid())
+  userId         String
+  organizationId String
+  role           String   // ex. "owner" | "manager" | "member"
+  createdAt      DateTime @default(now())
+
+  user         User         @relation(fields: [userId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([userId, organizationId])
+}`;
+
+/* ------------------------------------------------------------------ */
 /*  Présentation par rôle (exhaustif sur PlatformRole)                 */
 /* ------------------------------------------------------------------ */
 
@@ -172,13 +230,23 @@ interface MigrationStep {
  * ajouter son entrée ici provoque une erreur de compilation.
  */
 const ROLE_PRESENTATION: Record<PlatformRole, RolePresentation> = {
+  visitor: {
+    scope:
+      "Accès public sans compte : consultation du catalogue public, aucune commande, aucun avis, aucun point de fidélité. Valeur de repli quand aucune session n'est présente.",
+    whoAssigns:
+      "Aucune attribution : c'est l'état par défaut d'un visiteur non connecté. Aucune ligne User n'est créée pour ce rôle — il n'existe qu'en session.",
+    notes:
+      'Valeur de repli pour les sessions anonymes — rang 0 (le plus bas). Ne doit jamais être persistée dans User.platformRole pour un compte réel : le rôle stocké par défaut à l\'inscription est "user".',
+    icon: Eye,
+    accent: "chart-5",
+  },
   user: {
     scope:
       "Accès standard : lecture publique, gestion de son propre profil, actions autorisées à tout compte connecté. Rôle par défaut à l'inscription.",
     whoAssigns:
       "Automatique (Better Auth) à la création du compte. Aucune action manuelle requise.",
     notes:
-      'Valeur stockée en base : "user". Rang 0 (le plus bas). Fallback de toPlatformRole() si la valeur en base est invalide.',
+      'Valeur stockée en base : "user". Rang 1 (au-dessus de visitor, sous admin). Fallback de toPlatformRole() si la valeur en base est invalide.',
     icon: Users,
     accent: "chart-1",
   },
@@ -188,7 +256,7 @@ const ROLE_PRESENTATION: Record<PlatformRole, RolePresentation> = {
     whoAssigns:
       "Attribué par un superAdmin (ou un admin déjà en place selon la politique retenue). Journalisé.",
     notes:
-      'Valeur stockée en base : "admin". Rang 1 dans la hiérarchie (au-dessus de user, sous dev et superAdmin).',
+      'Valeur stockée en base : "admin". Rang 2 dans la hiérarchie (au-dessus de user, sous dev et superAdmin).',
     icon: UserCog,
     accent: "chart-2",
   },
@@ -198,7 +266,7 @@ const ROLE_PRESENTATION: Record<PlatformRole, RolePresentation> = {
     whoAssigns:
       "Attribué par un superAdmin. Journalisé. Rôle technique, à périmètre étroit.",
     notes:
-      "Valeur stockée en base : \"dev\". Rang 2 dans la hiérarchie — sous superAdmin, au-dessus d'admin. Ouvre /genesis sans donner les droits d'administration métier. Voit donc Admin (rang 1 ≤ 2) mais pas Super-admin (rang 3 > 2).",
+      "Valeur stockée en base : \"dev\". Rang 3 dans la hiérarchie — sous superAdmin, au-dessus d'admin. Ouvre /genesis sans donner les droits d'administration métier. Voit donc Admin (rang 2 ≤ 3) mais pas Super-admin (rang 4 > 3).",
     icon: Cog,
     accent: "chart-3",
   },
@@ -208,20 +276,11 @@ const ROLE_PRESENTATION: Record<PlatformRole, RolePresentation> = {
     whoAssigns:
       "Attribué par un autre superAdmin. En bootstrap (aucun superAdmin existant), l'auto-promotion est autorisée via /super-admin/user-manager.",
     notes:
-      'Valeur stockée en base : "superAdmin". Rang 3 (le plus haut). Anti-lockout : le dernier superAdmin actif ne peut pas être rétrogradé. Règle « voit tout » appliquée par canSee() via hasPlatformRank.',
+      'Valeur stockée en base : "superAdmin". Rang 4 (le plus haut). Anti-lockout : le dernier superAdmin actif ne peut pas être rétrogradé. Règle « voit tout » appliquée par canSee() via hasPlatformRank.',
     icon: ShieldCheck,
     accent: "chart-4",
   },
 };
-
-/**
- * Rôles triés par rang croissant (user → admin → dev → superAdmin).
- * Le tri est dérivé de PLATFORM_ROLE_RANK, donc l'ordre suit
- * automatiquement la hiérarchie définie dans config/roles.ts.
- */
-const SORTED_PLATFORM_ROLES: readonly PlatformRole[] = [...PLATFORM_ROLES].sort(
-  (a, b) => PLATFORM_ROLE_RANK[a] - PLATFORM_ROLE_RANK[b],
-);
 
 /* ------------------------------------------------------------------ */
 /*  Données — étapes de migration WorkerRole                           */
@@ -293,7 +352,7 @@ function RoleCard({
   return (
     <Card
       className="relative h-full overflow-hidden border-border/60"
-      style={{ "--accent": `var(--${accent})` } as React.CSSProperties}
+      style={{ "--accent": `var(--${accent})` } as CSSProperties}
     >
       <div
         aria-hidden
@@ -378,7 +437,7 @@ export default function RcbaPage() {
         </div>
       </section>
 
-      {/* Les rôles plateforme — dynamique depuis PLATFORM_ROLES */}
+      {/* Les rôles plateforme — dynamique depuis PLATFORM_ROLES_BY_RANK */}
       <section className="px-4 pb-16 sm:px-6">
         <div className="mx-auto max-w-6xl">
           <header className="mb-8 text-center">
@@ -386,17 +445,18 @@ export default function RcbaPage() {
               Les rôles plateforme
             </h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              {SORTED_PLATFORM_ROLES.length} rôles globaux, stockés dans{" "}
+              {PLATFORM_ROLES_BY_RANK.length} rôles globaux, stockés dans{" "}
               <code>User.platformRole</code> et validés par{" "}
               <code>platformRoleSchema</code>. Liste dérivée de{" "}
               <code>config/roles.ts</code> — ajouter un rôle dans{" "}
               <code>PLATFORM_ROLES</code> le fait apparaître ici
-              automatiquement. Triés par rang croissant.
+              automatiquement. Triés par rang croissant via{" "}
+              <code>PLATFORM_ROLES_BY_RANK</code>.
             </p>
           </header>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {SORTED_PLATFORM_ROLES.map((role) => (
+            {PLATFORM_ROLES_BY_RANK.map((role) => (
               <RoleCard
                 key={role}
                 role={role}
@@ -438,9 +498,9 @@ export default function RcbaPage() {
                 </tr>
               </thead>
               <tbody>
-                {SORTED_PLATFORM_ROLES.map((role) => {
+                {PLATFORM_ROLES_BY_RANK.map((role) => {
                   const rank = PLATFORM_ROLE_RANK[role];
-                  const visibleSeuils = SORTED_PLATFORM_ROLES.filter(
+                  const visibleSeuils = PLATFORM_ROLES_BY_RANK.filter(
                     (seuil) => PLATFORM_ROLE_RANK[seuil] <= rank,
                   );
                   return (
@@ -470,7 +530,7 @@ export default function RcbaPage() {
               Règle « superAdmin voit tout »
             </h3>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              <code>superAdmin</code> a le rang le plus élevé (3). Via{" "}
+              <code>superAdmin</code> a le rang le plus élevé (4). Via{" "}
               <code>hasPlatformRank(role, minimum)</code> — qui teste{" "}
               <code>RANK[role] &gt;= RANK[minimum]</code> —{" "}
               <code>superAdmin</code> satisfait <strong>tous</strong> les seuils
@@ -516,7 +576,8 @@ export default function RcbaPage() {
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">
                     Source de vérité : PLATFORM_ROLES, PLATFORM_ROLE_LABELS,
-                    PLATFORM_ROLE_RANK, platformRoleSchema, hasPlatformRank.
+                    PLATFORM_ROLE_RANK, PLATFORM_ROLES_BY_RANK,
+                    platformRoleSchema, hasPlatformRank.
                   </td>
                 </tr>
                 <tr className="border-b border-border/40">
@@ -551,8 +612,8 @@ export default function RcbaPage() {
                     app/super-admin/user-manager/
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">
-                    UI de gestion : liste + select de rôle + Server Action
-                    updateUserPlatformRoleAction.
+                    UI de gestion : liste + select de rôle (RoleSelect) +
+                    Server Action updateUserPlatformRoleAction.
                   </td>
                 </tr>
               </tbody>
@@ -586,27 +647,15 @@ export default function RcbaPage() {
                 <CardTitle className="text-sm">Modèle Prisma cible</CardTitle>
               </CardHeader>
               <CardContent>
-                <pre className="overflow-x-auto rounded-lg bg-muted/40 p-3 font-mono text-[11px] leading-relaxed text-foreground">
-                  {`model Organization {
-  id        String   @id @default(cuid())
-  name      String
-  createdAt DateTime @default(now())
-  workers   Worker[]
-}
-
-model Worker {
-  id             String   @id @default(cuid())
-  userId         String
-  organizationId String
-  role           String   // ex. "owner" | "manager" | "member"
-  createdAt      DateTime @default(now())
-
-  user         User         @relation(fields: [userId], references: [id])
-  organization Organization @relation(fields: [organizationId], references: [id])
-
-  @@unique([userId, organizationId])
-}`}
-                </pre>
+                <CodeBlock>
+                  <CodeBlockHeader>
+                    <CodeBlockTitle>schema.prisma</CodeBlockTitle>
+                    <CodeBlockActions>
+                      <CodeBlockCopyButton value={PRISMA_WORKER_SNIPPET} />
+                    </CodeBlockActions>
+                  </CodeBlockHeader>
+                  <CodeBlockContent>{PRISMA_WORKER_SNIPPET}</CodeBlockContent>
+                </CodeBlock>
               </CardContent>
             </Card>
 
@@ -676,6 +725,10 @@ model Worker {
                 <CardTitle className="text-sm">PlatformRole</CardTitle>
               </CardHeader>
               <CardContent className="text-xs text-muted-foreground">
+                <p>
+                  <strong>visitor</strong> : jamais attribué manuellement,
+                  valeur de repli des sessions anonymes.
+                </p>
                 <p>
                   <strong>user</strong> : automatique à la création.
                 </p>
@@ -754,8 +807,9 @@ model Worker {
                 <p>
                   Le <strong>dernier superAdmin actif</strong> ne peut pas être
                   rétrogradé (ni en <code>dev</code>, ni en <code>admin</code>,
-                  ni en <code>user</code>). Règle appliquée côté client (
-                  <code>UsersTable</code>) <strong>et</strong> côté serveur (
+                  ni en <code>user</code>, ni en <code>visitor</code>). Règle
+                  appliquée côté client (<code>UsersTable</code>){" "}
+                  <strong>et</strong> côté serveur (
                   <code>updateUserPlatformRoleAction</code>).
                 </p>
                 <p className="mt-2 text-xs">

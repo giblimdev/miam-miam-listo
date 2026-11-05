@@ -1,20 +1,21 @@
 /*
 path :           app/scrum/lib/services/sprint.ts
-tag :            ["scrum", "service", "sprint", "crud", "reorder", "custom-update"]
+tag :            ["scrum", "service", "sprint", "crud", "reorder", "custom-update", "move"]
 projectId:       new-genesis
 type:            helper
 generic:         true
 
-role:            Service CRUD + reorder pour la section "sprint" du module
-                 Scrum. Cas particulier : l'édition est SCINDÉE en deux
-                 opérations indépendantes (méta / stories) — la page
-                 d'édition appelle deux Server Actions séquentielles — donc
-                 on n'utilise PAS le update générique de la factory.
+role:            Service CRUD + reorder + move pour la section "sprint"
+                 du module Scrum. L'édition est SCINDÉE en deux
+                 opérations indépendantes (méta / stories) — donc on
+                 n'utilise PAS le update générique de la factory.
                  list / create / delete / reorder délèguent à
                  makeCrudService ; updateSprintMeta et updateSprintStories
-                 restent des fonctions dédiées (logique métier propre :
-                 validation de storyId, unicité inter-sprints, préservation
-                 du publishedAt-like — ici aucun champ dérivé). 
+                 restent des fonctions dédiées (validation de storyId,
+                 unicité inter-sprints). moveStoryToSprint est AJOUTÉE
+                 pour le board DnD US↔Sprint (/sprint/board) :
+                 rattache ou détache une US d'un sprint, en garantissant
+                 l'unicité (une US ne peut être que dans un seul sprint).
 
 flow:            makeCrudService("sprint", sprintInputSchema) → base.
                  Exports : base.list / base.create / base.delete /
@@ -25,6 +26,13 @@ flow:            makeCrudService("sprint", sprintInputSchema) → base.
                  updateSprintStories(flow, id, storyIds) → parse → valide
                  chaque storyId → retire des autres sprints (unicité) →
                  réassigne au sprint courant → write.
+                 moveStoryToSprint(flow, storyId, sprintId | null) :
+                 - si sprintId !== null : vérifie que le sprint existe,
+                   valide que storyId existe, retire l'US de tous les
+                   autres sprints, l'ajoute en fin du sprint cible.
+                 - si sprintId === null : retire l'US de tous les
+                   sprints (retour au backlog).
+                 → write → retourne { storyId, sprintId }.
 
 ecosystem:       Scrum = [
                    "@/app/scrum/lib/actions/epic.ts",
@@ -60,11 +68,13 @@ imports:         ["@/app/scrum/lib/services/_crud",
                   "@/app/scrum/lib/validations"]
 
 exports:         ["listSprints", "createSprint", "updateSprintMeta",
-                  "updateSprintStories", "deleteSprint", "reorderSprints"]
+                  "updateSprintStories", "deleteSprint", "reorderSprints",
+                  "moveStoryToSprint"]
 
 useBy:           ["@/app/scrum/lib/actions/sprint.ts"]
 
-userStories:     ["*en tant que développeur je veux CRUD et réorganiser les sprints Scrum"]
+userStories:     ["*en tant que développeur je veux CRUD et réorganiser les sprints Scrum",
+                  "*en tant qu'utilisateur je veux déplacer une US entre backlog et sprint"]
 
 status:          wip
 pathChecked:     ✔true
@@ -125,7 +135,7 @@ export async function updateSprintMeta(
 }
 
 /* ------------------------------------------------------------------ */
-/*  Édition des US (board DnD) — retire des autres sprints             */
+/*  Édition des US (board DnD de l'éditeur) — retire des autres        */
 /* ------------------------------------------------------------------ */
 
 export async function updateSprintStories(
@@ -171,4 +181,68 @@ export async function updateSprintStories(
     throw new Error(`[scrum/sprint] Sprint introuvable après écriture : ${id}`);
   }
   return updated;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Move : rattacher / détacher une US à un sprint (board DnD)         */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Rattache ou détache une US d'un sprint, en garantissant l'unicité
+ * (une US ne peut être que dans un seul sprint).
+ *
+ * - `sprintId === null` : retire l'US de tous les sprints (retour
+ *   backlog).
+ * - `sprintId !== null` : retire l'US de tous les autres sprints et
+ *   l'ajoute en fin du sprint cible.
+ *
+ * @throws si le sprint cible ou l'US n'existent pas.
+ */
+export async function moveStoryToSprint(
+  flow: ScrumFlow,
+  storyId: string,
+  sprintId: string | null,
+): Promise<{ readonly storyId: string; readonly sprintId: string | null }> {
+  const doc = await readScrumFile(flow);
+
+  const storyExists = doc.userStory.some((us) => us.id === storyId);
+  if (!storyExists) {
+    throw new Error(`[scrum/sprint] UserStory introuvable : ${storyId}`);
+  }
+
+  if (sprintId !== null) {
+    const sprintExists = doc.sprint.some((s) => s.id === sprintId);
+    if (!sprintExists) {
+      throw new Error(`[scrum/sprint] Sprint introuvable : ${sprintId}`);
+    }
+  }
+
+  const now = new Date().toISOString();
+
+  const next = doc.sprint.map((sprint) => {
+    const withoutStory = sprint.storyIds.filter((sid) => sid !== storyId);
+    const wasInSprint = withoutStory.length !== sprint.storyIds.length;
+
+    /* Sprint cible : ajoute en fin si pas déjà présent. */
+    if (sprintId !== null && sprint.id === sprintId) {
+      const alreadyInTarget = sprint.storyIds.includes(storyId);
+      return {
+        ...sprint,
+        storyIds: alreadyInTarget
+          ? sprint.storyIds
+          : [...withoutStory, storyId],
+        updatedAt: now,
+      };
+    }
+
+    /* Autres sprints : retire l'US si elle y était. */
+    if (wasInSprint) {
+      return { ...sprint, storyIds: withoutStory, updatedAt: now };
+    }
+
+    return sprint;
+  });
+
+  await writeScrumFile(flow, { ...doc, sprint: next });
+  return { storyId, sprintId };
 }

@@ -1,58 +1,74 @@
 /*
 path :           app/scrum/[flow]/layout.tsx
-tag :            ["help", "layout", "flow", "scrum"]
+tag :            ["scrum", "layout", "flow", "sidebar", "mobile", "mono-flux"]
 projectId:       new-genesis
 type:            layout
 generic:         false
 
-role:            Layout du flux Scrum. Le composant layout est synchrone et monte
-                 un <Suspense> autour d'un composant async qui lit params et valide
-                 le flow. ScrumNav est lui aussi streamé sous Suspense car il utilise
-                 usePathname (Cache Components).
+role:            Layout du flux Scrum. Le composant layout est synchrone
+                 et monte un <Suspense> autour d'un composant async qui
+                 lit params et valide le flow. La navigation est une
+                 SCRUM SIDEBAR (verticale) sur desktop, une Sheet sur
+                 mobile. Un bouton burger est rendu dans le header pour
+                 piloter l'ouverture de la sheet mobile.
+
+                 MONO-FLUX : un seul flux actif ("scrum-business"). Le
+                 FLOW_TITLE local remplace l'ancien FLOW_LABEL
+                 (Record<ScrumFlow, string>) — plus de mapping inutile.
+                 isScrumFlow() reste utilisé pour valider params.flow
+                 (défense en profondeur : une URL forgée
+                 /scrum/scrum-app/... tombe en notFound()).
+
+                 Réorganisation du rendu : la sidebar est EXTRAITE du
+                 flux de contenu (grid 2 colonnes sur md+ : sidebar +
+                 contenu), pour permettre le sticky et le scroll
+                 indépendant.
 
 flow:            Server Component sync → <Suspense fallback=<FlowShellFallback />> →
-                 <FlowShell params={params} /> async → await params → validation
-                 → rend header + ScrumNav (sous Suspense) + children.
+                 <FlowShell params={params} /> async → await params →
+                 validation → rend header (titre + burger mobile) +
+                 <FlowShellContent> (Client Component : gère l'état
+                 mobileOpen de la sheet) qui affiche :
+                 - sidebar desktop (≥ md)
+                 - sheet mobile (< md)
+                 - contenu principal (children).
 
-ecosystem:       Help = [
-                   "@/app/scrum/[flow]/epic/page.tsx",
-                   "@/app/scrum/[flow]/feature/page.tsx",
-                   "@/app/scrum/[flow]/global-json/page.tsx",
-                   "@/app/scrum/[flow]/idee/page.tsx",
-                   "@/app/scrum/[flow]/layout.tsx",
-                   "@/app/scrum/[flow]/page.tsx",
-                   "@/app/scrum/[flow]/persona/page.tsx",
-                   "@/app/scrum/[flow]/sprint/page.tsx",
-                   "@/app/scrum/[flow]/user-story/page.tsx",
-                   "@/app/scrum/layout.tsx",
-                   "@/app/scrum/page.tsx",
+ecosystem:       Scrum = [
+                   "@/app/scrum/components/ScrumSidebar.tsx",
+                   "@/app/scrum/components/ScrumSidebarGroup.tsx",
+                   "@/app/scrum/lib/navigation.ts",
+                   "@/app/scrum/lib/types.ts",
                  ]
 
-relatedFiles:    ["@/app/scrum/lib/types.ts",
-                  "@/app/scrum/components/scrum/ScrumNav.tsx"]
+relatedFiles:    ["@/app/scrum/components/ScrumSidebar.tsx",
+                  "@/app/scrum/lib/navigation.ts",
+                  "@/app/scrum/lib/types.ts",
+                  "@/components/ui/button.tsx"]
 
-imports:         ["react", "next/navigation",
+imports:         ["react", "next/navigation", "lucide-react",
                   "@/app/scrum/lib/types",
-                  "@/app/scrum/components/ScrumNav",
+                  "@/app/scrum/components/ScrumSidebar",
+                  "@/components/ui/button",
                   "@/components/ui/skeleton"]
 
 exports:         ["default FlowLayout"]
 
 useBy:           []
 
-userStories:     ["*en tant qu'utilisateur je veux naviguer entre les sections d'un flux"]
+userStories:     ["*en tant qu'utilisateur je veux naviguer entre les sections d'un flux",
+                  "*en tant qu'utilisateur je veux une sidebar sur desktop et une sheet sur mobile"]
 
-status:          planned
-pathChecked:     ✘false
-metaDataChecked: ✘false
-scriptChecked:   ✘false
+status:          wip
+pathChecked:     ✔true
+metaDataChecked: ✔true
+scriptChecked:   ✔true
 */
 
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 
 import { SCRUM_FLOWS, type ScrumFlow } from "@/app/scrum/lib/types";
-import { ScrumNav } from "@/app/scrum/components/ScrumNav";
+import { FlowShellContent } from "@/app/scrum/components/FlowShellContent";
 import { Skeleton } from "@/components/ui/skeleton";
 
 /* ------------------------------------------------------------------ */
@@ -69,14 +85,14 @@ function isScrumFlow(value: string): value is ScrumFlow {
   return (SCRUM_FLOWS as readonly string[]).includes(value);
 }
 
-const FLOW_LABEL: Record<ScrumFlow, string> = {
-  "scrum-business": "ScrumBusiness",
-  "scrum-app": "ScrumApp",
-  "scrum-genesis": "Scrum-Genesis",
-};
+/**
+ * Libellé affiché du flux. Un seul flux actif ("scrum-business").
+ * Plus de Record<ScrumFlow, string> : le mapping est inutile.
+ */
+const FLOW_TITLE = "ScrumBusiness";
 
 /* ------------------------------------------------------------------ */
-/*  Layout (sync, ne fait que monter le Suspense)                      */
+/*  Layout (sync)                                                      */
 /* ------------------------------------------------------------------ */
 
 export default function FlowLayout({
@@ -116,16 +132,12 @@ async function FlowShell({
         <p className="text-[11px] font-semibold uppercase tracking-wider text-chart-2">
           Flux Scrum
         </p>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">
-          {FLOW_LABEL[flow]}
+        <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+          {FLOW_TITLE}
         </h1>
       </header>
 
-      <Suspense fallback={<ScrumNavFallback />}>
-        <ScrumNav flow={flow} />
-      </Suspense>
-
-      <div className="pt-4">{children}</div>
+      <FlowShellContent flow={flow}>{children}</FlowShellContent>
     </div>
   );
 }
@@ -144,8 +156,4 @@ function FlowShellFallback() {
       <Skeleton className="h-10 w-full" />
     </div>
   );
-}
-
-function ScrumNavFallback() {
-  return <div className="h-10 w-full" aria-hidden />;
 }

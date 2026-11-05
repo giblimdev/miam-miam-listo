@@ -124,12 +124,12 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Genesis — Concevoir et développer votre projet numérique",
-    template: "%s · Genesis",
+    default: "Miam-miam Listo ",
+    template: "%s · Miam-miam Listo",
   },
   description:
     "Genesis est l'atelier de conception et de développement pour toute l'équipe projet.",
-  applicationName: "Genesis",
+  applicationName: "Miam-miam Listo",
 };
 
 /* ------------------------------------------------------------------ */
@@ -227,7 +227,7 @@ export default function RootLayout({
           <TooltipProvider>
             <Suspense fallback={<HeaderFallback />}>
               <HeaderWithRole />
-            </Suspense>
+            </Suspense>{" "}
             <main className="flex-1">{children}</main>
             <Footer />
             <Toaster />

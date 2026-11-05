@@ -1,6 +1,6 @@
 /*
-path :           lib/auth/rbac.ts
-tag :            ["auth", "rbac", "roles", "server-only", "guard", "dynamic"]
+path :           lib/auth/rbca.ts
+tag :            ["auth", "rbca", "roles", "server-only", "guard", "dynamic"]
 projectId:       <à fournir>
 type:            helper
 generic:         true
@@ -29,8 +29,8 @@ flow:            requireSession() → await connection() → getSession() +
                  requireSuperAdmin() → requirePlatformRole(["superAdmin"]).
                  Tous retournent SessionUser pour usage dans l'action.
 
-ecosystem:       AuthRBAC = [
-                   "@/lib/auth/rbac.ts",
+ecosystem:       AuthRBCA = [
+                   "@/lib/auth/rbca.ts",
                    "@/lib/auth/session.ts",
                    "@/lib/prisma.ts",
                    "@/config/roles.ts",

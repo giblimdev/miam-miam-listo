@@ -1,92 +1,71 @@
 /*
 path :           app/scrum/components/TaskBoard.tsx
-tag :            ["scrum", "task", "board", "dnd", "ui", "hydration", "readonly"]
+tag :            ["scrum", "task", "board", "dnd", "ui", "hydration", "cross-container", "design", "sidebar", "flex", "scroll"]
 projectId:       <à fournir>
-type :           component
+type:            component
 generic:         false
 
 role:            Board DnD à N colonnes : "Non rattachées" (task sans
-                 storyId) + 1 colonne par UserStory. Permet de rattacher
-                 / détacher une task d'une US par glisser-déposer. Le
-                 backlog est IMPLICITE (storyId === undefined) : ce n'est
-                 pas une entité, c'est une vue. Une task sans storyId
-                 apparaît dans la colonne "Non rattachées" ; une task avec
-                 storyId apparaît dans la colonne de son US. La colonne
-                 "Non rattachées" est en première position (id UNASSIGNED_ID)
-                 et accepte les drops. Les colonnes US ont pour id l'id de
-                 l'US.
+                 storyId) + 1 colonne par UserStory. Permet de
+                 rattacher / détacher une task d'une US par
+                 glisser-déposer. Le backlog est IMPLICITE
+                 (storyId === undefined).
 
-                 ⚠️ MODE LECTURE SEULE : le board est PUREMENT
-                 présentationnel (drag-only). Les TaskCard sont rendues
-                 avec `readOnly={true}` pour masquer les boutons Éditer /
-                 Supprimer — sinon ils seraient visibles mais morts
-                 (règle 8 : états UX). Les callbacks onEdit / onDelete
-                 sont requis par TaskCardProps mais ignorés en mode
-                 readOnly (no-op documenté).
+                 ALIGNEMENT UI/UX SUR UserStoryBoard (Epic Board) :
+                 - Layout flex horizontal sur desktop : sidebar
+                   "Non rattachées" (320px, hauteur fixe, scroll
+                   interne) + zone US (grille 1/2 colonnes).
+                 - Mobile (< lg) : flex-col → "Non rattachées" en
+                   haut, US en dessous.
+                 - BoardColumn variant="sidebar" pour la colonne
+                   virtuelle, variant="grid" pour les colonnes US.
+                 - TaskMiniCard (drag-only, compact) au lieu de
+                   TaskCard complet → cohérence visuelle avec
+                   UserStoryMiniCard.
 
-                 ⚠️ CORRECTIF HYDRATATION : un `id` stable produit par
-                 `useId()` est passé à <DndContext> (même raison que
-                 UserStoryBoard et SprintStoriesBoard).
+                 ⚠️ CROSS-CONTAINER DND : un SEUL <SortableContext>
+                 global englobe toutes les cartes.
 
-flow:            Reçoit flow + tasks + stories → useId() → dndId stable →
-                 useMemo :
+                 ⚠️ CORRECTIF HYDRATATION : `useId()` fournit un id
+                 stable SSR/client à <DndContext>.
+
+                 ⚠️ CORRECTIF FIN DE DRAG : le conteneur source est
+                 RECALCULÉ à partir des props `tasks` + `storyIds`
+                 au lieu de `event.active.data.current?.containerId`
+                 (peu fiable en fin de drag si le composant source
+                 est re-rendu pendant le drag).
+
+flow:            Reçoit flow + tasks + stories → useId() → dndId
+                 stable → useMemo :
                  - unassignedTasks = tasks.filter(t => !t.storyId)
                  - tasksByStory = Map<storyId, Task[]>
                  - storyTitleById = Map<storyId, title>
-                 → DndContext(id=dndId) + 1 BoardColumn("unassigned") + N
-                 BoardColumn(story.id) avec SortableContext → handleDragEnd
-                 calcule (source, dest) → moveTaskToStoryAction(
-                 flow, taskId, destStoryId | null) → toast + router.refresh().
-                 Les TaskCard sont rendues avec readOnly={true} (drag-only).
+                 → DndContext(id=dndId) + 1 BoardColumn("unassigned")
+                 + N BoardColumn(story.id) avec SortableContext
+                 global → handleDragEnd calcule (source, dest) →
+                 moveTaskToStoryAction(flow, taskId, destStoryId |
+                 null) → toast + router.refresh(). Les TaskMiniCard
+                 sont rendues dans les colonnes.
 
 ecosystem:       Scrum = [
                    "@/app/scrum/components/BoardColumn.tsx",
-                   "@/app/scrum/components/EpicCard.tsx",
-                   "@/app/scrum/components/EpicForm.tsx",
-                   "@/app/scrum/components/EpicList.tsx",
-                   "@/app/scrum/components/FeatureCard.tsx",
-                   "@/app/scrum/components/FeatureForm.tsx",
-                   "@/app/scrum/components/FeatureList.tsx",
-                   "@/app/scrum/components/FlowSelector.tsx",
-                   "@/app/scrum/components/GlobalJsonExport.tsx",
-                   "@/app/scrum/components/IdeeCard.tsx",
-                   "@/app/scrum/components/IdeeDetailDialog.tsx",
-                   "@/app/scrum/components/IdeeForm.tsx",
-                   "@/app/scrum/components/IdeeList.tsx",
-                   "@/app/scrum/components/PersonaCard.tsx",
-                   "@/app/scrum/components/PersonaForm.tsx",
-                   "@/app/scrum/components/PersonaList.tsx",
-                   "@/app/scrum/components/ScrumNav.tsx",
-                   "@/app/scrum/components/SortableItem.tsx",
-                   "@/app/scrum/components/SortableList.tsx",
-                   "@/app/scrum/components/SprintCard.tsx",
-                   "@/app/scrum/components/SprintEditor.tsx",
-                   "@/app/scrum/components/SprintForm.tsx",
-                   "@/app/scrum/components/SprintList.tsx",
-                   "@/app/scrum/components/SprintStoriesBoard.tsx",
                    "@/app/scrum/components/TaskBoard.tsx",
-                   "@/app/scrum/components/TaskCard.tsx",
-                   "@/app/scrum/components/TaskForm.tsx",
-                   "@/app/scrum/components/TaskList.tsx",
-                   "@/app/scrum/components/UserStoryBoard.tsx",
-                   "@/app/scrum/components/UserStoryCard.tsx",
-                   "@/app/scrum/components/UserStoryForm.tsx",
-                   "@/app/scrum/components/UserStoryList.tsx",
-                   "@/app/scrum/components/UserStoryMiniCard.tsx",
+                   "@/app/scrum/components/TaskMiniCard.tsx",
+                   "@/app/scrum/lib/actions/task.ts",
                    "@/app/scrum/lib/types.ts",
                  ]
 
 relatedFiles:    ["@/app/scrum/components/BoardColumn.tsx",
-                  "@/app/scrum/components/TaskCard.tsx",
+                  "@/app/scrum/components/TaskMiniCard.tsx",
                   "@/app/scrum/lib/actions/task.ts",
                   "@/app/scrum/lib/types.ts"]
 
-imports:         ["react", "next/navigation", "sonner",
+imports:         ["react", "next/navigation", "sonner", "lucide-react",
                   "@dnd-kit/core", "@dnd-kit/sortable",
                   "@/app/scrum/lib/types",
                   "@/app/scrum/lib/actions/task",
                   "@/app/scrum/components/BoardColumn",
-                  "@/app/scrum/components/TaskCard"]
+                  "@/app/scrum/components/TaskMiniCard"]
 
 exports:         ["TaskBoard", "TaskBoardProps"]
 
@@ -106,6 +85,7 @@ scriptChecked:   ✔true
 import { useId, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Inbox, ListTodo } from "lucide-react";
 import {
   DndContext,
   KeyboardSensor,
@@ -125,20 +105,13 @@ import {
 import type { ScrumFlow, Task, UserStory } from "@/app/scrum/lib/types";
 import { moveTaskToStoryAction } from "@/app/scrum/lib/actions/task";
 import { BoardColumn } from "@/app/scrum/components/BoardColumn";
-import { TaskCard } from "@/app/scrum/components/TaskCard";
+import { TaskMiniCard } from "@/app/scrum/components/TaskMiniCard";
 
 /* ------------------------------------------------------------------ */
 /*  Constantes                                                         */
 /* ------------------------------------------------------------------ */
 
 const UNASSIGNED_ID = "unassigned-column";
-
-/* Callbacks no-op utilisés en mode readOnly (drag-only).
-   Requis par TaskCardProps mais ignorés : TaskCard ne rend PAS le footer
-   d'actions quand readOnly === true. Documenté ici pour éviter un faux
-   sentiment de boutons morts (règle 8 : états UX). */
-const noop = () => {};
-const noopEdit = (_task: Task) => noop();
 
 /* ------------------------------------------------------------------ */
 /*  Props                                                              */
@@ -162,10 +135,17 @@ export function TaskBoard({ flow, tasks, stories }: TaskBoardProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
-  /* Backlog implicite : tasks sans storyId. */
+  /* Source de vérité pour la résolution des storyId. */
+  const knownStoryIds = useMemo(
+    () => new Set(stories.map((s) => s.id)),
+    [stories],
+  );
+
+  /* Backlog implicite : tasks sans storyId OU avec storyId invalide. */
   const unassignedTasks = useMemo(
-    () => tasks.filter((t) => !t.storyId),
-    [tasks],
+    () =>
+      tasks.filter((t) => !t.storyId || !knownStoryIds.has(t.storyId)),
+    [tasks, knownStoryIds],
   );
 
   /* Map storyId → Task[]. */
@@ -173,18 +153,27 @@ export function TaskBoard({ flow, tasks, stories }: TaskBoardProps) {
     const map = new Map<string, Task[]>();
     for (const story of stories) map.set(story.id, []);
     for (const task of tasks) {
-      if (task.storyId && map.has(task.storyId)) {
+      if (task.storyId && knownStoryIds.has(task.storyId)) {
         map.get(task.storyId)!.push(task);
       }
     }
     return map;
-  }, [tasks, stories]);
+  }, [tasks, stories, knownStoryIds]);
 
-  /* Map storyId → storyTitle (pour l'affichage sur les TaskCard). */
+  /* Map storyId → storyTitle (pour l'affichage sur les TaskMiniCard). */
   const storyTitleById = useMemo(
     () => new Map(stories.map((s) => [s.id, s.title])),
     [stories],
   );
+
+  /* Liste plate de tous les IDs (pour le SortableContext global). */
+  const allTaskIds = useMemo(() => {
+    const ids: string[] = unassignedTasks.map((t) => t.id);
+    for (const storyTasks of tasksByStory.values()) {
+      for (const t of storyTasks) ids.push(t.id);
+    }
+    return ids;
+  }, [unassignedTasks, tasksByStory]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -197,12 +186,33 @@ export function TaskBoard({ flow, tasks, stories }: TaskBoardProps) {
   /*  Helpers                                                            */
   /* ------------------------------------------------------------------ */
 
+  /**
+   * Résout le conteneur d'un id donné. L'id peut être :
+   * - UNASSIGNED_ID          → colonne virtuelle
+   * - un id de UserStory     → cette colonne US
+   * - un id de Task          → le conteneur de rattachement de cette
+   *                            task (storyId valide → colonne US,
+   *                            sinon colonne virtuelle)
+   */
   function findContainer(id: string): string | null {
     if (id === UNASSIGNED_ID) return UNASSIGNED_ID;
-    if (stories.some((s) => s.id === id)) return id;
+    if (knownStoryIds.has(id)) return id;
     const task = tasks.find((t) => t.id === id);
     if (!task) return null;
-    return task.storyId && stories.some((s) => s.id === task.storyId)
+    return task.storyId && knownStoryIds.has(task.storyId)
+      ? task.storyId
+      : UNASSIGNED_ID;
+  }
+
+  /**
+   * Recalcule le conteneur SOURCE d'une task à partir des props
+   * serveur (`tasks` + `knownStoryIds`). Remplace l'usage de
+   * `event.active.data.current?.containerId`.
+   */
+  function resolveSourceContainer(taskId: string): string | null {
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task) return null;
+    return task.storyId && knownStoryIds.has(task.storyId)
       ? task.storyId
       : UNASSIGNED_ID;
   }
@@ -222,12 +232,24 @@ export function TaskBoard({ flow, tasks, stories }: TaskBoardProps) {
 
     if (!overId || pending) return;
 
-    const from = findContainer(taskId);
-    const to = findContainer(overId);
-    if (!from || !to || from === to) return;
+    /* 1. Conteneur source : recalcul déterministe. */
+    const fromContainer = resolveSourceContainer(taskId);
+    if (!fromContainer) return;
 
-    const targetStoryId = to === UNASSIGNED_ID ? null : to;
+    /* 2. Conteneur cible : résolution robuste. */
+    const toContainer = findContainer(overId);
+    if (!toContainer || fromContainer === toContainer) return;
 
+    /* 3. Cible finale. */
+    const targetStoryId = toContainer === UNASSIGNED_ID ? null : toContainer;
+
+    /* 4. Garde : si la story cible n'existe pas, on refuse. */
+    if (targetStoryId !== null && !knownStoryIds.has(targetStoryId)) {
+      toast.error("UserStory introuvable : impossible de rattacher la task.");
+      return;
+    }
+
+    /* 5. Mutation. */
     setPending(true);
     const result = await moveTaskToStoryAction(flow, taskId, targetStoryId);
     setPending(false);
@@ -251,65 +273,85 @@ export function TaskBoard({ flow, tasks, stories }: TaskBoardProps) {
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-        {/* Colonne Non rattachées (toujours en 1er, virtuelle) */}
-        <BoardColumn
-          id={UNASSIGNED_ID}
-          title="Non rattachées"
-          subtitle={`${unassignedTasks.length} task${unassignedTasks.length > 1 ? "s" : ""} sans US`}
-          empty={unassignedTasks.length === 0}
-          emptyMessage="Toutes les tasks sont rattachées à une US."
-        >
-          <SortableContext
-            items={unassignedTasks.map((t) => t.id)}
-            strategy={verticalListSortingStrategy}
-            disabled={pending}
+      <SortableContext
+        items={allTaskIds}
+        strategy={verticalListSortingStrategy}
+        disabled={pending}
+      >
+        {/* Layout flex : sidebar 320px (Non rattachées) + zone US
+            min-w-0 flex-1. Sur mobile (< lg), stack vertical. */}
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+          {/* =================== SIDEBAR UNASSIGNED =================== */}
+          <aside
+            className="lg:sticky lg:top-16 lg:flex lg:h-[calc(100svh-5rem)] lg:w-[320px] lg:shrink-0 lg:flex-col"
+            aria-label="Tasks non rattachées"
           >
-            {unassignedTasks.map((task) => (
-              <TaskCard
-                key={task.id}
-                task={task}
-                storyTitle={undefined}
-                onEdit={noopEdit}
-                onDelete={noopEdit}
-                readOnly
-              />
-            ))}
-          </SortableContext>
-        </BoardColumn>
-
-        {/* 1 colonne par US */}
-        {stories.map((story) => {
-          const storyTasks = tasksByStory.get(story.id) ?? [];
-          return (
             <BoardColumn
-              key={story.id}
-              id={story.id}
-              title={story.title}
-              subtitle={`${storyTasks.length} task${storyTasks.length > 1 ? "s" : ""}`}
-              empty={storyTasks.length === 0}
-              emptyMessage="Glissez une task ici pour la rattacher à cette US."
+              id={UNASSIGNED_ID}
+              title="Non rattachées"
+              subtitle={`${unassignedTasks.length} task${
+                unassignedTasks.length > 1 ? "s" : ""
+              } sans US`}
+              empty={unassignedTasks.length === 0}
+              emptyMessage="Toutes les tasks sont rattachées à une US."
+              icon={Inbox}
+              accent="chart-5"
+              variant="sidebar"
             >
-              <SortableContext
-                items={storyTasks.map((t) => t.id)}
-                strategy={verticalListSortingStrategy}
-                disabled={pending}
-              >
-                {storyTasks.map((task) => (
-                  <TaskCard
-                    key={task.id}
-                    task={task}
-                    storyTitle={storyTitleById.get(task.storyId ?? "")}
-                    onEdit={noopEdit}
-                    onDelete={noopEdit}
-                    readOnly
-                  />
-                ))}
-              </SortableContext>
+              {unassignedTasks.map((task) => (
+                <TaskMiniCard
+                  key={task.id}
+                  task={task}
+                  storyTitle={undefined}
+                  containerId={UNASSIGNED_ID}
+                  disabled={pending}
+                />
+              ))}
             </BoardColumn>
-          );
-        })}
-      </div>
+          </aside>
+
+          {/* =================== GRILLE US =================== */}
+          <div className="min-w-0 flex-1">
+            {stories.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-border/60 bg-muted/20 p-8 text-center text-sm text-muted-foreground">
+                Aucune UserStory pour l&apos;instant. Créez au moins une US
+                pour pouvoir organiser les tasks.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-2">
+                {stories.map((story) => {
+                  const storyTasks = tasksByStory.get(story.id) ?? [];
+                  return (
+                    <BoardColumn
+                      key={story.id}
+                      id={story.id}
+                      title={story.title}
+                      subtitle={`${storyTasks.length} task${
+                        storyTasks.length > 1 ? "s" : ""
+                      }`}
+                      empty={storyTasks.length === 0}
+                      emptyMessage="Glissez une task ici pour la rattacher à cette US."
+                      icon={ListTodo}
+                      accent="chart-2"
+                      variant="grid"
+                    >
+                      {storyTasks.map((task) => (
+                        <TaskMiniCard
+                          key={task.id}
+                          task={task}
+                          storyTitle={storyTitleById.get(task.storyId ?? "")}
+                          containerId={story.id}
+                          disabled={pending}
+                        />
+                      ))}
+                    </BoardColumn>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      </SortableContext>
 
       {activeId && (
         <p className="mt-3 text-center text-xs text-muted-foreground">

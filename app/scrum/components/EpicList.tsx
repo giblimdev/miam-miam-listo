@@ -5,53 +5,32 @@ projectId:       <à fournir>
 type:            component
 generic:         false
 
-role:            Liste des epics d'un flux Scrum avec DnD. État optimiste
-                 (useState + useEffect resync) pour un réordonnancement
-                 immédiat côté client, rollback + toast en cas d'échec.
-                 Gère l'état local (dialogs création/édition/suppression)
-                 et délègue les mutations aux Server Actions. Les
-                 DialogContent utilisent `flex h-[85vh] flex-col
-                 overflow-hidden` + `sm:max-w-2xl`.
+role:            Liste des epics d'un flux Scrum avec DnD. L'édition
+                 se fait désormais sur une page dédiée
+                 /scrum/[flow]/epic/[epicId]/edit (bouton Éditer →
+                 router.push), comme pour Sprint. Seule la création
+                 rapide passe par une modale (EpicForm). État optimiste
+                 conservé pour le réordonnancement DnD.
 
-flow:            flow + epics (server) → useState(optimistic) → useEffect
-                 resync sur [epics] → SortableList + SortableItem →
-                 handleReorder(orderedIds) → setOptimistic(reordered)
-                 → reorderEpicsAction(flow, orderedIds) → succès :
-                 router.refresh() ; échec : setOptimistic(previous) +
-                 toast.error. Création/édition/suppression : Dialog +
-                 EpicForm → Server Action → toast → router.refresh().
+                 ⚠️ ROUTE : la route physique réelle est
+                 /scrum/[flow]/epic/[epicId]/edit. Le préfixe `/scrum/`
+                 est OBLIGATOIRE.
+
+flow:            flow + epics → useState(optimistic) → useEffect
+                 resync → SortableList + SortableItem → handleReorder
+                 → Server Action. handleEdit(epic) →
+                 router.push(`/scrum/${flow}/epic/${epic.id}/edit`).
+                 Création : Dialog + EpicForm → createEpicAction.
+                 Suppression : AlertDialog → deleteEpicAction.
 
 ecosystem:       Scrum = [
                    "@/app/scrum/components/EpicCard.tsx",
                    "@/app/scrum/components/EpicForm.tsx",
                    "@/app/scrum/components/EpicList.tsx",
-                   "@/app/scrum/components/FeatureCard.tsx",
-                   "@/app/scrum/components/FeatureForm.tsx",
-                   "@/app/scrum/components/FeatureList.tsx",
-                   "@/app/scrum/components/FlowSelector.tsx",
-                   "@/app/scrum/components/GlobalJsonExport.tsx",
-                   "@/app/scrum/components/IdeeCard.tsx",
-                   "@/app/scrum/components/IdeeDetailDialog.tsx",
-                   "@/app/scrum/components/IdeeForm.tsx",
-                   "@/app/scrum/components/IdeeList.tsx",
-                   "@/app/scrum/components/PersonaCard.tsx",
-                   "@/app/scrum/components/PersonaForm.tsx",
-                   "@/app/scrum/components/PersonaList.tsx",
-                   "@/app/scrum/components/ScrumNav.tsx",
                    "@/app/scrum/components/SortableItem.tsx",
                    "@/app/scrum/components/SortableList.tsx",
-                   "@/app/scrum/components/SprintCard.tsx",
-                   "@/app/scrum/components/SprintEditor.tsx",
-                   "@/app/scrum/components/SprintForm.tsx",
-                   "@/app/scrum/components/SprintList.tsx",
-                   "@/app/scrum/components/SprintStoriesBoard.tsx",
-                   "@/app/scrum/components/TaskCard.tsx",
-                   "@/app/scrum/components/TaskForm.tsx",
-                   "@/app/scrum/components/TaskList.tsx",
-                   "@/app/scrum/components/UserStoryCard.tsx",
-                   "@/app/scrum/components/UserStoryForm.tsx",
-                   "@/app/scrum/components/UserStoryList.tsx",
-                   "@/app/scrum/components/UserStoryMiniCard.tsx",
+                   "@/app/scrum/lib/actions/epic.ts",
+                   "@/app/scrum/lib/types.ts",
                  ]
 
 relatedFiles:    ["@/app/scrum/components/EpicCard.tsx",
@@ -74,9 +53,10 @@ imports:         ["react", "next/navigation", "lucide-react", "sonner",
 
 exports:         ["EpicList", "EpicListProps"]
 
-useBy:           ["@/app/scrum/[flow]/epic/page.tsx"]
+useBy:           ["/app/scrum/[flow]/epic/page.tsx"]
 
-userStories:     ["*en tant qu'utilisateur je veux lister et réorganiser les epics Scrum"]
+userStories:     ["*en tant qu'utilisateur je veux lister et réorganiser les epics Scrum",
+                  "*en tant qu'utilisateur je veux éditer un epic sur une page dédiée"]
 
 status:          wip
 pathChecked:     ✔true
@@ -85,7 +65,7 @@ scriptChecked:   ✔true
 */
 
 "use client";
-// "use client" justifié : useState (dialogs + optimiste), useEffect, DnD, toast.
+// "use client" justifié : useState (dialogs + optimiste), useEffect, router.push, DnD, toast.
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -97,7 +77,6 @@ import {
   createEpicAction,
   deleteEpicAction,
   reorderEpicsAction,
-  updateEpicAction,
 } from "@/app/scrum/lib/actions/epic";
 import { EpicCard } from "@/app/scrum/components/EpicCard";
 import { EpicForm } from "@/app/scrum/components/EpicForm";
@@ -139,7 +118,6 @@ export function EpicList({ flow, epics }: EpicListProps) {
   const router = useRouter();
   const [optimistic, setOptimistic] = useState<readonly Epic[]>(epics);
   const [createOpen, setCreateOpen] = useState(false);
-  const [editing, setEditing] = useState<Epic | null>(null);
   const [deleting, setDeleting] = useState<Epic | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -147,7 +125,7 @@ export function EpicList({ flow, epics }: EpicListProps) {
     setOptimistic(epics);
   }, [epics]);
 
-  /* --- Création --- */
+  /* --- Création (modale conservée) --- */
   async function handleCreate(formData: FormData) {
     setPending(true);
     const result = await createEpicAction(flow, formData);
@@ -155,21 +133,6 @@ export function EpicList({ flow, epics }: EpicListProps) {
     if (result.ok) {
       toast.success("Epic créé.");
       setCreateOpen(false);
-      router.refresh();
-    } else {
-      toast.error(result.error);
-    }
-  }
-
-  /* --- Édition --- */
-  async function handleUpdate(formData: FormData) {
-    if (!editing) return;
-    setPending(true);
-    const result = await updateEpicAction(flow, editing.id, formData);
-    setPending(false);
-    if (result.ok) {
-      toast.success("Epic mis à jour.");
-      setEditing(null);
       router.refresh();
     } else {
       toast.error(result.error);
@@ -209,6 +172,16 @@ export function EpicList({ flow, epics }: EpicListProps) {
       setOptimistic(previous);
       toast.error(result.error);
     }
+  }
+
+  /**
+   * ⚠️ ROUTE : la route physique réelle est
+   * /scrum/[flow]/epic/[epicId]/edit. Le préfixe `/scrum/` est
+   * OBLIGATOIRE — sans lui, l'URL produite est
+   * `/scrum-business/epic/.../edit` et renvoie 404.
+   */
+  function handleEdit(epic: Epic) {
+    router.push(`/scrum/${flow}/epic/${epic.id}/edit`);
   }
 
   return (
@@ -266,7 +239,7 @@ export function EpicList({ flow, epics }: EpicListProps) {
               <SortableItem key={epic.id} id={epic.id} disabled={pending}>
                 <EpicCard
                   epic={epic}
-                  onEdit={setEditing}
+                  onEdit={handleEdit}
                   onDelete={setDeleting}
                 />
               </SortableItem>
@@ -275,7 +248,7 @@ export function EpicList({ flow, epics }: EpicListProps) {
         </SortableList>
       )}
 
-      {/* Création */}
+      {/* Création (modale conservée) */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="flex h-[85vh] flex-col gap-4 overflow-hidden sm:max-w-2xl">
           <DialogHeader className="shrink-0">
@@ -286,28 +259,6 @@ export function EpicList({ flow, epics }: EpicListProps) {
             </DialogDescription>
           </DialogHeader>
           <EpicForm onSubmit={handleCreate} pending={pending} />
-        </DialogContent>
-      </Dialog>
-
-      {/* Édition */}
-      <Dialog
-        open={editing !== null}
-        onOpenChange={(open) => !open && setEditing(null)}
-      >
-        <DialogContent className="flex h-[85vh] flex-col gap-4 overflow-hidden sm:max-w-2xl">
-          <DialogHeader className="shrink-0">
-            <DialogTitle>Éditer l&apos;epic</DialogTitle>
-            <DialogDescription>
-              Mettez à jour l&apos;objectif, le périmètre ou les personas.
-            </DialogDescription>
-          </DialogHeader>
-          {editing && (
-            <EpicForm
-              defaultValues={editing}
-              onSubmit={handleUpdate}
-              pending={pending}
-            />
-          )}
         </DialogContent>
       </Dialog>
 
