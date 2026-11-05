@@ -73,8 +73,8 @@ export interface FoodImage {
 /* ------------------------------------------------------------------ */
 
 export const FOOD_TYPES: readonly FoodImage[] = [
-  { src: "/foodtype/arabe.webp", text: "Moyen-orientale", visibility: true },
-  { src: "/foodtype/arepas.webp", text: "Arepas", visibility: true },
+  { src: "/arabe.webp", text: "Moyen-orientale", visibility: true },
+  { src: "/arepas.webp", text: "Arepas", visibility: true },
   { src: "/foodtype/asiat.webp", text: "Asiatique", visibility: true },
   { src: "/foodtype/assado.webp", text: "Assado", visibility: true },
   { src: "/foodtype/boisson.webp", text: "Boisson", visibility: true },

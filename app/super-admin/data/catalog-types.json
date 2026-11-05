@@ -16,8 +16,8 @@
     { "slug": "lot",        "label": "Lot",        "imageSrc": "/producttype/lot.webp",        "accent": "chart-1", "visibility": true, "order": 5 }
   ],
   "food": [
-    { "slug": "moyen-orientale", "label": "Moyen-orientale", "imageSrc": "/foodtype/arabe.webp", "visibility": true, "order": 0 },
-    { "slug": "arepas",          "label": "Arepas",          "imageSrc": "/foodtype/arepas.webp", "visibility": true, "order": 1 },
+    { "slug": "moyen-orientale", "label": "Moyen-orientale", "imageSrc": "/arabe.webp", "visibility": true, "order": 0 },
+    { "slug": "arepas",          "label": "Arepas",          "imageSrc": "/arepas.webp", "visibility": true, "order": 1 },
     { "slug": "asiatique",       "label": "Asiatique",       "imageSrc": "/foodtype/asiat.webp", "visibility": true, "order": 2 },
     { "slug": "assado",          "label": "Assado",          "imageSrc": "/foodtype/assado.webp", "visibility": true, "order": 3 },
     { "slug": "boisson",         "label": "Boisson",         "imageSrc": "/foodtype/boisson.webp", "visibility": true, "order": 4 },
